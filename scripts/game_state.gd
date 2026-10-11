@@ -214,6 +214,19 @@ const METRIC_NAMES := {
 const FAILURE_METRICS := ["vegetation", "water_quality", "fish", "birds", "community"]
 const BIRD_REDLINE_PERCENT := [80, 85, 88, 90]
 
+# ==================== 提前胜利（0.1.29）====================
+# 四项常驻指标都**严格高于** EARLY_WIN_THRESHOLD，且留湖候鸟基数达标，
+# 连续 EARLY_WIN_STREAK 个回合的结算后仍然如此 → 提前通关。
+#
+# ⚠ 候鸟那一项按「留湖基数 B」判，不按面板上的「留湖＋迁徙」总量判：
+#   迁徙来客的季节容量是春 8 / 夏 4 / 秋 20 / 冬 40，总量上限 100 只在冬季摸得到，
+#   按总量 > 80 算的话只有冬季那一两个回合能达标，任何「连续两回合」都不可能成立
+#   —— 条件会变成永远触发不了。B 的上限是 60、且与季节无关（环境系数决定）。
+const EARLY_WIN_METRICS := ["vegetation", "water_quality", "fish", "community"]
+const EARLY_WIN_THRESHOLD := 80
+const EARLY_WIN_BIRD_BASE := 55      # 留湖基数 0–60：55 ≈ 满员九成
+const EARLY_WIN_STREAK := 2          # 连续达成多少个回合的结算 → 提前通关
+
 # 死因 → 下一局优先补强的方向（失败报告用来交代「输在哪、下次怎么打」）
 # ⚠ 只给「打什么」，不给「为什么」：指标之间的因果链（水质→植被→候鸟…）是隐性参数，
 #   要玩家自己从数字里总结。这里写解释就等于把机制白送。
@@ -1784,6 +1797,7 @@ var is_failure: bool = false        # 是否因生态崩溃提前结束
 var failure_reason: String = ""     # 失败原因文案
 var failure_metric: String = ""     # 崩溃的指标
 var failure_value: int = 0          # 判负时该指标的数值（失败报告用）
+var early_win_streak: int = 0       # 提前胜利：连续多少个回合的结算后五项都达标（中途掉一项即清零）
 
 signal metrics_changed
 signal funds_changed
@@ -2052,6 +2066,7 @@ func serialize() -> Dictionary:
 		"fired_synergies": _fired_synergies.duplicate(),
 		"is_failure": is_failure, "failure_reason": failure_reason,
 		"failure_metric": failure_metric, "failure_value": failure_value,
+		"early_win_streak": early_win_streak,
 	}
 
 
@@ -2127,6 +2142,7 @@ func load_state(d: Dictionary, restore_talents: bool = true) -> void:
 	failure_reason = str(d.get("failure_reason", ""))
 	failure_metric = str(d.get("failure_metric", ""))
 	failure_value = int(d.get("failure_value", 0))
+	early_win_streak = clampi(int(d.get("early_win_streak", 0)), 0, EARLY_WIN_STREAK)
 	# 流水账是实时算分动画的副产品，读档后没有「刚刚结算过」的语义，直接清空
 	score_ledger = []
 
@@ -2162,6 +2178,7 @@ func reset_game() -> void:
 	log_messages = []
 	score_ledger = []
 	game_over = false
+	early_win_streak = 0
 	pending_crisis = {}
 	music_crisis_recovery = {}
 	forecast_crisis = {}
@@ -3545,6 +3562,14 @@ func end_turn() -> void:
 	if not _is_settlement_preview:
 		_check_knowledge_triggers()
 
+	# 提前胜利（0.1.29）：五项都过提前线并连续保持 EARLY_WIN_STREAK 个回合的结算 → 不用撑满四年。
+	# ⚠ 只在 turn < TOTAL_TURNS 时判：最后一回合本来就是自然通关，报「提前」是假话。
+	if turn < TOTAL_TURNS and not _is_settlement_preview and _advance_early_win():
+		game_over = true
+		_add_log("生态五项连续 %d 个回合高于提前线：提前通关" % EARLY_WIN_STREAK)
+		game_ended.emit(generate_report())
+		return
+
 	if turn >= TOTAL_TURNS:
 		game_over = true
 		game_ended.emit(generate_report())
@@ -3618,6 +3643,40 @@ func metrics_below_threshold() -> Array:
 			out.append({"metric": metric, "value": metric_failure_value(str(metric))})
 	out.sort_custom(func(a, b): return int(a["value"]) < int(b["value"]))
 	return out
+
+
+## 提前胜利的门槛：四项常驻指标**严格高于**提前线，且留湖候鸟基数达标。
+## from 可传一组指标做推演（预览 / 测试用），默认取当前面板值。
+func early_win_met(from: Dictionary = {}) -> bool:
+	var src: Dictionary = metrics if from.is_empty() else from
+	for metric in EARLY_WIN_METRICS:
+		if int(src.get(metric, 0)) <= EARLY_WIN_THRESHOLD:
+			return false
+	return int(bird_snapshot()["base"]) >= EARLY_WIN_BIRD_BASE
+
+
+## 离提前线还差哪几项（结算日志与测试用，顺序同面板）
+func early_win_missing() -> Array:
+	var out: Array = []
+	for metric in EARLY_WIN_METRICS:
+		if int(metrics.get(metric, 0)) <= EARLY_WIN_THRESHOLD:
+			out.append(METRIC_NAMES.get(metric, metric))
+	if int(bird_snapshot()["base"]) < EARLY_WIN_BIRD_BASE:
+		out.append(METRIC_NAMES.get("birds", "birds"))
+	return out
+
+
+## 回合末结算之后推进提前胜利的连续计数；返回本回合是否达成提前通关。
+## ⚠ 只在真实结算里调用（预览不能改状态，否则悬停推演会污染存档计数）。
+func _advance_early_win() -> bool:
+	if early_win_met():
+		early_win_streak += 1
+		if early_win_streak >= EARLY_WIN_STREAK:
+			return true
+		_add_log("生态五项都高于提前线：再保持 %d 个回合即可提前通关" % (EARLY_WIN_STREAK - early_win_streak))
+		return false
+	early_win_streak = 0
+	return false
 
 
 ## 知识卡的两条节拍规则（2026-10-03 反馈）——
