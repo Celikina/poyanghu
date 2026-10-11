@@ -130,7 +130,7 @@ enum Difficulty { EASY, NORMAL, HARD, NIGHTMARE }
 #   反馈原话「大概率活不过第二回合」说的就是这套参数。
 #   ⚠ 动这几个数字之前先想清楚：它的"乐趣"完全来自"几乎必死"，
 #     别顺手把它调平衡了（平衡版的困难档已经存在，就是上面的 HARD）。
-const FAILURE_THRESHOLD := { Difficulty.EASY: 20, Difficulty.NORMAL: 30, Difficulty.HARD: 40, Difficulty.NIGHTMARE: 45 }   # 判负阈值
+const FAILURE_THRESHOLD := { Difficulty.EASY: 20, Difficulty.NORMAL: 30, Difficulty.HARD: 40, Difficulty.NIGHTMARE: 45 }   # 判负基准线（没有单独列进 FAILURE_LINES 的指标才用它）
 const PENALTY_MULT := { Difficulty.EASY: 1.0, Difficulty.NORMAL: 1.5, Difficulty.HARD: 2.0, Difficulty.NIGHTMARE: 2.0 }     # 扣分惩罚倍率
 
 # 0.1.3：水位退出致死判定；难度倍率只放大生态损失，水文涨落不放大。
@@ -185,19 +185,23 @@ func difficulty_name() -> String:
 #   "fish":            -5,   # 同样无条件衰减（无巡护 -1~-2/回合）
 #   "birds":            0,   # 恢复最慢、条件触发，维持原线
 #   "community":      +10,   # 平时不衰减（缓冲 19.4），抬线让「牺牲社区」真的会输
-# 生效后的五条致死线（顺序：水质/植被/鱼类/候鸟/社区；水位无致死线）：
-#   简单 15/23/15/20/30
-#   普通 25/28/25/30/40
-#   困难 35/38/35/40/50
-const FAILURE_THRESHOLD_OFFSET := {"water_quality": -5, "vegetation": 3, "fish": -5, "birds": 0, "community": 10}
-
-# 在 FAILURE_THRESHOLD_OFFSET 之上、**只对特定难度**再叠加的调整。
-# 用来做「普通/困难太严、简单档不动」这类微调 —— 直接改 FAILURE_THRESHOLD_OFFSET
-# 会连简单档一起动，而简单档是给新手的，不该跟着变。
-# 2026-09-28 玩测反馈：沉水植被在普通/困难太难保住，两条线各降 5。
-const FAILURE_THRESHOLD_EXTRA := {
-	Difficulty.NORMAL: {"vegetation": -5},
-	Difficulty.HARD:   {"vegetation": -5},
+# ==================== 六项判负红线（2026-10-11 重构）====================
+# 原来是三处相加：FAILURE_THRESHOLD（难度基准）+ FAILURE_THRESHOLD_OFFSET（指标偏移）
+# + FAILURE_THRESHOLD_EXTRA（个别难度追加）。改一个数要在脑子里叠三层，
+# 「普通档沉水植被到底是多少」得算；而且偏移和追加调整各只照顾了一部分指标。
+# 现在直接列成「指标 × 难度」一张表，读一眼就知道任何一档是哪条线。
+#
+# 数值相比重构前：简单档不动（15/23/15/20/30），普通、困难、噩梦三档**每项各降 5**
+# （普通 20/23/20/25/35、困难 30/33/30/35/45、噩梦 40×6）。取 5 是因为量过「整局最小余量」：
+# 满天赋树 + 规划策略下，困难/噩梦最紧的那一刻七成以上落在第 1 回合，而开局的余量就是
+# 开局值减这条线 —— 线降 5，等于任何一档的开局余量都多 5 点，且六项一起动。
+# 水位不在表里：它没有致死线，只有季节参考区间。
+const FAILURE_LINES := {
+	"water_quality": { Difficulty.EASY: 15, Difficulty.NORMAL: 20, Difficulty.HARD: 30, Difficulty.NIGHTMARE: 40 },
+	"vegetation":    { Difficulty.EASY: 23, Difficulty.NORMAL: 23, Difficulty.HARD: 33, Difficulty.NIGHTMARE: 40 },
+	"fish":          { Difficulty.EASY: 15, Difficulty.NORMAL: 20, Difficulty.HARD: 30, Difficulty.NIGHTMARE: 40 },
+	"birds":         { Difficulty.EASY: 20, Difficulty.NORMAL: 25, Difficulty.HARD: 35, Difficulty.NIGHTMARE: 40 },
+	"community":     { Difficulty.EASY: 30, Difficulty.NORMAL: 35, Difficulty.HARD: 45, Difficulty.NIGHTMARE: 40 },
 }
 
 # 六项指标的中文名与量纲说明
@@ -212,8 +216,8 @@ const METRIC_NAMES := {
 
 # 提前判负只检查这五项；水位通过季节生态影响间接作用，不直接判负。
 const FAILURE_METRICS := ["vegetation", "water_quality", "fish", "birds", "community"]
-## 候鸟红线 = 与其它五项同一套生成逻辑（FAILURE_THRESHOLD + 指标偏移，即简单 20 / 普通 30 /
-## 困难 40 / 噩梦 45），但**每局按种子在这个区间里随机抽一条**，抽完整局不变、存档一起保存。
+## 候鸟红线 = 与其它五项同一张表里那一行（简单 20 / 普通 25 / 困难 35 / 噩梦 40），
+## 但**每局按种子在这个区间里随机抽一条**，抽完整局不变、存档一起保存。
 ## 上限是开局留湖基数的 85%（向下取整）：留湖自己就是开局滚出来的 48~60，天赋还会往上加，
 ## 不设上限的话「难度线」与「开局就贴着线」这两种坏情况都会出现。
 ## ⚠ 抽签必须只在开新局时做一次：存档、预览、悬停都不能重抽（会消耗随机数序列，
@@ -3609,16 +3613,12 @@ func failure_threshold() -> int:
 
 ## 某一项指标的判负阈值 = 难度线 + 该项偏移 + 该难度下的额外调整
 ## （两张表里都没写就是难度线本身）
-## 五项共用的红线生成方式：FAILURE_THRESHOLD + 该指标的偏移 + 个别难度的追加调整。
+## 某一项在这一档的红线：直接查 FAILURE_LINES 那张表（见文件上方那次重构的说明）。
 func base_metric_line(metric: String) -> int:
-	# ⚠ 噩梦档**不叠任何偏移**：995f784 那版就是六项共用一条线，
-	#   "每指标单独红线"是后来才加的。照搬偏移会把噩梦档悄悄变简单
-	#   （社区 +10 会把它的线从 45 抬到 55，等于开局凭空多出 7 点余量）。
-	if difficulty == Difficulty.NIGHTMARE:
+	var row: Dictionary = FAILURE_LINES.get(metric, {})
+	if row.is_empty():
 		return clampi(failure_threshold(), 5, 95)
-	var offset: int = int(FAILURE_THRESHOLD_OFFSET.get(metric, 0))
-	offset += int(FAILURE_THRESHOLD_EXTRA.get(difficulty, {}).get(metric, 0))
-	return clampi(failure_threshold() + offset, 5, 95)
+	return clampi(int(row.get(difficulty, failure_threshold())), 5, 95)
 
 
 ## 候鸟红线的上限：开局留湖基数的 85%（向下取整，宁可松一点）。

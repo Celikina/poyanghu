@@ -27,7 +27,8 @@ func _ready() -> void:
 	var restored = load("res://scripts/game_state.gd").new()
 	for mode in 4:
 		fixture(state, mode)
-		var floor_line: int = [20, 30, 40, 45][mode]
+		# 下限直接问代码要，别在这里抄一份表（0.1.29 重构红线时抄的那份就过期了）
+		var floor_line: int = int(state.base_metric_line("birds"))
 		check(line >= floor_line and line <= state.bird_redline_cap(60),
 			"Opening sixty rolls a redline between the difficulty line and eighty-five percent of residents")
 		# 上限：留湖偏小时 85% 会先咬人（向下取整），这时线就是上限本身。
@@ -83,7 +84,7 @@ func _ready() -> void:
 			state.reset_game()
 			check(state.bird_initial_residents == state.bird_snapshot().base, "New run captures real opening residents after talents")
 			var opened: int = int(state.failure_threshold_for("birds"))
-			check(opened >= [20, 30, 40, 45][mode] or opened == state.bird_redline_cap(state.bird_initial_residents),
+			check(opened >= state.base_metric_line("birds") or opened == state.bird_redline_cap(state.bird_initial_residents),
 				"Real opening redline starts from the shared difficulty line")
 			check(opened <= state.bird_redline_cap(state.bird_initial_residents), "Real opening redline stays under eighty-five percent of residents")
 	state.free()
