@@ -70,7 +70,7 @@ func configure(owner_game: Node, canvas: CanvasLayer) -> void:
 	view_button.name = "SandpanViewButton"
 	view_button.custom_minimum_size = Vector2(136, 36)
 	view_button.size = Vector2(136, 36)
-	view_button.tooltip_text = "收起手牌与其他界面查看沙盘；再次点击恢复，保留已选卡牌与投入档位。"
+	view_button.tooltip_text = ""
 	canvas.add_child(view_button)
 	# Keep popups and metric tips above the new entry point.
 	canvas.move_child(view_button, game.popup_root.get_index())

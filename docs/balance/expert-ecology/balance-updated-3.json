@@ -1,0 +1,114 @@
+{
+	"difficulty": 3,
+	"elapsed_ms": 50723,
+	"games_per_policy": 100,
+	"seed_start": 1000,
+	"strategies": {
+		"ignore_birds": {
+			"avg_eco_score": 63.0033333333333,
+			"avg_extra_funding": 88.22,
+			"avg_turns": 9.15,
+			"bird_cards_per_game": 0.0,
+			"conflicts_per_game": 0.0,
+			"deaths": {
+				"community": 3,
+				"fish": 15,
+				"vegetation": 23,
+				"water_quality": 19
+			},
+			"events": {
+				"bird_conflict": 2,
+				"disease": 4,
+				"drought": 23,
+				"flood": 32,
+				"illegal_fishing": 8,
+				"invasive": 37,
+				"pollution": 28,
+				"wetland_encroach": 17,
+				"winter_poaching": 12
+			},
+			"games": 100,
+			"win_rate": 0.4,
+			"wins": 40
+		},
+		"ignore_trust": {
+			"avg_eco_score": 57.8266666666667,
+			"avg_extra_funding": 18.81,
+			"avg_turns": 4.68,
+			"bird_cards_per_game": 1.46,
+			"conflicts_per_game": 0.0,
+			"deaths": {
+				"community": 60,
+				"fish": 14,
+				"vegetation": 15,
+				"water_quality": 11
+			},
+			"events": {
+				"bird_conflict": 3,
+				"disease": 2,
+				"drought": 4,
+				"flood": 13,
+				"illegal_fishing": 4,
+				"invasive": 14,
+				"pollution": 10,
+				"wetland_encroach": 7,
+				"winter_poaching": 10
+			},
+			"games": 100,
+			"win_rate": 0.0,
+			"wins": 0
+		},
+		"planned": {
+			"avg_eco_score": 62.97,
+			"avg_extra_funding": 105.76,
+			"avg_turns": 8.86,
+			"bird_cards_per_game": 2.43,
+			"conflicts_per_game": 0.0,
+			"deaths": {
+				"community": 2,
+				"fish": 11,
+				"vegetation": 31,
+				"water_quality": 17
+			},
+			"events": {
+				"disease": 5,
+				"drought": 18,
+				"flood": 32,
+				"illegal_fishing": 14,
+				"invasive": 41,
+				"pollution": 27,
+				"wetland_encroach": 18,
+				"winter_poaching": 10
+			},
+			"games": 100,
+			"win_rate": 0.39,
+			"wins": 39
+		},
+		"random": {
+			"avg_eco_score": 50.5066666666667,
+			"avg_extra_funding": 16.01,
+			"avg_turns": 2.37,
+			"bird_cards_per_game": 0.9,
+			"conflicts_per_game": 0.03,
+			"deaths": {
+				"community": 3,
+				"fish": 16,
+				"vegetation": 52,
+				"water_quality": 29
+			},
+			"events": {
+				"disease": 1,
+				"drought": 1,
+				"flood": 3,
+				"illegal_fishing": 1,
+				"invasive": 8,
+				"pollution": 5,
+				"winter_poaching": 3
+			},
+			"games": 100,
+			"win_rate": 0.0,
+			"wins": 0
+		}
+	},
+	"version": "updated"
+}

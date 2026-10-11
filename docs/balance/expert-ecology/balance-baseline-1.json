@@ -1,0 +1,101 @@
+{
+	"difficulty": 1,
+	"elapsed_ms": 110928,
+	"games_per_policy": 100,
+	"seed_start": 1000,
+	"strategies": {
+		"ignore_birds": {
+			"avg_eco_score": 72.5366666666667,
+			"avg_extra_funding": 199.79,
+			"avg_turns": 16.0,
+			"bird_cards_per_game": 0.0,
+			"conflicts_per_game": 0.0,
+			"deaths": {},
+			"events": {
+				"algal_bloom": 2,
+				"disease": 14,
+				"drought": 31,
+				"flood": 14,
+				"illegal_fishing": 17,
+				"invasive": 28,
+				"pollution": 92
+			},
+			"games": 100,
+			"win_rate": 1.0,
+			"wins": 100
+		},
+		"ignore_trust": {
+			"avg_eco_score": 58.66,
+			"avg_extra_funding": 15.69,
+			"avg_turns": 6.62,
+			"bird_cards_per_game": 2.77,
+			"conflicts_per_game": 0.01,
+			"deaths": {
+				"community": 100
+			},
+			"events": {
+				"algal_bloom": 3,
+				"bird_conflict": 7,
+				"disease": 10,
+				"drought": 6,
+				"flood": 7,
+				"illegal_fishing": 18,
+				"invasive": 16,
+				"pollution": 25,
+				"wetland_encroach": 36
+			},
+			"games": 100,
+			"win_rate": 0.0,
+			"wins": 0
+		},
+		"planned": {
+			"avg_eco_score": 74.13,
+			"avg_extra_funding": 236.34,
+			"avg_turns": 16.0,
+			"bird_cards_per_game": 7.95,
+			"conflicts_per_game": 0.0,
+			"deaths": {},
+			"events": {
+				"algal_bloom": 2,
+				"disease": 16,
+				"drought": 16,
+				"flood": 7,
+				"illegal_fishing": 17,
+				"invasive": 45,
+				"pollution": 124
+			},
+			"games": 100,
+			"win_rate": 1.0,
+			"wins": 100
+		},
+		"random": {
+			"avg_eco_score": 46.04,
+			"avg_extra_funding": 83.87,
+			"avg_turns": 8.49,
+			"bird_cards_per_game": 4.44,
+			"conflicts_per_game": 0.43,
+			"deaths": {
+				"birds": 5,
+				"community": 4,
+				"fish": 13,
+				"vegetation": 47,
+				"water_quality": 17
+			},
+			"events": {
+				"algal_bloom": 20,
+				"bird_conflict": 4,
+				"disease": 31,
+				"drought": 24,
+				"flood": 15,
+				"illegal_fishing": 23,
+				"invasive": 39,
+				"pollution": 35,
+				"wetland_encroach": 8
+			},
+			"games": 100,
+			"win_rate": 0.14,
+			"wins": 14
+		}
+	},
+	"version": "baseline"
+}

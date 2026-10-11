@@ -1,0 +1,861 @@
+{
+  "version": "0.1.25",
+  "changes": [
+    {
+      "cell": "D50",
+      "id": 44,
+      "before": "本回合已用及待付（含行动、调度与刷新费用）/ 本回合总预算",
+      "after": "本回合已用及待付/ 本回合总预算",
+      "locations": [
+        {
+          "path": "scripts/main.gd",
+          "line": 1919
+        }
+      ]
+    },
+    {
+      "cell": "D177",
+      "id": 171,
+      "before": "[color=#9aa0a6]→ 未爆发（本局在那之前就结束了）[/color]\n",
+      "after": "[color=#9aa0a6]→ 未爆发[/color]\n",
+      "locations": [
+        {
+          "path": "scripts/main.gd",
+          "line": 4700
+        }
+      ]
+    },
+    {
+      "cell": "D251",
+      "id": 245,
+      "before": "[color=#ffb060]回合末洪旱额外损失（已含难度）：[/color]",
+      "after": "[color=#ffb060]回合末洪旱额外损失：[/color]",
+      "locations": [
+        {
+          "path": "scripts/main.gd",
+          "line": 6525
+        }
+      ]
+    },
+    {
+      "cell": "D255",
+      "id": 249,
+      "before": "[color=#ffb060]秋季开局遗留：水位 %+d（含当前预警）[/color]",
+      "after": "[color=#ffb060]秋季开局遗留：水位 %+d[/color]",
+      "locations": [
+        {
+          "path": "scripts/main.gd",
+          "line": 6532
+        }
+      ]
+    },
+    {
+      "cell": "D344",
+      "id": 338,
+      "before": "[color=#8a8a8a]本局种子：%d（同种子可复现，便于对照实验）[/color]\n",
+      "after": "[color=#8a8a8a]本局种子：%d[/color]\n",
+      "locations": [
+        {
+          "path": "scripts/main.gd",
+          "line": 8744
+        }
+      ]
+    },
+    {
+      "cell": "D55",
+      "id": 49,
+      "before": "松手落到桌面 · 待打出",
+      "after": "松手落到桌面",
+      "locations": [
+        {
+          "path": "scripts/main.gd",
+          "line": 2024
+        }
+      ]
+    },
+    {
+      "cell": "D65",
+      "id": 59,
+      "before": "守护每一片芦苇，等待每一次归来。\n轻点湖面，观察水鸟。",
+      "after": "守护每一片芦苇，等待每一次归来。",
+      "locations": [
+        {
+          "path": "scripts/main.gd",
+          "line": 2250
+        }
+      ]
+    },
+    {
+      "cell": "D101",
+      "id": 95,
+      "before": "[center]动效机制：[url=https://github.com/feitangyuan/motion-web]motion-web · feitangyuan[/url]\n[url=https://github.com/feitangyuan/motion-web/blob/main/LICENSE]CC BY-NC 4.0[/url] · 已改为 Godot 原生实现[/center]",
+      "after": "",
+      "locations": [
+        {
+          "path": "scripts/main.gd",
+          "line": 2572
+        }
+      ]
+    },
+    {
+      "cell": "D102",
+      "id": 96,
+      "before": "[center]卡牌燃烧：[url=https://godotshaders.com/shader/2d-dissolve-with-burn-edge/]mreliptik · CC0[/url]\n[url=https://github.com/MrEliptik/godot_ui_components]godot_ui_components[/url] · MIT[/center]",
+      "after": "",
+      "locations": [
+        {
+          "path": "scripts/main.gd",
+          "line": 2579
+        }
+      ]
+    },
+    {
+      "cell": "D103",
+      "id": 97,
+      "before": "[center]打击反馈参考：[url=https://github.com/a327ex/SNKRX]SNKRX · a327ex[/url] · MIT\n特效与闪光改编：[url=https://github.com/haowg/GODOT-VFX-LIBRARY]GODOT-VFX-LIBRARY · haowg[/url] · MIT[/center]",
+      "after": "",
+      "locations": [
+        {
+          "path": "scripts/main.gd",
+          "line": 2586
+        }
+      ]
+    },
+    {
+      "cell": "D124",
+      "id": 118,
+      "before": "BGM：%s（随局势自动切换）",
+      "after": "",
+      "locations": [
+        {
+          "path": "scripts/main.gd",
+          "line": 3539
+        }
+      ]
+    },
+    {
+      "cell": "D151",
+      "id": 145,
+      "before": "下批手牌保底一张对策",
+      "after": "",
+      "locations": [
+        {
+          "path": "scripts/main.gd",
+          "line": 4423
+        }
+      ]
+    },
+    {
+      "cell": "D152",
+      "id": 146,
+      "before": "下批手牌里对策卡概率已提高，不保证到手",
+      "after": "",
+      "locations": [
+        {
+          "path": "scripts/main.gd",
+          "line": 4423
+        }
+      ]
+    },
+    {
+      "cell": "D274",
+      "id": 268,
+      "before": "（本局已用过 %d 次，每再用一次 +%d 万）",
+      "after": "",
+      "locations": [
+        {
+          "path": "scripts/main.gd",
+          "line": 6883
+        }
+      ]
+    },
+    {
+      "cell": "D304",
+      "id": 298,
+      "before": "  ⚠ 以下行动因资金不足未能执行：%s",
+      "after": "",
+      "locations": [
+        {
+          "path": "scripts/main.gd",
+          "line": 8089
+        }
+      ]
+    },
+    {
+      "cell": "D320",
+      "id": 314,
+      "before": "保底一张当季对策，按档位减伤",
+      "after": "",
+      "locations": [
+        {
+          "path": "scripts/main.gd",
+          "line": 8139
+        }
+      ]
+    },
+    {
+      "cell": "D321",
+      "id": 315,
+      "before": "出现概率已提高，不保证到手",
+      "after": "",
+      "locations": [
+        {
+          "path": "scripts/main.gd",
+          "line": 8139
+        }
+      ]
+    },
+    {
+      "cell": "D336",
+      "id": 330,
+      "before": "[color=#8fd0ff]补强建议：%s[/color]\n",
+      "after": "",
+      "locations": [
+        {
+          "path": "scripts/main.gd",
+          "line": 8724
+        }
+      ]
+    },
+    {
+      "cell": "D337",
+      "id": 331,
+      "before": "[color=#c08080]同一回合跌破生态红线的还有：%s[/color]\n",
+      "after": "",
+      "locations": [
+        {
+          "path": "scripts/main.gd",
+          "line": 8730
+        }
+      ]
+    },
+    {
+      "cell": "D350",
+      "id": 344,
+      "before": "\n[b]反思[/b]\n%s",
+      "after": "",
+      "locations": [
+        {
+          "path": "scripts/main.gd",
+          "line": 8755
+        }
+      ]
+    },
+    {
+      "cell": "D353",
+      "id": 347,
+      "before": "收起手牌与其他界面查看沙盘；再次点击恢复，保留已选卡牌与投入档位。",
+      "after": "",
+      "locations": [
+        {
+          "path": "scripts/sandpan_view.gd",
+          "line": 73
+        }
+      ]
+    },
+    {
+      "cell": "D463",
+      "id": 457,
+      "before": "议事会需要时间磨合，但一旦跑通，调度阻力大减",
+      "after": "",
+      "locations": [
+        {
+          "path": "scripts/game_state.gd",
+          "line": 791
+        }
+      ]
+    },
+    {
+      "cell": "D466",
+      "id": 460,
+      "before": "见效快，但覆盖范围取决于参与的户数",
+      "after": "",
+      "locations": [
+        {
+          "path": "scripts/game_state.gd",
+          "line": 804
+        }
+      ]
+    },
+    {
+      "cell": "D153",
+      "id": 147,
+      "before": "\n\n[color=#8fd0ff]应对建议（%s）：优先打出「%s」%s[/color]",
+      "after": "\n\n[color=#8fd0ff]应对建议：「%s」%s[/color]",
+      "locations": [
+        {
+          "path": "scripts/main.gd",
+          "line": 4424
+        }
+      ]
+    },
+    {
+      "cell": "D180",
+      "id": 174,
+      "before": "查看全部行动卡 · 点击打开牌库",
+      "after": "查看全部行动卡",
+      "locations": [
+        {
+          "path": "scripts/main.gd",
+          "line": 4770
+        }
+      ]
+    },
+    {
+      "cell": "D192",
+      "id": 186,
+      "before": "点击牌面和解说栏之外的背景返回",
+      "after": "点击空白处返回",
+      "locations": [
+        {
+          "path": "scripts/main.gd",
+          "line": 5673
+        },
+        {
+          "path": "scripts/main.gd",
+          "line": 6037
+        }
+      ]
+    },
+    {
+      "cell": "D195",
+      "id": 189,
+      "before": "尚未收集的知识卡\n\n在游戏里触发它之后，这里会显示完整资料。",
+      "after": "尚未收集的知识卡",
+      "locations": [
+        {
+          "path": "scripts/main.gd",
+          "line": 5824
+        }
+      ]
+    },
+    {
+      "cell": "D199",
+      "id": 193,
+      "before": "[color=#8a8a8a]未收集[/color]\n\n这张知识卡还没有收集到。在游戏里触发它之后，这里会显示它的完整资料。\n\n[b]？[/b]",
+      "after": "[color=#8a8a8a]未收集[/color]\n\n这张知识卡还没有收集到。",
+      "locations": [
+        {
+          "path": "scripts/main.gd",
+          "line": 5938
+        }
+      ]
+    },
+    {
+      "cell": "D204",
+      "id": 198,
+      "before": "[b]生态角色[/b]：%s\n\n",
+      "after": "生态角色：%s\n\n",
+      "locations": [
+        {
+          "path": "scripts/main.gd",
+          "line": 5950
+        }
+      ]
+    },
+    {
+      "cell": "D205",
+      "id": 199,
+      "before": "[b]当前威胁[/b]：%s\n\n",
+      "after": "当前威胁：%s\n\n",
+      "locations": [
+        {
+          "path": "scripts/main.gd",
+          "line": 5951
+        }
+      ]
+    },
+    {
+      "cell": "D206",
+      "id": 200,
+      "before": "[b]管理建议[/b]：%s",
+      "after": "管理建议：%s",
+      "locations": [
+        {
+          "path": "scripts/main.gd",
+          "line": 5952
+        }
+      ]
+    },
+    {
+      "cell": "D207",
+      "id": 201,
+      "before": "\n\n[b]资料来源[/b]：[url=%s]%s[/url]",
+      "after": "\n\n资料来源：[url=%s]%s[/url]",
+      "locations": [
+        {
+          "path": "scripts/main.gd",
+          "line": 5960
+        }
+      ]
+    },
+    {
+      "cell": "D208",
+      "id": 202,
+      "before": "种子需为非负整数（留空则随机）",
+      "after": "种子：",
+      "locations": [
+        {
+          "path": "scripts/main.gd",
+          "line": 6047
+        }
+      ]
+    },
+    {
+      "cell": "D220",
+      "id": 214,
+      "before": "基础健康稳定 · 正常迁徙不判负",
+      "after": "种群基数稳定",
+      "locations": [
+        {
+          "path": "scripts/main.gd",
+          "line": 6264
+        },
+        {
+          "path": "scripts/main.gd",
+          "line": 7749
+        }
+      ]
+    },
+    {
+      "cell": "D229",
+      "id": 223,
+      "before": "[color=#ff5a5a][b]⚠ 回合末就会跌破生态红线[/b][/color]",
+      "after": "[color=#ff5a5a][b]⚠ 回合末将跌破生态红线[/b][/color]",
+      "locations": [
+        {
+          "path": "scripts/main.gd",
+          "line": 6456
+        }
+      ]
+    },
+    {
+      "cell": "D254",
+      "id": 248,
+      "before": "候鸟种群受栖息地影响，详见鸟群预览。",
+      "after": "候鸟种群受栖息地影响。",
+      "locations": [
+        {
+          "path": "scripts/main.gd",
+          "line": 6528
+        }
+      ]
+    },
+    {
+      "cell": "D268",
+      "id": 262,
+      "before": "紧急调度 · %d 万（含待打出预算不足）",
+      "after": "紧急调度 · %d 万（预算不足）",
+      "locations": [
+        {
+          "path": "scripts/main.gd",
+          "line": 6742
+        }
+      ]
+    },
+    {
+      "cell": "D275",
+      "id": 269,
+      "before": "%s · 按「有效投入」档结算 · 不占行动位、回合末与手牌一起算分 · 每用一次后要空 %d 个回合",
+      "after": "按「有效投入」档结算",
+      "locations": [
+        {
+          "path": "scripts/main.gd",
+          "line": 6884
+        }
+      ]
+    },
+    {
+      "cell": "D276",
+      "id": 270,
+      "before": "紧急调度 · 从当季可抽池点名一张牌",
+      "after": "紧急调度 · 从当季政策选择一张牌",
+      "locations": [
+        {
+          "path": "scripts/main.gd",
+          "line": 6929
+        }
+      ]
+    },
+    {
+      "cell": "D309",
+      "id": 303,
+      "before": "  候鸟来客最多 %+d；基础健康不直接扣减，可用对策减伤。",
+      "after": "  候鸟来客最多 %+d；候鸟种群不直接扣减，可用对策减伤。",
+      "locations": [
+        {
+          "path": "scripts/main.gd",
+          "line": 8113
+        }
+      ]
+    },
+    {
+      "cell": "D315",
+      "id": 309,
+      "before": "候鸟基础健康",
+      "after": "候鸟种群基数",
+      "locations": [
+        {
+          "path": "scripts/main.gd",
+          "line": 8122
+        }
+      ]
+    },
+    {
+      "cell": "D319",
+      "id": 313,
+      "before": "[color=#ff5a5a][b]⚠ 下回合结算时若仍未改善，将因「%s」跌破生态红线而被撤换 —— 你还有下回合一整个回合可以补救[/b][/color]",
+      "after": "[color=#ff5a5a][b]⚠ 下回合结算时若仍未改善，将因「%s」跌破生态红线而被撤换[/b][/color]",
+      "locations": [
+        {
+          "path": "scripts/main.gd",
+          "line": 8133
+        }
+      ]
+    },
+    {
+      "cell": "D335",
+      "id": 329,
+      "before": "[b]直接死因：[/b]%s 跌至 [color=#ff9090]%d[/color]（生态红线 %d）\n",
+      "after": "[b]判负原因：[/b]%s 跌至 [color=#ff9090]%d[/color]（生态红线 %d）\n",
+      "locations": [
+        {
+          "path": "scripts/main.gd",
+          "line": 8721
+        }
+      ]
+    },
+    {
+      "cell": "D365",
+      "id": 359,
+      "before": "移栽成株苦草、黑藻，快速重建水下草场 —— 当回合见效，但成株与固定成本高。",
+      "after": "移栽成株苦草、黑藻，快速重建水下草场。",
+      "locations": [
+        {
+          "path": "scripts/game_state.gd",
+          "line": 364
+        }
+      ]
+    },
+    {
+      "cell": "D368",
+      "id": 362,
+      "before": "保育苦草、黑藻的冬芽与种子库，为后续萌发留足种源 —— 便宜，但要等 2~3 回合才见效。",
+      "after": "保育苦草、黑藻的冬芽与种子库，为后续萌发留足种源。",
+      "locations": [
+        {
+          "path": "scripts/game_state.gd",
+          "line": 380
+        }
+      ]
+    },
+    {
+      "cell": "D389",
+      "id": 383,
+      "before": "见效慢，2~3 回合后显现",
+      "after": "2-3回合后见效",
+      "locations": [
+        {
+          "path": "scripts/game_state.gd",
+          "line": 465
+        }
+      ]
+    },
+    {
+      "cell": "D398",
+      "id": 392,
+      "before": "严查非法捕捞，直接决定鱼类恢复速度。",
+      "after": "严查非法捕捞。",
+      "locations": [
+        {
+          "path": "scripts/game_state.gd",
+          "line": 497
+        }
+      ]
+    },
+    {
+      "cell": "D450",
+      "id": 444,
+      "before": "修复四大家鱼产卵场与洄游通道：当回合就见鱼群回补，后续繁殖还会再涨一波。",
+      "after": "修复四大家鱼产卵场与洄游通道。",
+      "locations": [
+        {
+          "path": "scripts/game_state.gd",
+          "line": 718
+        }
+      ]
+    },
+    {
+      "cell": "D456",
+      "id": 450,
+      "before": "立法见效慢，2 回合后逐步显现",
+      "after": "2回合后生效",
+      "locations": [
+        {
+          "path": "scripts/game_state.gd",
+          "line": 751
+        }
+      ]
+    },
+    {
+      "cell": "D462",
+      "id": 456,
+      "before": "把灌溉与生态用水的分配权交给村民议事会，从抢水变成共管。",
+      "after": "把灌溉与生态用水的分配权交给村委会。",
+      "locations": [
+        {
+          "path": "scripts/game_state.gd",
+          "line": 784
+        }
+      ]
+    },
+    {
+      "cell": "D889",
+      "id": 883,
+      "before": "优先补水、蓄水保水，把闸坝联合调度打出来",
+      "after": "优先补水",
+      "locations": [
+        {
+          "path": "scripts/game_state.gd",
+          "line": 217
+        }
+      ]
+    },
+    {
+      "cell": "D894",
+      "id": 888,
+      "before": "补偿与转产别断",
+      "after": "持续补偿和转产",
+      "locations": [
+        {
+          "path": "scripts/game_state.gd",
+          "line": 222
+        }
+      ]
+    },
+    {
+      "cell": "D899",
+      "id": 893,
+      "before": "先测水质再补种，成活率大幅提升",
+      "after": "大幅提升成活率",
+      "locations": [
+        {
+          "path": "scripts/game_state.gd",
+          "line": 1578
+        }
+      ]
+    },
+    {
+      "cell": "D903",
+      "id": 897,
+      "before": "执法与社区共管协同，巡护覆盖翻倍",
+      "after": "增强巡护覆盖",
+      "locations": [
+        {
+          "path": "scripts/game_state.gd",
+          "line": 1588
+        }
+      ]
+    },
+    {
+      "cell": "D907",
+      "id": 901,
+      "before": "候鸟食堂配合社区补偿，把冲突转化为共管",
+      "after": "候鸟食堂配合社区补偿，缓解人鸟关系",
+      "locations": [
+        {
+          "path": "scripts/game_state.gd",
+          "line": 1598
+        }
+      ]
+    },
+    {
+      "cell": "D909",
+      "id": 903,
+      "before": "清淤与浮岛协同，内源外源污染一起削减",
+      "after": "清淤与浮岛协同，削减内外污染源",
+      "locations": [
+        {
+          "path": "scripts/game_state.gd",
+          "line": 1603
+        }
+      ]
+    },
+    {
+      "cell": "D911",
+      "id": 905,
+      "before": "无人机侦察配合地面执法，非法捕捞无所遁形",
+      "after": "无人机侦察配合地面执法，严厉打击非法捕捞",
+      "locations": [
+        {
+          "path": "scripts/game_state.gd",
+          "line": 1608
+        }
+      ]
+    },
+    {
+      "cell": "D917",
+      "id": 911,
+      "before": "栖息地保护好，观鸟旅游才有持续客流",
+      "after": "保护好栖息地以维持旅游业",
+      "locations": [
+        {
+          "path": "scripts/game_state.gd",
+          "line": 1623
+        }
+      ]
+    },
+    {
+      "cell": "D921",
+      "id": 915,
+      "before": "鱼类资源枯竭，江豚与食鱼水鸟无以为继，禁渔成果付诸东流。",
+      "after": "鱼类资源枯竭，江豚与食鱼水鸟食物来源减少。",
+      "locations": [
+        {
+          "path": "scripts/game_state.gd",
+          "line": 1633
+        }
+      ]
+    },
+    {
+      "cell": "D930",
+      "id": 924,
+      "before": "【湖区简报】暂未触发明显洪旱预警或候鸟进田情况。",
+      "after": "【湖区简报】未收到洪旱预警及候鸟进田的报告。",
+      "locations": [
+        {
+          "path": "scripts/game_state.gd",
+          "line": 1668
+        }
+      ]
+    },
+    {
+      "cell": "D931",
+      "id": 925,
+      "before": "【湖区简报】水位略偏离本季参考区间，暂未触发明显洪旱预警或候鸟进田情况。",
+      "after": "【湖区简报】水位略偏离本季参考区间，未收到洪旱预警及候鸟进田的报告。",
+      "locations": [
+        {
+          "path": "scripts/game_state.gd",
+          "line": 1669
+        }
+      ]
+    },
+    {
+      "cell": "D934",
+      "id": 928,
+      "before": "农户损失正在累积。",
+      "after": "农户损失正在扩大，造成不良社会影响。",
+      "locations": [
+        {
+          "path": "scripts/game_state.gd",
+          "line": 1675
+        }
+      ]
+    },
+    {
+      "cell": "D938",
+      "id": 932,
+      "before": "滩地食源修复",
+      "after": "候鸟食物恢复",
+      "locations": [
+        {
+          "path": "scripts/game_state.gd",
+          "line": 1916
+        }
+      ]
+    },
+    {
+      "cell": "D939",
+      "id": 933,
+      "before": "%s：恢复滩地食源 %d",
+      "after": "%s：恢复候鸟食物 %d",
+      "locations": [
+        {
+          "path": "scripts/game_state.gd",
+          "line": 1917
+        }
+      ]
+    },
+    {
+      "cell": "D940",
+      "id": 934,
+      "before": "湿地环境影响鸟群基础健康",
+      "after": "湿地环境影响鸟群基数",
+      "locations": [
+        {
+          "path": "scripts/game_state.gd",
+          "line": 1929
+        }
+      ]
+    },
+    {
+      "cell": "D941",
+      "id": 935,
+      "before": "季节迁徙：%s季来客随食源与水位变化",
+      "after": "季节迁徙：%s季候鸟随食源与水位变化",
+      "locations": [
+        {
+          "path": "scripts/game_state.gd",
+          "line": 1930
+        }
+      ]
+    },
+    {
+      "cell": "D944",
+      "id": 938,
+      "before": "对策减伤 %d%%",
+      "after": "应对措施减少损失 %d%%",
+      "locations": [
+        {
+          "path": "scripts/game_state.gd",
+          "line": 2368
+        }
+      ]
+    },
+    {
+      "cell": "D950",
+      "id": 944,
+      "before": "%s季%s：行动后水位 %d → 自然变化后 %d，参考 %d–%d，季内暴露 ×%.2f",
+      "after": "%s季%s：行动后水位 %d → 自然变化后 %d，参考 %d–%d，本回合水位压力 ×%.2f",
+      "locations": [
+        {
+          "path": "scripts/game_state.gd",
+          "line": 3089
+        }
+      ]
+    },
+    {
+      "cell": "D959",
+      "id": 953,
+      "before": "没打巡护/护渔 → 被非法捕捞蚕食",
+      "after": "未投入巡护或护渔力度，非法捕捞趁虚而入",
+      "locations": [
+        {
+          "path": "scripts/game_state.gd",
+          "line": 3135
+        }
+      ]
+    },
+    {
+      "cell": "D960",
+      "id": 954,
+      "before": "信任度 %d 低于 45 且本回合没打补偿 → 持续下降",
+      "after": "下降",
+      "locations": [
+        {
+          "path": "scripts/game_state.gd",
+          "line": 3141
+        }
+      ]
+    }
+  ],
+  "retained": {
+    "D289": "存在异常卡牌保护分支，保留提示"
+  },
+  "explanations": {
+    "D938:D939": "退水后洲滩上的苔草等鸟类食物，显示为候鸟食物",
+    "D944": "应对措施减少事件损失",
+    "D950": "本回合高低水位造成的生态压力"
+  }
+}

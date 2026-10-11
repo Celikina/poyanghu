@@ -1,0 +1,149 @@
+{
+	"difficulty": 3,
+	"elapsed_ms": 75296,
+	"games_per_policy": 100,
+	"seed_start": 1000,
+	"strategies": {
+		"ignore_birds": {
+			"avg_eco_score": 64.08,
+			"avg_extra_funding": 101.86,
+			"avg_turns": 9.75,
+			"bird_cards_per_game": 0.0,
+			"conflicts_per_game": 0.0,
+			"deaths": {
+				"community": 3,
+				"fish": 11,
+				"vegetation": 22,
+				"water_quality": 18
+			},
+			"events": {
+				"autumn_burning": 5,
+				"autumn_lake_fishing": 3,
+				"bird_conflict": 8,
+				"disease": 4,
+				"drought": 23,
+				"flood": 25,
+				"illegal_fishing": 6,
+				"invasive": 27,
+				"pollution": 24,
+				"spring_overgrazing": 5,
+				"spring_reclamation": 4,
+				"spring_runoff": 2,
+				"spring_spawning_fishing": 2,
+				"summer_destructive_fishing": 9,
+				"summer_sand_mining": 4,
+				"summer_water_dispute": 4,
+				"wetland_encroach": 7,
+				"winter_drone_disturbance": 8,
+				"winter_poaching": 8
+			},
+			"games": 100,
+			"win_rate": 0.46,
+			"wins": 46
+		},
+		"ignore_trust": {
+			"avg_eco_score": 58.8066666666667,
+			"avg_extra_funding": 19.97,
+			"avg_turns": 4.9,
+			"bird_cards_per_game": 1.48,
+			"conflicts_per_game": 0.0,
+			"deaths": {
+				"community": 63,
+				"fish": 13,
+				"vegetation": 16,
+				"water_quality": 8
+			},
+			"events": {
+				"autumn_burning": 4,
+				"bird_conflict": 9,
+				"disease": 1,
+				"drought": 2,
+				"flood": 6,
+				"illegal_fishing": 4,
+				"invasive": 7,
+				"pollution": 5,
+				"spring_overgrazing": 2,
+				"spring_reclamation": 4,
+				"spring_runoff": 1,
+				"spring_spawning_fishing": 3,
+				"summer_destructive_fishing": 4,
+				"summer_sand_mining": 3,
+				"summer_water_dispute": 4,
+				"wetland_encroach": 4,
+				"winter_drone_disturbance": 3,
+				"winter_poaching": 10
+			},
+			"games": 100,
+			"win_rate": 0.0,
+			"wins": 0
+		},
+		"planned": {
+			"avg_eco_score": 65.5033333333333,
+			"avg_extra_funding": 120.05,
+			"avg_turns": 9.51,
+			"bird_cards_per_game": 2.71,
+			"conflicts_per_game": 0.0,
+			"deaths": {
+				"community": 1,
+				"fish": 11,
+				"vegetation": 25,
+				"water_quality": 16
+			},
+			"events": {
+				"autumn_burning": 7,
+				"autumn_lake_fishing": 3,
+				"bird_conflict": 7,
+				"disease": 3,
+				"drought": 18,
+				"flood": 27,
+				"illegal_fishing": 3,
+				"invasive": 28,
+				"pollution": 21,
+				"spring_overgrazing": 3,
+				"spring_reclamation": 4,
+				"spring_runoff": 2,
+				"spring_spawning_fishing": 1,
+				"summer_destructive_fishing": 6,
+				"summer_sand_mining": 4,
+				"summer_water_dispute": 6,
+				"wetland_encroach": 6,
+				"winter_drone_disturbance": 9,
+				"winter_poaching": 6
+			},
+			"games": 100,
+			"win_rate": 0.47,
+			"wins": 47
+		},
+		"random": {
+			"avg_eco_score": 50.5633333333333,
+			"avg_extra_funding": 17.21,
+			"avg_turns": 2.49,
+			"bird_cards_per_game": 0.9,
+			"conflicts_per_game": 0.04,
+			"deaths": {
+				"community": 2,
+				"fish": 16,
+				"vegetation": 53,
+				"water_quality": 29
+			},
+			"events": {
+				"autumn_lake_fishing": 1,
+				"bird_conflict": 2,
+				"disease": 1,
+				"drought": 3,
+				"flood": 3,
+				"invasive": 4,
+				"pollution": 6,
+				"spring_spawning_fishing": 2,
+				"summer_sand_mining": 1,
+				"summer_water_dispute": 1,
+				"winter_drone_disturbance": 1,
+				"winter_poaching": 1
+			},
+			"games": 100,
+			"win_rate": 0.0,
+			"wins": 0
+		}
+	},
+	"version": "all-v0.1.24"
+}

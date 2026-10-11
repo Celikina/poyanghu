@@ -1916,7 +1916,7 @@ func _build_ui() -> void:
 	# ⚠ 必须写 24：_snap_px() 只认 12 的倍数，写 17 / 18 都会被吸附回 12px，
 	#   改完看不出一丁点变大（原来的 17 就是这么被吃掉的）。
 	funds_label = _make_label("0 / 80 万", 24, Color(1, 0.95, 0.6))
-	funds_label.tooltip_text = "本回合已用及待付（含行动、调度与刷新费用）/ 本回合总预算"
+	funds_label.tooltip_text = "本回合已用及待付/ 本回合总预算"
 	funds_label.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	funds_row.add_child(funds_label)
 	lv.add_child(funds_row)
@@ -2021,7 +2021,7 @@ func _build_ui() -> void:
 	card_box.resized.connect(_on_card_box_resized)
 	hv.add_child(card_box)
 	# Prompt above the fan while a card is dragged; ignore input so it cannot block drops.
-	drag_play_hint = _make_label("松手落到桌面 · 待打出", 15, Color("a8f0c1"))
+	drag_play_hint = _make_label("松手落到桌面", 15, Color("a8f0c1"))
 	drag_play_hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	drag_play_hint.add_theme_color_override("font_outline_color", Color(0.03, 0.08, 0.06, 0.95))
 	drag_play_hint.add_theme_constant_override("outline_size", 5)
@@ -2247,7 +2247,7 @@ func _build_menu() -> void:
 	reeds.position = Vector2(68, 220)
 	reeds.size = Vector2(300, 36)
 	menu_root.add_child(reeds)
-	var footer := _make_label("守护每一片芦苇，等待每一次归来。\n轻点湖面，观察水鸟。", 12, VisualTheme.PAPER)
+	var footer := _make_label("守护每一片芦苇，等待每一次归来。", 12, VisualTheme.PAPER)
 	footer.anchor_top = 1.0
 	footer.anchor_bottom = 1.0
 	footer.offset_left = 68
@@ -2447,12 +2447,6 @@ func _build_menu() -> void:
 	audio_volume_label = _make_label("音量：%d%%" % int(bgm_volume * 100), 14, Color(1, 0.95, 0.6))
 	vol_row.add_child(audio_volume_label)
 
-	# 切换 BGM
-	bgm_switch_btn = _make_button("", _on_switch_bgm, 16)
-	bgm_switch_btn.custom_minimum_size = Vector2(0, 44)
-	svb.add_child(bgm_switch_btn)
-	_update_bgm_btn()
-
 	# 结算动画速度：手感因人而异，做成滑块而不是写死在代码里
 	var spd_row := HBoxContainer.new()
 	spd_row.add_theme_constant_override("separation", 8)
@@ -2564,28 +2558,6 @@ func _build_menu() -> void:
 		name_l.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 		row.add_child(name_l)
 
-	var motion_credit := RichTextLabel.new()
-	motion_credit.bbcode_enabled = true
-	motion_credit.fit_content = true
-	motion_credit.custom_minimum_size = Vector2(0, 34)
-	motion_credit.add_theme_font_size_override("normal_font_size", 12)
-	motion_credit.text = "[center]动效机制：[url=https://github.com/feitangyuan/motion-web]motion-web · feitangyuan[/url]\n[url=https://github.com/feitangyuan/motion-web/blob/main/LICENSE]CC BY-NC 4.0[/url] · 已改为 Godot 原生实现[/center]"
-	motion_credit.meta_clicked.connect(func(link: Variant): OS.shell_open(str(link)))
-	cvb.add_child(motion_credit)
-	var card_credit := RichTextLabel.new()
-	card_credit.bbcode_enabled = true
-	card_credit.fit_content = true
-	card_credit.add_theme_font_size_override("normal_font_size", 12)
-	card_credit.text = "[center]卡牌燃烧：[url=https://godotshaders.com/shader/2d-dissolve-with-burn-edge/]mreliptik · CC0[/url]\n[url=https://github.com/MrEliptik/godot_ui_components]godot_ui_components[/url] · MIT[/center]"
-	card_credit.meta_clicked.connect(func(link: Variant): OS.shell_open(str(link)))
-	cvb.add_child(card_credit)
-	var impact_credit := RichTextLabel.new()
-	impact_credit.bbcode_enabled = true
-	impact_credit.fit_content = true
-	impact_credit.add_theme_font_size_override("normal_font_size", 12)
-	impact_credit.text = "[center]打击反馈参考：[url=https://github.com/a327ex/SNKRX]SNKRX · a327ex[/url] · MIT\n特效与闪光改编：[url=https://github.com/haowg/GODOT-VFX-LIBRARY]GODOT-VFX-LIBRARY · haowg[/url] · MIT[/center]"
-	impact_credit.meta_clicked.connect(func(link: Variant): OS.shell_open(str(link)))
-	cvb.add_child(impact_credit)
 	var c_back := _make_button("返回", _on_credits_back, 16)
 	c_back.custom_minimum_size = Vector2(0, 40)
 	cvb.add_child(c_back)
@@ -3438,7 +3410,7 @@ func _update_bgm_state() -> void:
 					for metric in GameState.METRIC_NAMES:
 						if metric == "water_level": continue
 						var risk: Dictionary = GameState.metric_hover_preview(metric)
-						if int(risk["worst"]) < int(risk["line"]) + BGM_RISK_THRESHOLD_OFFSET:
+						if int(risk["health_worst"]) < int(risk["line"]) + BGM_RISK_THRESHOLD_OFFSET:
 							_bgm_risk = true
 							break
 				danger = danger or _bgm_risk
@@ -3536,13 +3508,8 @@ func _sync_audio_ui() -> void:
 
 ## 刷新切换 BGM 按钮文字（两处）
 func _update_bgm_btn() -> void:
-	var txt := "BGM：%s（随局势自动切换）" % BGM_NAMES[bgm_index]
-	if bgm_switch_btn != null:
-		bgm_switch_btn.text = txt
-		bgm_switch_btn.disabled = true
-	if pause_bgm_btn != null:
-		pause_bgm_btn.text = txt
-		pause_bgm_btn.disabled = true
+	if bgm_switch_btn != null: bgm_switch_btn.hide()
+	if pause_bgm_btn != null: pause_bgm_btn.hide()
 
 
 ## The branching panel owns node selection, allocation limits and purchases.
@@ -4271,32 +4238,6 @@ func _build_pause_menu() -> void:
 	pause_volume_label = _make_label("音量：%d%%" % int(bgm_volume * 100), 14, Color(1, 0.95, 0.6))
 	pvol_row.add_child(pause_volume_label)
 
-	pause_bgm_btn = _make_button("", _on_switch_bgm, 16)
-	pause_bgm_btn.custom_minimum_size = Vector2(0, 44)
-	psv.add_child(pause_bgm_btn)
-
-	# 结算速度：与主菜单设置共用同一个 score_speed，两边永远同步
-	# （_on_score_speed_changed → _sync_score_speed_ui 会同时刷两个滑块）
-	var pspd_row := HBoxContainer.new()
-	pspd_row.add_theme_constant_override("separation", 8)
-	psv.add_child(pspd_row)
-	pspd_row.add_child(_make_label("结算速度", 16, Color(0.82, 0.86, 0.9)))
-	pause_score_speed_slider = HSlider.new()
-	pause_score_speed_slider.min_value = SCORE_SPEED_MIN * 100.0
-	pause_score_speed_slider.max_value = SCORE_SPEED_MAX * 100.0
-	pause_score_speed_slider.step = 5
-	pause_score_speed_slider.value = score_speed * 100.0
-	pause_score_speed_slider.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	pause_score_speed_slider.tooltip_text = "结算动画的快慢。100% 为默认；调小则更慢、看得更清楚，调大则更快。下一回合结算起生效。"
-	pause_score_speed_slider.value_changed.connect(_on_score_speed_changed)
-	pspd_row.add_child(pause_score_speed_slider)
-	pause_score_speed_label = _make_label("", 14, Color(1, 0.95, 0.6))
-	pspd_row.add_child(pause_score_speed_label)
-
-	var ps_back := _make_button("返回", _on_pause_settings_back, 16)
-	ps_back.custom_minimum_size = Vector2(0, 40)
-	psv.add_child(ps_back)
-
 	_update_bgm_btn()        # 同步两个切换按钮文字
 	_sync_score_speed_ui()   # 两个结算速度滑块的文字也要填上（建的时候标签是空的）
 
@@ -4374,6 +4315,15 @@ func _crisis_effect_lines(crisis: Dictionary) -> Array:
 	var out: Array = []
 	for e in crisis.get("effects", []):
 		out.append("· %s %+d" % [GameState.METRIC_NAMES.get(e["metric"], e["metric"]), int(e["delta"])])
+	for e in crisis.get("legacy_effects", []):
+		if str(e["kind"]) == "food":
+			out.append("· 候鸟食物 %+d（持续至本年冬末，可修复）" % int(e["delta"]))
+		else:
+			out.append("· 秋季水位遗留 %+d（秋季开局一次生效）" % int(e["delta"]))
+	if bool(crisis.get("migrant_only", false)):
+		out.append("· 鸟群损失最多为当季候鸟，不扣种群基数；未恢复损失折半影响次年迁入。")
+	for settled in crisis.get("legacy_settled", []):
+		out.append("· 第 %d 回合遗留已生效：水位 %+d" % [int(settled["turn"]), int(settled["delta"])])
 	return out
 
 
@@ -4392,11 +4342,13 @@ func _crisis_body_text(crisis: Dictionary, is_warning: bool) -> String:
 	var body := ""
 	if is_warning:
 		body += "%s\n\n" % crisis["warn"]
+		if bool(crisis.get("mitigation", false)):
+			body += "[color=#8fd0ff]对应牌可减伤：基础 50% / 有效 80% / 深度 100%。下批手牌保底一张当季对策。[/color]\n\n"
 		# 只在当前值真的落在危险侧时才提示，避免出现「当前水质 90（偏低）」这种自相矛盾的话。
 		# ⚠ 这里**不写**危机的「触发阈值」：那和 HUD 上的「生态红线」（致死线）是两回事
 		#   （水质触发线 55，致死线简单/普通/困难 = 15/25/35），两个词又太像，
 		#   写出来玩家会以为是同一个数、进而误判自己离死还有多远，反而更糟。
-		if metric != "" and _cond_holds(cur, op, threshold):
+		if metric != "" and not bool(crisis.get("seasonal_social", false)) and _cond_holds(cur, op, threshold):
 			body += "[color=#ffb060]⚠ 当前%s %d（%s）[/color]\n\n" % [mname, cur, low_high]
 		body += "[color=#ff9090]若未及时应对，下一回合可能造成：[/color]\n"
 		body += "\n".join(effect_lines)
@@ -4409,8 +4361,7 @@ func _crisis_body_text(crisis: Dictionary, is_warning: bool) -> String:
 			var shown: Array = names.slice(0, 4)
 			var tail: String = "" if names.size() <= 4 else " 等 %d 张" % names.size()
 			# 对策卡是「大概率入手」而不是必出（肉鸽要有没抽到的局面），文案不承诺保底
-			body += "\n\n[color=#8fd0ff]应对建议（下批手牌里对策卡概率已提高，不保证到手）：优先打出「%s」%s[/color]" % [
-				"」「".join(shown), tail]
+			body += "\n\n[color=#8fd0ff]应对建议：「%s」%s[/color]" % ["」「".join(shown), tail]
 		# 深预警（科研点累计达标后开启）：把「2 回合后」那一场一并预告出来 ——
 		# 这就是科研点的实际作用，写在弹窗里玩家才知道那个数字不只是评分。
 		var fc: Dictionary = GameState.forecast_crisis
@@ -4430,6 +4381,8 @@ func _crisis_body_text(crisis: Dictionary, is_warning: bool) -> String:
 		body += "%s\n\n" % crisis["hit"]
 		body += "[color=#ff9090]本次已造成：[/color]\n"
 		body += "\n".join(effect_lines)
+	if crisis.has("lesson"):
+		body += "\n\n[color=#b6d6ae]生态提示：%s[/color]" % str(crisis["lesson"])
 	return body
 
 
@@ -4495,6 +4448,7 @@ func _build_crisis_alert() -> void:
 
 	crisis_title = _make_label("", 44, Color(1.0, 0.30, 0.25))
 	crisis_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	crisis_title.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	crisis_title.add_theme_color_override("font_outline_color", Color(0.55, 0.0, 0.0, 0.85))
 	crisis_title.add_theme_constant_override("outline_size", 8)
 	pv.add_child(crisis_title)
@@ -4505,8 +4459,9 @@ func _build_crisis_alert() -> void:
 
 	crisis_body = RichTextLabel.new()
 	crisis_body.bbcode_enabled = true
-	crisis_body.fit_content = true
-	crisis_body.custom_minimum_size = Vector2(500, 0)
+	crisis_body.fit_content = false
+	crisis_body.scroll_active = true
+	crisis_body.custom_minimum_size = Vector2(500, 280)
 	crisis_body.add_theme_font_size_override("normal_font_size", _snap_px(16))
 	crisis_body.add_theme_color_override("default_color", Color(0.98, 0.95, 0.92))
 	pv.add_child(crisis_body)
@@ -4514,6 +4469,15 @@ func _build_crisis_alert() -> void:
 	crisis_button = _make_button("知道了", _on_crisis_dismiss, 20)
 	crisis_button.custom_minimum_size = Vector2(0, 50)
 	pv.add_child(crisis_button)
+	_resize_crisis_alert()
+	get_viewport().size_changed.connect(_resize_crisis_alert)
+
+func _resize_crisis_alert() -> void:
+	if crisis_body == null: return
+	var viewport_size := get_viewport().get_visible_rect().size
+	crisis_body.custom_minimum_size = Vector2(minf(500, viewport_size.x - 80), clampf(viewport_size.y - 330, 120, 280))
+	crisis_icon.custom_minimum_size.y = 64 if viewport_size.y < 600 else 96
+	crisis_title.add_theme_font_size_override("font_size", _snap_px(32 if viewport_size.y < 600 else 44))
 
 
 # ==================== 危机预警回顾（P1）====================
@@ -4617,6 +4581,8 @@ func _crisis_short_label(id: String) -> String:
 	var c: Dictionary = GameState.crisis_by_id(id)
 	if c.is_empty():
 		return "危机"
+	if bool(c.get("seasonal_social", false)):
+		return str(c.get("name", "治理风险"))
 	var pc := _parse_cond(str(c.get("cond", "")))
 	var metric := str(pc.get("metric", ""))
 	var nm := str(WARN_SHORT_METRIC.get(metric, GameState.METRIC_NAMES.get(metric, metric)))
@@ -4666,12 +4632,11 @@ func _make_warn_row(e: Dictionary) -> Control:
 	# 完全不是一个数（水质 55 vs 15/25/35），词又像，写出来只会误导。
 	t += "当时：%s %d\n" % [mname, int(e.get("value", 0))]
 	if hit > 0:
-		var eff: Array = []
-		for ef in c.get("effects", []):
-			eff.append("%s %+d" % [GameState.METRIC_NAMES.get(ef["metric"], ef["metric"]), int(ef["delta"])])
-		t += "[color=#ff9090]→ 第 %d 回合已爆发：%s[/color]\n" % [hit, "、".join(eff)]
+		t += "[color=#ff9090]→ 第 %d 回合已结算：[/color]\n%s\n" % [hit, "\n".join(_crisis_effect_lines(c))]
+		if bool(c.get("mitigation", false)):
+			t += "对策已减伤 %d%%；以上为实际损失。\n" % roundi(float(c.get("mitigation_ratio", 0.0)) * 100.0)
 	elif GameState.game_over:
-		t += "[color=#9aa0a6]→ 未爆发（本局在那之前就结束了）[/color]\n"
+		t += "[color=#9aa0a6]→ 未爆发[/color]\n"
 	else:
 		t += "[color=#ffcf80]→ 待爆发：第 %d 回合[/color]\n" % int(e.get("expected_hit_turn", turn + lead))
 	# 沿用预警弹窗里的说法（「应对建议：优先打出「卡名」」），不暴露内部的标签名 ——
@@ -4741,7 +4706,7 @@ func _build_deck_ui(canvas: CanvasLayer) -> void:
 	deck_root.mouse_entered.connect(_on_deck_mouse_entered)
 	deck_root.mouse_exited.connect(_on_deck_mouse_exited)
 	deck_root.gui_input.connect(_on_deck_gui_input)
-	deck_root.tooltip_text = "查看全部行动卡 · 点击打开牌库"
+	deck_root.tooltip_text = "查看全部行动卡"
 
 
 func _on_deck_mouse_entered() -> void:
@@ -5549,7 +5514,8 @@ func _card_detail_text(card: Dictionary) -> String:
 			"　← 当前档位" if tier == play_tier else ""]
 	if card.has("side_note") and not card["side_note"].is_empty():
 		for k in card["side_note"]:
-			body += "\n[color=#ffb060]※ %s[/color]" % card["side_note"][k]
+			if not str(card["side_note"][k]).is_empty():
+				body += "\n[color=#ffb060]※ %s[/color]" % card["side_note"][k]
 	return body
 
 
@@ -5642,7 +5608,7 @@ func _build_card_detail() -> void:
 	card_detail_body.add_theme_color_override("default_color", Color(0.96, 0.94, 0.9))
 	iv.add_child(card_detail_body)
 
-	iv.add_child(_make_label("点击牌面和解说栏之外的背景返回", 12, Color("8eaaa8")))
+	iv.add_child(_make_label("点击空白处返回", 12, Color("8eaaa8")))
 
 
 # ==================== 知识卡图鉴（主页入口）====================
@@ -5793,7 +5759,7 @@ func _on_knowledge_card_click(event: InputEvent, view: Control, kid: String) -> 
 
 func _knowledge_tooltip(kid: String, collected: bool) -> String:
 	if not collected:
-		return "尚未收集的知识卡\n\n在游戏里触发它之后，这里会显示完整资料。"
+		return "尚未收集的知识卡"
 	var k: Dictionary = GameState.KNOWLEDGE_CARDS[kid]
 	return "%s\n\n%s" % [str(k["short"]), str(k["ecology"])]
 
@@ -5907,7 +5873,7 @@ func _show_knowledge_detail(view: Control, kid: String) -> void:
 
 func _knowledge_detail_text(kid: String, collected: bool) -> String:
 	if not collected:
-		return "[color=#8a8a8a]未收集[/color]\n\n这张知识卡还没有收集到。在游戏里触发它之后，这里会显示它的完整资料。\n\n[b]？[/b]"
+		return "[color=#8a8a8a]未收集[/color]\n\n这张知识卡还没有收集到。"
 	var k: Dictionary = GameState.KNOWLEDGE_CARDS[kid]
 	if kid == "egg_dixinhu":
 		return "[color=#e9b9ff]制作组彩蛋 · 狄鑫斛[/color]\n\n%s\n\n[b]画作作者[/b]：Oliveira\n[b]创作来源[/b]：%s\n\n%s\n%s" % [k["short"], k["origin"], k["ecology"], k["management"]]
@@ -5919,9 +5885,9 @@ func _knowledge_detail_text(kid: String, collected: bool) -> String:
 	if not ktags.is_empty():
 		body += "[color=#8a8a8a]关联行动：%s[/color]\n\n" % " / ".join(ktags)
 	body += "%s\n\n" % str(k["short"])
-	body += "[b]生态角色[/b]：%s\n\n" % str(k["ecology"])
-	body += "[b]当前威胁[/b]：%s\n\n" % str(k["threat"])
-	body += "[b]管理建议[/b]：%s" % str(k["management"])
+	body += "生态角色：%s\n\n" % str(k["ecology"])
+	body += "当前威胁：%s\n\n" % str(k["threat"])
+	body += "管理建议：%s" % str(k["management"])
 	body += _knowledge_source_text(k)
 	return body
 
@@ -5929,7 +5895,7 @@ func _knowledge_detail_text(kid: String, collected: bool) -> String:
 func _knowledge_source_text(card: Dictionary) -> String:
 	if not card.has("source_url"):
 		return ""
-	return "\n\n[b]资料来源[/b]：[url=%s]%s[/url]" % [card["source_url"], card["source_title"]]
+	return "\n\n资料来源：[url=%s]%s[/url]" % [card["source_url"], card["source_title"]]
 
 
 func _on_knowledge_source_clicked(meta: Variant) -> void:
@@ -6006,7 +5972,7 @@ func _build_knowledge_detail() -> void:
 	knowledge_detail_body.add_theme_color_override("default_color", Color(0.96, 0.94, 0.9))
 	iv.add_child(knowledge_detail_body)
 
-	iv.add_child(_make_label("点击牌面和解说栏之外的背景返回", 12, Color("8eaaa8")))
+	iv.add_child(_make_label("点击空白处返回", 12, Color("8eaaa8")))
 
 
 func _on_start_pressed() -> void:
@@ -6016,7 +5982,7 @@ func _on_start_pressed() -> void:
 	elif s.is_valid_int() and int(s) >= 0:
 		GameState.run_seed = int(s)
 	else:
-		menu_hint.text = "种子需为非负整数（留空则随机）"
+		menu_hint.text = "种子："
 		return
 	_clear_save()           # 放弃（判负）上一局暂停的进度
 	if impact_feedback != null: impact_feedback.clear()
@@ -6193,7 +6159,7 @@ func _make_metric_row(metric: String) -> VBoxContainer:
 		wrap.add_child(high_line)
 
 	vb.add_child(wrap)
-	if metric == "water_level":
+	if metric in ["water_level", "birds"]:
 		reference_label = _make_label("", 10, Color("b6ebae"))
 		vb.add_child(reference_label)
 
@@ -6226,9 +6192,15 @@ func _update_threshold_lines() -> void:
 			reference.add_theme_color_override("font_color", Color("b6ebae") if pressure["side"] == "safe" else Color("ffcc66"))
 			continue
 		if line != null:
-			var ratio: float = GameState.failure_threshold_for(metric) / 100.0
+			var ratio: float = GameState.metric_display_line(metric) / 100.0
 			line.anchor_left = ratio
 			line.anchor_right = ratio
+		if metric == "birds":
+			var health: int = GameState.metric_health("birds")
+			var health_line: int = GameState.failure_threshold_for("birds")
+			var label: Label = metric_bars[metric]["reference_label"]
+			label.text = "种群基数告急" if health <= health_line + 5 else "种群基数稳定"
+			label.add_theme_color_override("font_color", Color("ffcc66") if health <= health_line + 5 else Color("b6ebae"))
 
 
 # ==================== 指标悬停小窗 ====================
@@ -6345,6 +6317,9 @@ func _fill_metric_tip(metric: String) -> void:
 	if metric == "water_level":
 		_fill_water_metric_tip(p)
 		return
+	if metric == "birds":
+		_fill_bird_metric_tip(p)
+		return
 
 	var cur: int = int(p["cur"])
 	var kind: String = str(p["kind"])
@@ -6379,8 +6354,6 @@ func _fill_metric_tip(metric: String) -> void:
 		dcol = "#ff8f7a"
 	var rows: Array = []
 	rows.append("[color=#cfd6dc]自然演化（含洪旱）[/color]   [color=%s][b]%s[/b][/color]" % [dcol, dtxt])
-	if metric == "birds":
-		rows.append("[color=#8e9aa4]· 其中季节迁徙 %+d[/color]" % int(GameState.BIRD_MIGRATION_DELTA[GameState.current_season()]))
 	# 刻意不写「为什么」：水质怎么拖累植被、植被怎么影响候鸟这一类因果，是留给玩家自己悟的隐性参数。
 	# 人鸟矛盾同理：只报一个安静的小计，不给公式、不给原因
 	if cf_pen > 0:
@@ -6418,7 +6391,7 @@ func _fill_metric_tip(metric: String) -> void:
 	# ⚠ 用调整后的 end_min 重新判「会不会跌破」：人鸟矛盾那一笔也算进去，
 	#   否则小窗会一边显示回合末 48、一边说「仍在红线上」（红线 50）。
 	if end_min < line:
-		rows.append("[color=#ff5a5a][b]⚠ 回合末就会跌破生态红线[/b][/color]")
+		rows.append("[color=#ff5a5a][b]⚠ 回合末将跌破生态红线[/b][/color]")
 	elif margin <= 3:
 		rows.append("[color=#ffcc66]⚠ 回合末将贴近生态红线[/color]")
 
@@ -6436,6 +6409,28 @@ func _fill_metric_tip(metric: String) -> void:
 		_tip_last_text = txt
 		metric_tip_body.text = txt
 
+
+func _fill_bird_metric_tip(p: Dictionary) -> void:
+	var line: int = int(p["line"])
+	var color := "#ffcc66" if int(p["health_min"]) <= line + 5 else "#7ee08a"
+	var rows: Array[String] = [
+		"种群基数 [b]%d[/b]/80 · 红线 %d" % [int(p["health_cur"]), line],
+		"自然变化 %+d ~ %+d" % [int(p["nat_min"]), int(p["nat_max"])],
+		"回合末总量 %d ~ %d" % [int(p["end_min"]), int(p["end_max"])],
+		"[color=%s]回合末健康 %d ~ %d[/color]" % [color, int(p["health_min"]), int(p["health_max"])],
+		"[color=#8e9aa4]正常迁出不判负；环境退化影响健康。[/color]",
+	]
+	var food_loss := GameState.wetland_food_loss()
+	var returns := GameState.winter_return_loss()
+	if food_loss > 0 or returns > 0:
+		rows.append("候鸟食物损失 %d · 本年迁入遗留 %d" % [food_loss, returns])
+	if str(p["crisis_name"]) != "":
+		rows.append("[color=#ffb060]%s：总量约 %d[/color]" % [str(p["crisis_name"]), int(p["worst"])])
+	if bool(p["break_total"]): rows.append("[color=#ff5a5a]⚠ 种群基数将跌破红线[/color]")
+	var text := "\n".join(rows)
+	if text != _tip_last_text:
+		_tip_last_text = text
+		metric_tip_body.text = text
 
 func _fill_water_metric_tip(p: Dictionary) -> void:
 	var rule: Dictionary = GameState.water_reference()
@@ -6465,8 +6460,14 @@ func _fill_water_metric_tip(p: Dictionary) -> void:
 			hi = maxi(hi, d)
 		if lo < 0:
 			losses.append("%s %s" % [GameState.METRIC_NAMES[metric], "%+d" % lo if lo == hi else "%+d ~ %+d" % [lo, hi]])
-	rows.append("[color=#ffb060]回合末洪旱额外损失（已含难度）：[/color]" if not losses.is_empty() else "[color=#7ee08a]预计回合末无洪旱额外损失[/color]")
+	rows.append("[color=#ffb060]回合末洪旱额外损失：[/color]" if not losses.is_empty() else "[color=#7ee08a]预计回合末无洪旱额外损失[/color]")
 	if not losses.is_empty(): rows.append("；".join(losses))
+	if pressure["side"] != "safe":
+		rows.append("候鸟种群受栖息地影响。")
+	var legacy := GameState.pending_water_legacy()
+	for effect in GameState.crisis_legacy_effects(GameState.pending_crisis):
+		if str(effect["kind"]) == "water": legacy += int(effect["delta"])
+	if legacy != 0: rows.append("[color=#ffb060]秋季开局遗留：水位 %+d[/color]" % legacy)
 	var next_season: String = GameState.SEASONS[(GameState.SEASONS.find(season) + 1) % 4]
 	var next_rule: Dictionary = GameState.water_reference(next_season)
 	if GameState.turn < GameState.TOTAL_TURNS:
@@ -6676,7 +6677,7 @@ func _refresh_action_buttons() -> void:
 			dispatch_btn.text = "紧急调度 · 冷却 %d 回合" % cd
 			dispatch_btn.disabled = true
 		elif GameState.funds < GameState.dispatch_cost() + _committed_funds():
-			dispatch_btn.text = "紧急调度 · %d 万（含待打出预算不足）" % GameState.dispatch_cost()
+			dispatch_btn.text = "紧急调度 · %d 万（预算不足）" % GameState.dispatch_cost()
 			dispatch_btn.disabled = true
 		else:
 			# 价格是**递增**的：本局每用过一次 +10 万，所以这里必须每次重算
@@ -6815,10 +6816,7 @@ func _open_dispatch_panel() -> void:
 
 ## 面板显示实际调度费；专用牌面不显示普通牌的定价。
 func _dispatch_hint_text() -> String:
-	var price := "本次调度费 %d 万" % GameState.dispatch_cost()
-	if GameState.dispatch_used_count > 0:
-		price += "（本局已用过 %d 次，每再用一次 +%d 万）" % [GameState.dispatch_used_count, GameState.DISPATCH_PRICE_STEP]
-	return "%s · 按「有效投入」档结算 · 不占行动位、回合末与手牌一起算分 · 每用一次后要空 %d 个回合" % [price, GameState.DISPATCH_COOLDOWN_TURNS]
+	return "按「有效投入」档结算"
 
 
 func _close_dispatch_panel() -> void:
@@ -6863,7 +6861,7 @@ func _build_dispatch_panel() -> void:
 	box.add_theme_constant_override("separation", 12)
 	dispatch_panel.add_child(box)
 
-	var title := _make_label("紧急调度 · 从当季可抽池点名一张牌", 28, Color(1, 0.9, 0.55))
+	var title := _make_label("紧急调度 · 从当季政策选择一张牌", 28, Color(1, 0.9, 0.55))
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	box.add_child(title)
 
@@ -7665,12 +7663,25 @@ func _update_metric_preview() -> void:
 		var info: Dictionary = card_infos[index]
 		if info.get("stage_zone", "preview") != "board" or info.get("queue_flying", false): continue
 		queue.append({"card_id": info["card_id"], "tier": _info_tier(info), "dispatched": info.get("dispatched", false)})
-	_metric_preview_values = GameState.preview_settlement(queue)
+	var forecast: Dictionary = GameState.preview_settlement_detail(queue)
+	_metric_preview_values = forecast["metrics"]
 	for metric in metric_bars:
 		var current := float(GameState.metrics[metric])
 		var predicted := float(_metric_preview_values.get(metric, current))
 		metric_bars[metric]["preview"].configure(current, predicted)
 		metric_bars[metric]["val"].tooltip_text = "结算预览：%d → %d（%+d）\n含本回合到期的遗留效果、协同、自然变化、六值联动与已预警危机；与实际结算共用本回合水位结果。" % [int(current), int(predicted), int(predicted - current)]
+		if metric == "birds":
+			metric_bars[metric]["val"].tooltip_text += "\n种群基数：%d → %d；红线 %d。正常迁出不判负。" % [GameState.metric_health("birds"), int(forecast["birds"]["base"]), GameState.failure_threshold_for("birds")]
+			if int(forecast["food_loss"]) > 0:
+				metric_bars[metric]["val"].tooltip_text += "\n候鸟食物损失 %d，持续至本年冬末，可用修复牌恢复。" % int(forecast["food_loss"])
+			if GameState.current_season() == "winter" and int(forecast["birds"]["loss"]) > 0:
+				metric_bars[metric]["val"].tooltip_text += "\n次年迁入遗留预计 %d（冬季口径）。" % mini(20, ceili(int(forecast["birds"]["loss"]) * 0.5))
+			if int(forecast["birds"]["base"]) < GameState.failure_threshold_for("birds"):
+				metric_bars[metric]["reference_label"].text = "⚠ 预览：种群基数将跌破红线"
+			else:
+				metric_bars[metric]["reference_label"].text = "种群基数告急" if GameState.metric_health("birds") <= GameState.failure_threshold_for("birds") + 5 else "种群基数稳定"
+		if metric == "water_level" and int(forecast["water_legacy"]) != 0:
+			metric_bars[metric]["val"].tooltip_text += "\n秋季开局水位遗留 %+d，当季预览不重复扣除。" % int(forecast["water_legacy"])
 
 
 func _cards_waiting_for_board() -> bool:
@@ -8004,11 +8015,6 @@ func _finish_turn() -> void:
 			lines.append("  %s：%+d" % [GameState.METRIC_NAMES[metric], d])
 	for msg in GameState.log_messages:
 		lines.append("  · %s" % msg)
-	if not failed.is_empty():
-		var names: Array = []
-		for cid in failed:
-			names.append(_card_name(cid))
-		lines.append("  ⚠ 以下行动因资金不足未能执行：%s" % "、".join(names))
 	lines.append("")
 	# 指标换来的额外拨款：**只报结果，不解释是哪一项换来的** ——
 	# 「哪些指标决定钱」属于隐性参数，要玩家自己从数字里总结（与 METRIC_REMEDY 同一条铁律）。
@@ -8027,10 +8033,13 @@ func _finish_turn() -> void:
 		for e in GameState.pending_crisis.get("effects", []):
 			var em := str(e["metric"])
 			var ed := int(e["delta"])
-			var ecur := int(GameState.metrics.get(em, 0))
+			var ecur := GameState.metric_health(em)
 			var eline := GameState.failure_threshold_for(em)
 			var eafter := clampi(ecur + ed, 0, 100)
 			var verdict := "[color=#7ee08a]仍在生态红线 %d 之上[/color]" % eline
+			if em == "birds" and bool(GameState.pending_crisis.get("migrant_only", false)):
+				lines.append("  季节候鸟最多 %+d；候鸟种群不直接扣减，可用应对措施减少损失。" % ed)
+				continue
 			if em == "water_level":
 				var next_season: String = GameState.SEASONS[GameState.turn % 4]
 				var pressure: Dictionary = GameState.water_pressure(eafter, next_season)
@@ -8038,21 +8047,24 @@ func _finish_turn() -> void:
 			elif eafter < eline:
 				verdict = "[color=#ff5a5a]会跌破生态红线 %d[/color]" % eline
 				fatal_names.append(str(GameState.METRIC_NAMES.get(em, em)))
-			lines.append("  %s %+d → 约 %d，%s" % [GameState.METRIC_NAMES.get(em, em), ed, eafter, verdict])
+			var effect_name: String = "候鸟种群基数" if em == "birds" else str(GameState.METRIC_NAMES.get(em, em))
+			lines.append("  %s %+d → 约 %d，%s" % [effect_name, ed, eafter, verdict])
+		for legacy in GameState.pending_crisis.get("legacy_effects", []):
+			lines.append("  %s %+d，%s" % ["候鸟食物" if str(legacy["kind"]) == "food" else "秋季水位遗留", int(legacy["delta"]),
+				"持续至本年冬末，可修复" if str(legacy["kind"]) == "food" else "秋季开局一次生效"])
 		# 逐项列了数字，但玩家未必会自己加总 —— 会致死时再补一句总括。
 		# ⚠ 措辞要**如实反映还能补救**：危机是在下一回合的回合末才结算的，
 		#   玩家下一回合整回合可以出牌把这一项拉上去，真的有可能救回来。
 		#   （早先这里写过「来不及补救了」—— 那是照搬危机还在「下回合开局」结算时的
 		#     旧时序，时序一挪就变成了假话。文案必须跟着机制走。）
 		if not fatal_names.is_empty():
-			lines.append("[color=#ff5a5a][b]⚠ 下回合结算时若仍未改善，将因「%s」跌破生态红线而被撤换 —— 你还有下回合一整个回合可以补救[/b][/color]" % "、".join(fatal_names))
+			lines.append("[color=#ff5a5a][b]⚠ 下回合结算时若仍未改善，将因「%s」跌破生态红线而被撤换[/b][/color]" % "、".join(fatal_names))
 		var counter_names: Array = []
 		for cid in GameState.counter_card_ids():
 			counter_names.append(_card_name(cid))
 		var shown_c: Array = counter_names.slice(0, 3)
 		var tail_c: String = "" if counter_names.size() <= 3 else " 等 %d 张" % counter_names.size()
-		lines.append("[color=#8a8a8a]   （专项响应已列入下批：%s%s，出现概率已提高，不保证到手）[/color]" % [
-			"、".join(shown_c), tail_c])
+		lines.append("[color=#8a8a8a]   （专项响应已列入下批：%s%s）[/color]" % ["、".join(shown_c), tail_c])
 
 	# ★ 算分动画。必须在收起手牌 / 侧栏之**前**播 —— 指标行得留在屏幕上才有的演。
 	await _play_score_animation(ledger, before_all, played, after)
@@ -8632,16 +8644,7 @@ func _show_report(r: Dictionary) -> void:
 			var fname: String = str(r.get("failure_metric_name", fm))
 			var fval: int = int(r.get("failure_value", GameState.metrics.get(fm, 0)))
 			var fthr: int = int(r.get("failure_threshold", GameState.failure_threshold_for(fm)))
-			body += "[b]直接死因：[/b]%s 跌至 [color=#ff9090]%d[/color]（生态红线 %d）\n" % [fname, fval, fthr]
-			var remedy: String = str(GameState.METRIC_REMEDY.get(fm, ""))
-			if remedy != "":
-				body += "[color=#8fd0ff]补强建议：%s[/color]\n" % remedy
-		var below: Array = r.get("metrics_below", [])
-		if below.size() > 1:
-			var parts: Array = []
-			for e in below:
-				parts.append("%s %d" % [GameState.METRIC_NAMES.get(e["metric"], e["metric"]), int(e["value"])])
-			body += "[color=#c08080]同一回合跌破生态红线的还有：%s[/color]\n" % "、".join(parts)
+			body += "[b]判负原因：[/b]%s 跌至 [color=#ff9090]%d[/color]（生态红线 %d）\n" % [fname, fval, fthr]
 		if GameState.last_crisis_name != "":
 			body += "[color=#c08080]本回合危机：%s[/color]\n" % GameState.last_crisis_name
 		body += "你的修复工作被迫中止。这不是终点——换一个策略，再试一次。\n\n"
@@ -8655,7 +8658,7 @@ func _show_report(r: Dictionary) -> void:
 	for n in r["manage"]["notes"]:
 		body += "  · %s\n" % n
 	body += "\n[b]知识卡收集[/b]：%d / %d　[b]科研点[/b]：%d\n" % [r["knowledge_count"], r["total_knowledge"], r["research_points"]]
-	body += "[color=#8a8a8a]本局种子：%d（同种子可复现，便于对照实验）[/color]\n" % r.get("seed", 0)
+	body += "[color=#8a8a8a]本局种子：%d[/color]\n" % r.get("seed", 0)
 	if reward.save_error:
 		body += "[color=#ff9090]通关奖励未能保存，请检查本地存档目录。[/color]\n"
 	elif reward.duplicate:
@@ -8666,7 +8669,6 @@ func _show_report(r: Dictionary) -> void:
 		body += "[color=#ffd060]通关获得灵感：+%d　（当前 %d）[/color]\n" % [reward.amount, Talents.inspiration]
 	else:
 		body += "[color=#9dd5bd]胜利通关（含提前胜利）可获得灵感，本次未获得。[/color]\n"
-	body += "\n[b]反思[/b]\n%s" % r["reflection"]
 	_show_popup(title, body, "返回主菜单", _restart)
 
 

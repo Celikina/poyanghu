@@ -1,0 +1,10 @@
+BIRD_MIGRATION checks=343 failures=0
+SEASONAL_EVENTS checks=8502 failures=0
+SEASONAL_LEGACY checks=304 failures=0
+EXPERT_ECOLOGY_UI checks=61 failures=0
+CRISIS_HISTORY checks=41 failures=0
+STAGED_BOARD: 324 checks, 0 failures
+SEASONAL_WATER: PASS (10516 checks, 0 failures)
+TURN_BUDGET: 46 checks, 0 failures
+DRAINAGE_CARDS checks=227 failures=0
+SITUATION_HUD checks=38 failures=0

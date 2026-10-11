@@ -11,14 +11,8 @@ const TOTAL_TURNS := 16          # 一局 16 回合 = 4 年 × 4 季
 # 卡池分季的依据是鄱阳湖的水文节律：春涨水、夏高水、秋落水、冬枯水。
 const SEASONS := ["spring", "summer", "autumn", "winter"]
 const SEASON_NAMES := {"spring": "春", "summer": "夏", "autumn": "秋", "winter": "冬"}
-# 迁徙改变在湖候鸟数量，四季合计为零；自然迁出不按难度放大。
-const BIRD_MIGRATION_DELTA := {"spring": -4, "summer": -3, "autumn": 3, "winter": 4}
-const BIRD_MIGRATION_REASON := {
-	"spring": "春季迁出（越冬候鸟北迁）",
-	"summer": "夏季低谷（候鸟在北方繁殖）",
-	"autumn": "秋季迁入（越冬候鸟陆续抵达）",
-	"winter": "冬季越冬（在湖候鸟达到高峰）",
-}
+const BirdPopulation = preload("res://scripts/bird_population.gd")
+const SEASONAL_MITIGATION := {"basic": 0.5, "effective": 0.8, "deep": 1.0}
 # 每季一句旁白：抽牌界面顶部用，把季节分类变成沉浸式科普
 const SEASON_TAGLINE := {
 	"spring": "五河来水，鱼群启程回家",
@@ -36,11 +30,11 @@ const WATER_SEASON_RULES := {
 		"low_loss": {"vegetation": 3, "water_quality": 2, "fish": 3},
 		"high_loss": {"vegetation": 3, "water_quality": 1, "community": 1}},
 	"autumn": {"low": 44, "high": 60, "drift": [-8, -4], "theme": "渐次退水、露滩备食",
-		"low_loss": {"vegetation": 2, "water_quality": 1, "fish": 2, "birds": 1},
-		"high_loss": {"vegetation": 2, "birds": 2}},
+		"low_loss": {"vegetation": 2, "water_quality": 1, "fish": 2},
+		"high_loss": {"vegetation": 2}},
 	"winter": {"low": 36, "high": 50, "drift": [-6, -3], "theme": "保留浅水、守护越冬觅食地",
-		"low_loss": {"vegetation": 2, "water_quality": 1, "fish": 1, "birds": 2},
-		"high_loss": {"vegetation": 2, "birds": 3}},
+		"low_loss": {"vegetation": 2, "water_quality": 1, "fish": 1},
+		"high_loss": {"vegetation": 2}},
 }
 const WATER_PRESSURE_SPAN := 10.0
 const WATER_PRESSURE_CAP := 3.0
@@ -216,16 +210,19 @@ const METRIC_NAMES := {
 	"community": "社区信任",
 }
 
+# 提前判负只检查这五项；水位通过季节生态影响间接作用，不直接判负。
+const FAILURE_METRICS := ["vegetation", "water_quality", "fish", "birds", "community"]
+
 # 死因 → 下一局优先补强的方向（失败报告用来交代「输在哪、下次怎么打」）
 # ⚠ 只给「打什么」，不给「为什么」：指标之间的因果链（水质→植被→候鸟…）是隐性参数，
 #   要玩家自己从数字里总结。这里写解释就等于把机制白送。
 const METRIC_REMEDY := {
-	"water_level": "优先补水、蓄水保水，把闸坝联合调度打出来",
+	"water_level": "优先补水",
 	"water_quality": "尽早安排水质监测与清淤",
 	"vegetation": "及时补种沉水植物、修复湿地",
 	"fish": "持续维持巡护执法，别断",
 	"birds": "保住栖息地，给候鸟留出恢复的时间",
-	"community": "补偿与转产别断",
+	"community": "持续补偿和转产",
 }
 
 # 卡牌档位 → 成本倍率
@@ -367,7 +364,7 @@ const ACTION_CARDS := [
 		"id": "submerged_planting", "name": "沉水植物移栽", "category": "ecology",
 		"season": "spring",
 		"tags": ["生态修复"],
-		"desc": "移栽成株苦草、黑藻，快速重建水下草场 —— 当回合见效，但成株与固定成本高。",
+		"desc": "移栽成株苦草、黑藻，快速重建水下草场。",
 		"cost": 40,
 		"tiers": {
 			"basic":     {"effects": [{"metric": "vegetation", "delta": 6, "delay": 1} , {"metric": "community", "delta": -1, "delay": 0}]},
@@ -383,7 +380,7 @@ const ACTION_CARDS := [
 		"id": "seed_bank", "name": "草种库保育", "category": "ecology",
 		"season": "spring",
 		"tags": ["生态修复"],
-		"desc": "保育苦草、黑藻的冬芽与种子库，为后续萌发留足种源 —— 便宜，但要等 2~3 回合才见效。",
+		"desc": "保育苦草、黑藻的冬芽与种子库，为后续萌发留足种源。",
 		"cost": 30,
 		"tiers": {
 			"basic":     {"effects": [{"metric": "vegetation", "delta": 8, "delay": 3} , {"metric": "community", "delta": -1, "delay": 0}]},
@@ -468,7 +465,7 @@ const ACTION_CARDS := [
 			"effective": {"effects": [{"metric": "community", "delta": 8, "delay": 2}, {"metric": "fish", "delta": 3, "delay": 2}]},
 			"deep":      {"effects": [{"metric": "community", "delta": 11, "delay": 0}, {"metric": "fish", "delta": 4, "delay": 0}]},
 		},
-		"side_note": {"effective": "见效慢，2~3 回合后显现"},
+		"side_note": {"effective": "2-3回合后见效"},
 	},
 	{
 		"id": "guard_team", "name": "社区共管与护鸟队", "category": "social",
@@ -500,7 +497,7 @@ const ACTION_CARDS := [
 		"id": "patrol", "name": "执法巡逻", "category": "manage",
 		"season": "all",
 		"tags": ["执法巡护"],
-		"desc": "严查非法捕捞，直接决定鱼类恢复速度。",
+		"desc": "严查非法捕捞。",
 		"cost": 20,
 		"tiers": {
 			"basic":     {"effects": [{"metric": "fish", "delta": 3, "delay": 1} , {"metric": "community", "delta": -1, "delay": 0}]},
@@ -721,7 +718,7 @@ const ACTION_CARDS := [
 		"id": "spawning_ground", "name": "鱼类产卵场修复", "category": "manage",
 		"season": "spring",
 		"tags": ["生态修复"],
-		"desc": "修复四大家鱼产卵场与洄游通道：当回合就见鱼群回补，后续繁殖还会再涨一波。",
+		"desc": "修复四大家鱼产卵场与洄游通道。",
 		"cost": 40,
 		"tiers": {
 			"basic":     {"effects": [{"metric": "fish", "delta": 6, "delay": 0} , {"metric": "community", "delta": -1, "delay": 0}]},
@@ -754,7 +751,7 @@ const ACTION_CARDS := [
 			"effective": {"effects": [{"metric": "fish", "delta": 6, "delay": 2}, {"metric": "birds", "delta": 4, "delay": 2}, {"metric": "community", "delta": 3, "delay": 2}]},
 			"deep":      {"effects": [{"metric": "fish", "delta": 8, "delay": 0}, {"metric": "birds", "delta": 6, "delay": 0}, {"metric": "community", "delta": 4, "delay": 0}]},
 		},
-		"side_note": {"effective": "立法见效慢，2 回合后逐步显现"},
+		"side_note": {"effective": "2回合后生效"},
 	},
 	{
 		"id": "grazing_ban", "name": "封洲禁牧", "category": "manage",
@@ -787,14 +784,14 @@ const ACTION_CARDS := [
 		"id": "water_comanage", "name": "社区水权共管", "category": "social",
 		"season": "all",
 		"tags": ["社区参与", "补水调度"],
-		"desc": "把灌溉与生态用水的分配权交给村民议事会，从抢水变成共管。",
+		"desc": "把灌溉与生态用水的分配权交给村委会。",
 		"cost": 40,
 		"tiers": {
 			"basic":     {"effects": [{"metric": "water_level", "delta": 6, "delay": 0}]},
 			"effective": {"effects": [{"metric": "water_level", "delta": 9, "delay": 0}, {"metric": "community", "delta": 3, "delay": 0}]},
 			"deep":      {"effects": [{"metric": "water_level", "delta": 18, "delay": 0}, {"metric": "community", "delta": 6, "delay": 0}]},
 		},
-		"side_note": {"effective": "议事会需要时间磨合，但一旦跑通，调度阻力大减"},
+		"side_note": {"effective": ""},
 	},
 	{
 		"id": "sewage_comanage", "name": "社区污水共治", "category": "social",
@@ -807,7 +804,7 @@ const ACTION_CARDS := [
 			"effective": {"effects": [{"metric": "water_quality", "delta": 10, "delay": 0}, {"metric": "community", "delta": 3, "delay": 0}]},
 			"deep":      {"effects": [{"metric": "water_quality", "delta": 20, "delay": 0}, {"metric": "community", "delta": 6, "delay": 0}]},
 		},
-		"side_note": {"basic": "见效快，但覆盖范围取决于参与的户数"},
+		"side_note": {"basic": ""},
 	},
 	{
 		"id": "fish_market", "name": "社区渔市共营", "category": "social",
@@ -1501,7 +1498,7 @@ const CRISIS_BREATH_TURNS := 1
 #   （见 generate_report 里 research_points >= 20 的档位），花掉会连带拉低评价，
 #   那就变成「拿成绩换情报」，与「科研投入换监测能力」的设定也不符。
 const DEEP_WARN_RESEARCH := 8
-const CRISES := [
+const NATURAL_CRISES := [
 	{
 		"id": "drought", "name": "极端干旱", "weight": 1.0, "cond": "water_level < seasonal_low",
 		"cooldown": 5,   # 重事件：掉 14 水位，两次之间至少隔 5 回合
@@ -1517,22 +1514,6 @@ const CRISES := [
 		"warn": "【监测提示】巡护员发现局部水草出现腐烂迹象，疑与水体富营养化有关，建议加强监测。",
 		"hit": "【危机爆发】苦草病害大面积暴发——沉水植被成片腐烂死亡，候鸟食物锐减。",
 		"effects": [{"metric": "vegetation", "delta": -12}, {"metric": "water_quality", "delta": -6}],
-	},
-	{
-		"id": "illegal_fishing", "name": "非法捕捞猖獗", "weight": 1.0, "cond": "fish < 50",
-		"cooldown": 5,   # 实测最易刷屏的之一（简单档随机打牌 0.54/局），拉长间隔
-		"needs": ["执法巡护"],
-		"warn": "【巡护通报】近期湖区外围发现可疑船只活动轨迹，疑似非法捕捞，建议加强执法。",
-		"hit": "【危机爆发】非法捕捞猖獗——电捕鱼与密眼网具造成鱼类资源骤减。",
-		"effects": [{"metric": "fish", "delta": -13}],
-	},
-	{
-		"id": "bird_conflict", "name": "候鸟大规模进田", "weight": 1.0, "cond": "fish < 50 and community < 55",
-		"cooldown": 3,   # 社会摩擦：本来就不密（0.04/局），维持全局值
-		"needs": ["社区补偿", "栖息地营造"],
-		"warn": "【社区报告】湖里鱼不够吃，白鹤开始成群转向稻田觅食，农户损失在扩大 —— 建议提前协商补偿。",
-		"hit": "【危机爆发】数千只候鸟涌入农田取食莲藕、踩踏稻苗：农户损失严重、矛盾激化，而候鸟也因食物不足与人为驱赶出现伤亡。",
-		"effects": [{"metric": "community", "delta": -7}, {"metric": "birds", "delta": -6}],
 	},
 	{
 		"id": "flood", "name": "汛期洪水", "weight": 0.8, "cond": "water_level > seasonal_high",
@@ -1566,20 +1547,9 @@ const CRISES := [
 		"hit": "【危机爆发】蓝藻水华暴发——水面被绿色藻膜覆盖，水体缺氧，候鸟中毒与食物短缺同时发生。",
 		"effects": [{"metric": "water_quality", "delta": -12}, {"metric": "birds", "delta": -8}],
 	},
-	{
-		"id": "wetland_encroach", "name": "围湖造田", "weight": 1.0, "cond": "community < 55",
-		"cooldown": 6,   # 重事件（还扣 30 安置额度）：一局出现一次就很有分量
-		"needs": ["执法巡护", "生态修复"],
-		"warn": "【社区动向】部分村民在湿地边缘围垦造田、搭建临时房，有向湖区推进的迹象。",
-		"hit": "【危机爆发】围湖造田蔓延——环湖湿地被侵占，临时房屋与圩田向湖推进。",
-		"effects": [
-			{"metric": "vegetation", "delta": -8},
-			{"metric": "water_quality", "delta": -4},
-			{"metric": "birds", "delta": -5},
-		],
-		"settlement": 30,
-	},
 ]
+
+var CRISES: Array = NATURAL_CRISES + preload("res://scripts/seasonal_events.gd").all_events()
 
 # ==================== 危机对策卡（标签匹配 + 概率加权）====================
 # 卡牌上的 tags 与危机上的 needs 做标签匹配：命中任一 needs 的卡就是该危机的对策卡。
@@ -1608,7 +1578,7 @@ const RESCUE_WEIGHT := 2.5
 const SYNERGIES := [
 	{
 		"id": "sci_plant", "name": "科学补种", "requires": ["water_monitor", "veg_restore"],
-		"desc": "先测水质再补种，成活率大幅提升",
+		"desc": "大幅提升成活率",
 		"bonus": [{"metric": "vegetation", "delta": 9}],
 	},
 	{
@@ -1618,7 +1588,7 @@ const SYNERGIES := [
 	},
 	{
 		"id": "joint_defense", "name": "群防群治", "requires": ["patrol", "guard_team"],
-		"desc": "执法与社区共管协同，巡护覆盖翻倍",
+		"desc": "增强巡护覆盖",
 		"bonus": [{"metric": "fish", "delta": 8}, {"metric": "community", "delta": 4}],
 	},
 	{
@@ -1628,17 +1598,17 @@ const SYNERGIES := [
 	},
 	{
 		"id": "coexist", "name": "人鸟共处", "requires": ["bird_canteen", "community_comp"],
-		"desc": "候鸟食堂配合社区补偿，把冲突转化为共管",
+		"desc": "候鸟食堂配合社区补偿，缓解人鸟关系",
 		"bonus": [{"metric": "birds", "delta": 6}, {"metric": "community", "delta": 5}],
 	},
 	{
 		"id": "clear_water", "name": "清源活水", "requires": ["dredge", "floating_island"],
-		"desc": "清淤与浮岛协同，内源外源污染一起削减",
+		"desc": "清淤与浮岛协同，削减内外污染源",
 		"bonus": [{"metric": "water_quality", "delta": 8}, {"metric": "vegetation", "delta": 4}],
 	},
 	{
 		"id": "sky_net", "name": "天网巡护", "requires": ["smart_patrol", "patrol"],
-		"desc": "无人机侦察配合地面执法，非法捕捞无所遁形",
+		"desc": "无人机侦察配合地面执法，严厉打击非法捕捞",
 		"bonus": [{"metric": "fish", "delta": 9}, {"metric": "water_quality", "delta": 3}],
 	},
 	{
@@ -1653,7 +1623,7 @@ const SYNERGIES := [
 	},
 	{
 		"id": "bird_tourism", "name": "观鸟经济", "requires": ["ecotourism", "habitat_protect"],
-		"desc": "栖息地保护好，观鸟旅游才有持续客流",
+		"desc": "保护好栖息地以维持旅游业",
 		"bonus": [{"metric": "birds", "delta": 7}, {"metric": "community", "delta": 5}],
 	},
 ]
@@ -1663,7 +1633,7 @@ const FAILURE_TEXT := {
 	"water_level": "鄱阳湖干涸见底，湖床裸露龟裂，候鸟失去越冬栖息地。",
 	"vegetation": "沉水植被彻底消失，白鹤失去主要食物来源，草洲退化为荒滩。",
 	"water_quality": "水质彻底恶化，蓝藻暴发、水体缺氧，水生生物大面积死亡。",
-	"fish": "鱼类资源枯竭，江豚与食鱼水鸟无以为继，禁渔成果付诸东流。",
+	"fish": "鱼类资源枯竭，江豚与食鱼水鸟食物来源减少。",
 	"birds": "候鸟种群崩溃，鄱阳湖失去国际重要湿地的生态价值。",
 	"community": "社区信任彻底破裂，农户与渔民转入对抗，保护工作再也无法开展。",
 }
@@ -1698,14 +1668,14 @@ const SITUATION_TEXT := {
 	"drought": "【自然预警】气象预报未来一季降水显著偏少，湖区面临干旱风险。",
 	"flood": "【自然预警】上游持续降雨，水文站预计湖区水位快速上涨，有洪水风险。",
 	"birds_field": "【社区报告】农户报告白鹤进入稻田取食，人鸟冲突初现端倪。",
-	"calm_safe": "【湖区简报】暂未触发明显洪旱预警或候鸟进田情况。",
-	"calm_off": "【湖区简报】水位略偏离本季参考区间，暂未触发明显洪旱预警或候鸟进田情况。",
+	"calm_safe": "【湖区简报】未收到洪旱预警及候鸟进田的报告。",
+	"calm_off": "【湖区简报】水位略偏离本季参考区间，未收到洪旱预警及候鸟进田的报告。",
 }
 # 弹窗里在横幅那句话后面，再补一句它意味着什么（同样只描述，不给数字）
 const SITUATION_WHY := {
 	"drought": "低水位下鱼类资源与沉水植被会跟着流失。",
 	"flood": "新生沉水植被与草洲有被淹风险。",
-	"birds_field": "农户损失正在累积。",
+	"birds_field": "农户损失正在扩大，造成不良社会影响。",
 }
 # 这两回合的横幅**只放开场 / 收官那句台词**，不拼当前态势（横幅是单行、超出会打省略号，
 # 见 situation_banner()）。想让第 11 回合的政策通知也上横幅，把 11 加进来即可。
@@ -1774,6 +1744,10 @@ var log_messages: Array = []        # 因果提示
 #   applied = 实际落地的变化量（metrics 前后差）——指标贴 0/100 时会被截断而与 raw 不等
 # ⚠ 故意不写进 serialize()：动画只在实时的 _finish_turn 路径播，读档永远走不到，
 #   加进去只会给存档增加无谓的不兼容面。
+var bird_population: Dictionary = {}
+var action_tiers: Dictionary = {}
+var seasonal_legacy: Array = [] # Food lasts to year-end; water is applied once in autumn.
+var winter_returns: Dictionary = {} # Year -> unrecovered winter loss / 2, capped at 20.
 var score_ledger: Array = []
 var game_over: bool = false
 var total_spent: int = 0            # 累计行动、调度与刷新支出（用于资金效率评价）
@@ -1825,6 +1799,197 @@ func _ready() -> void:
 
 
 # ==================== 存档 ====================
+func bird_snapshot() -> Dictionary:
+	var snapshot := BirdPopulation.snapshot(bird_population, int(metrics.get("birds", 0)), current_season())
+	if not snapshot.has("year"):
+		snapshot["year"] = int((maxi(1, turn) - 1) / 4) + 1
+		if current_season() == "spring" and snapshot["season"] == "winter": snapshot["year"] -= 1
+	return snapshot
+
+func metric_health(metric: String) -> int:
+	return int(bird_snapshot()["base"]) if metric == "birds" else int(metrics.get(metric, 0))
+
+func metric_display_line(metric: String) -> int:
+	return failure_threshold_for(metric) + (int(bird_snapshot()["migrants"]) if metric == "birds" else 0)
+
+func bird_evolution(source_metrics: Dictionary) -> Dictionary:
+	var current := bird_snapshot()
+	# Read-only forecasts may have already applied conflict losses to their copy.
+	var difference := int(source_metrics.get("birds", metrics.get("birds", 0))) - int(metrics.get("birds", 0))
+	if difference != 0: current = BirdPopulation.change(current, difference)
+	var deviation: int = int(water_pressure(int(source_metrics.get("water_level", 50)))["deviation"])
+	var habitat: int = clampi(BirdPopulation.habitat(source_metrics, deviation) - wetland_food_loss(), 0, 100)
+	return BirdPopulation.project(current, current_season(), habitat, PENALTY_MULT[difficulty], winter_return_loss(), int((maxi(1, turn) - 1) / 4) + 1)
+
+func wetland_food_loss(at_turn: int = -1) -> int:
+	var t := turn if at_turn < 0 else at_turn
+	var loss := 0
+	for entry in seasonal_legacy:
+		if entry.get("kind", "") == "food" and int(entry.get("until_turn", 0)) >= t:
+			loss -= int(entry["delta"])
+	return clampi(loss, 0, 30)
+
+func winter_return_loss(at_turn: int = -1) -> int:
+	var t := turn if at_turn < 0 else at_turn
+	var year := int((maxi(1, t) - 1) / 4) + 1
+	return clampi(int(winter_returns.get(str(year), 0)), 0, 20)
+
+func pending_water_legacy() -> int:
+	var delta := 0
+	for entry in seasonal_legacy:
+		if entry.get("kind", "") == "water": delta += int(entry["delta"])
+	return delta
+
+func crisis_legacy_effects(crisis: Dictionary) -> Array:
+	var effects: Array = crisis.get("legacy_effects", []).duplicate(true)
+	if crisis.has("mitigation_ratio"): return effects
+	var remaining := 1.0 - crisis_mitigation(crisis)
+	for effect in effects: effect["delta"] = roundi(int(effect["delta"]) * remaining)
+	return effects
+
+func _refresh_food_arrivals(phase: String, label: String, ref_id: String = "") -> void:
+	var old := bird_snapshot()
+	# A restoration card must not be blamed for the seasonal departure, which
+	# belongs to the later natural-settlement phase.
+	if str(old["season"]) != current_season(): return
+	var deviation: int = int(water_pressure(int(metrics["water_level"]))["deviation"])
+	var habitat := clampi(BirdPopulation.habitat(metrics, deviation) - wetland_food_loss(), 0, 100)
+	var next := BirdPopulation.arrivals(old, current_season(), habitat, winter_return_loss(), int((maxi(1, turn) - 1) / 4) + 1)
+	_apply_bird_state(next, phase, label, ref_id)
+
+func _resolve_seasonal_legacy(crisis: Dictionary) -> void:
+	for effect in crisis.get("legacy_effects", []):
+		var delta := int(effect["delta"])
+		if delta == 0: continue
+		var entry := {"kind": str(effect["kind"]), "delta": delta,
+			"source": str(crisis["name"]), "source_id": str(crisis["id"]), "hit_turn": turn}
+		if entry["kind"] == "food":
+			delta = -mini(-delta, 30 - wetland_food_loss())
+			effect["delta"] = delta
+			entry["delta"] = delta
+			entry["until_turn"] = int((turn - 1) / 4 + 1) * 4
+			effect["until_turn"] = entry["until_turn"]
+			if delta != 0:
+				seasonal_legacy.append(entry)
+				_refresh_food_arrivals("crisis", str(crisis["name"]))
+		else:
+			entry["due_turn"] = turn + posmod(2 - posmod(turn - 1, 4), 4)
+			effect["due_turn"] = entry["due_turn"]
+			seasonal_legacy.append(entry)
+		_add_log("%s：%s %+d" % [crisis["name"], "候鸟食物" if entry["kind"] == "food" else "秋季水位遗留", delta])
+
+func _advance_seasonal_legacy() -> void:
+	if turn > 1 and posmod(turn - 1, 4) == 0:
+		var winter := bird_snapshot()
+		if str(winter["season"]) == "winter":
+			var next_year := str(int((turn - 1) / 4) + 1)
+			winter_returns[next_year] = mini(20, ceili(int(winter["loss"]) * 0.5))
+			if int(winter_returns[next_year]) > 0:
+				_add_log("上冬未恢复鸟群损失：本年迁入基准减少 %d（冬季口径）" % int(winter_returns[next_year]))
+	var remaining: Array = []
+	for entry in seasonal_legacy:
+		if entry["kind"] == "food":
+			if int(entry["until_turn"]) >= turn: remaining.append(entry)
+		elif int(entry["due_turn"]) <= turn:
+			var before := int(metrics["water_level"])
+			_apply_delta("water_level", int(entry["delta"]), false)
+			var actual := int(metrics["water_level"]) - before
+			_add_log("%s遗留生效：秋季水位 %+d" % [entry["source"], actual])
+			for notice in warn_history:
+				if str(notice["id"]) == str(entry["source_id"]) and int(notice.get("hit_turn", -1)) == int(entry["hit_turn"]):
+					if not notice["crisis"].has("legacy_settled"): notice["crisis"]["legacy_settled"] = []
+					notice["crisis"]["legacy_settled"].append({"turn": turn, "delta": actual})
+		else: remaining.append(entry)
+	seasonal_legacy = remaining
+	_sync_species()
+	_sync_plants()
+
+func _restore_wetland_food(card: Dictionary, tier: String) -> void:
+	var tags: Array = card.get("tags", [])
+	if not tags.has("生态修复") and not tags.has("栖息地营造"): return
+	var amount := food_restoration_amount(card, tier)
+	var restored := 0
+	for entry in seasonal_legacy:
+		if entry["kind"] != "food" or int(entry["until_turn"]) < turn: continue
+		var recovery := mini(amount, -int(entry["delta"]))
+		entry["delta"] = int(entry["delta"]) + recovery
+		amount -= recovery
+		restored += recovery
+	if restored > 0:
+		_refresh_food_arrivals("card", "候鸟食物恢复", str(card["id"]))
+		_add_log("%s：恢复候鸟食物 %d" % [card["name"], restored])
+
+func food_restoration_amount(card: Dictionary, tier: String) -> int:
+	var tags: Array = card.get("tags", [])
+	if not tags.has("生态修复") and not tags.has("栖息地营造"): return 0
+	return int({"basic": 2, "effective": 4, "deep": 8}.get(tier, 0))
+
+func bird_evolution_reason(projected: Dictionary) -> String:
+	var old := bird_snapshot()
+	var health_change := int(projected["base"]) - int(old["base"])
+	var visitors_change := int(projected["migrants"]) - int(old["migrants"])
+	if absi(health_change) >= absi(visitors_change):
+		return "湿地环境影响鸟群基数"
+	return "季节迁徙：%s季候鸟随食源与水位变化" % SEASON_NAMES[current_season()]
+
+func bird_conflict_load() -> int:
+	var birds := bird_snapshot()
+	# Winter migrants naturally share seasonal feeding habitat; recalibrate the
+	# pre-existing conflict index instead of punishing a normal winter peak.
+	return int(birds["base"]) + int(birds["migrants"]) / 4
+
+func _apply_bird_state(next: Dictionary, phase: String, label: String, ref_id: String = "", raw_delta: int = 999) -> void:
+	var before: int = int(metrics.get("birds", 0))
+	bird_population = next.duplicate(true)
+	metrics["birds"] = int(next["total"])
+	if phase != "":
+		score_ledger.append({"phase": phase, "label": label, "ref_id": ref_id, "metric": "birds",
+			"raw": int(next["total"]) - before if raw_delta == 999 else raw_delta, "applied": int(next["total"]) - before,
+			"before": before, "after": int(next["total"])})
+
+func seasonal_social_chance() -> float:
+	var trust := int(metrics.get("community", 0))
+	var line := failure_threshold_for("community")
+	if trust < line: return 0.0
+	if trust < line + 5: return 0.6
+	if trust < line + 10: return 0.3
+	return 0.08 # Good trust reduces risk; it cannot eradicate all illegal activity.
+
+func crisis_mitigation(crisis: Dictionary) -> float:
+	if not bool(crisis.get("mitigation", false)): return 0.0
+	var ratio := 0.0
+	var counters := counter_ids_for(crisis)
+	for id in used_action_ids:
+		if counters.has(id):
+			ratio = maxf(ratio, float(SEASONAL_MITIGATION.get(str(action_tiers.get(id, "basic")), 0.5)))
+	return ratio
+
+func crisis_effects(crisis: Dictionary) -> Array:
+	var effects: Array = crisis.get("effects", []).duplicate(true)
+	if crisis.has("mitigation_ratio"): return effects # Already resolved historical snapshot.
+	var remaining := 1.0 - crisis_mitigation(crisis)
+	for effect in effects:
+		if int(effect["delta"]) < 0: effect["delta"] = roundi(int(effect["delta"]) * remaining)
+	return effects
+
+func _ensure_seasonal_counter(picked: Array) -> void:
+	if picked.is_empty() or not bool(pending_crisis.get("mitigation", false)): return
+	var counters := counter_ids_for(pending_crisis)
+	for card in picked:
+		if counters.has(card["id"]): return
+	var candidate: Dictionary = {}
+	for card in season_pool():
+		if not counters.has(card["id"]): continue
+		if candidate.is_empty() or int(card["cost"]) < int(candidate["cost"]): candidate = card
+	if candidate.is_empty(): return
+	# Preserve the season-exclusive guarantee whenever a second slot exists.
+	var replacement := picked.size() - 1
+	for i in picked.size():
+		if str(picked[i].get("season", "all")) == "all":
+			replacement = i
+			break
+	picked[replacement] = candidate
+
 ## 序列化全部运行时状态，供暂停退出后读档续玩
 func serialize() -> Dictionary:
 	return {
@@ -1832,6 +1997,8 @@ func serialize() -> Dictionary:
 		"last_metric_funding": last_metric_funding,
 		"research_points": research_points,
 		"metrics": metrics.duplicate(),
+		"bird_population": bird_snapshot(), "action_tiers": action_tiers.duplicate(),
+		"seasonal_legacy": seasonal_legacy.duplicate(true), "winter_returns": winter_returns.duplicate(),
 		"species_pop": species_pop.duplicate(),
 		"plant_pop": plant_pop.duplicate(),
 		"effects_queue": effects_queue.duplicate(true),
@@ -1906,6 +2073,13 @@ func load_state(d: Dictionary, restore_talents: bool = true) -> void:
 		Talents.set_run_tree(d.get("tree_talents", {}), bool(d.get("tree_mastery", false)))
 	settlement = int(d.get("settlement", 70))
 	difficulty = int(d.get("difficulty", 1 if d.get("hard_mode", false) else 0))
+	bird_population = BirdPopulation.snapshot(d.get("bird_population", {}), int(metrics.get("birds", 0)), current_season())
+	action_tiers = d.get("action_tiers", {}).duplicate()
+	seasonal_legacy = d.get("seasonal_legacy", []).duplicate(true)
+	for entry in seasonal_legacy:
+		for key in ["delta", "hit_turn", "due_turn", "until_turn"]:
+			if entry.has(key): entry[key] = int(entry[key])
+	winter_returns = _int_dict(d.get("winter_returns", {}))
 	run_id = str(d.get("run_id", "legacy:%d:%d" % [run_seed, difficulty]))
 	floating_islands = int(d.get("floating_islands", 0))
 	pending_crisis = d.get("pending_crisis", {})
@@ -1998,6 +2172,10 @@ func reset_game() -> void:
 	Talents.roll_for_run(run_seed, difficulty)
 	metrics = _roll_starting_metrics()
 	_guard_starting_metrics()
+	bird_population = BirdPopulation.snapshot({}, int(metrics["birds"]), current_season())
+	action_tiers = {}
+	seasonal_legacy = []
+	winter_returns = {}
 	_sync_species()
 	_sync_plants()
 	start_new_turn()
@@ -2096,7 +2274,7 @@ func _water_habitat_score() -> int:
 func _metric_funding() -> int:
 	var extra := 0
 	for metric in FUNDING_STEPS:
-		var cur: int = int(metrics.get(metric, 0))
+		var cur: int = metric_health(str(metric))
 		for step in FUNDING_STEPS[metric]:
 			var thr: int = int(step[0])
 			var hit: bool = (cur >= thr) if thr > 0 else (cur <= -thr)
@@ -2110,9 +2288,11 @@ func _metric_funding() -> int:
 func start_new_turn() -> void:
 	turn += 1
 	used_action_ids = []
+	action_tiers = {}
 	free_actions_executed = 0
 	clear_dispatch()          # 上一轮的调度牌已在回合末结算完，这里清空待办清单
 	log_messages = []
+	_advance_seasonal_legacy()
 
 	# 基础拨款随指标浮动：社区信任、候鸟种群决定能拉到多少社会/旅游资金。
 	# 具体阶梯见 FUNDING_STEPS；这一段是「指标 → 钱」的唯一入口。
@@ -2160,7 +2340,14 @@ func start_new_turn() -> void:
 func _resolve_pending_crisis() -> void:
 	if pending_crisis.is_empty():
 		return
-	var c: Dictionary = pending_crisis
+	var c: Dictionary = pending_crisis.duplicate(true)
+	var mitigation := crisis_mitigation(c)
+	var resolved_effects := crisis_effects(c)
+	var resolved_legacy := crisis_legacy_effects(c)
+	c["original_effects"] = c["effects"].duplicate(true)
+	c["effects"] = resolved_effects
+	c["legacy_effects"] = resolved_legacy
+	c["mitigation_ratio"] = mitigation
 	pending_crisis = {}
 	last_crisis_name = c["name"]
 	crisis_history.append({"id": c["id"], "turn": turn})   # 防连出 / 冷却的依据
@@ -2168,14 +2355,20 @@ func _resolve_pending_crisis() -> void:
 	_mark_warning_hit(str(c["id"]), turn)
 	_add_log("⚠ %s" % c["hit"])
 	for e in c["effects"]:
+		var before_value: int = int(metrics.get(str(e["metric"]), 0))
+		if str(e["metric"]) == "birds" and bool(c.get("migrant_only", false)):
+			_apply_bird_state(BirdPopulation.change(bird_snapshot(), int(e["delta"]), true), "crisis", str(c["name"]))
+		else:
+			_apply_delta(e["metric"], e["delta"], false, "crisis", str(c["name"]))
+		e["delta"] = int(metrics.get(str(e["metric"]), 0)) - before_value   # 危机伤害不叠负向倍率，见 _apply_delta 注释
 		if int(e["delta"]) < 0:
-			var metric: String = str(e["metric"])
-			var before: int = int(metrics[metric])
-			var after := clampi(before + int(e["delta"]), 0, 100)
-			var recovery_target := after + ceili((before - after) * MUSIC_CRISIS_RECOVERY_RATIO)
-			music_crisis_recovery[metric] = maxi(recovery_target, int(music_crisis_recovery.get(metric, 0)))
-		_apply_delta(e["metric"], e["delta"], false, "crisis", str(c["name"]))   # 危机伤害不叠负向倍率，见 _apply_delta 注释
+			var recovery_target := int(metrics[str(e["metric"])]) + ceili(-int(e["delta"]) * MUSIC_CRISIS_RECOVERY_RATIO)
+			music_crisis_recovery[str(e["metric"])] = maxi(recovery_target, int(music_crisis_recovery.get(str(e["metric"]), 0)))
 		_add_log("   %s %+d" % [METRIC_NAMES[e["metric"]], e["delta"]])
+	_resolve_seasonal_legacy(c)
+	if bool(c.get("mitigation", false)):
+		record_crisis_notice(c, 0)
+		_add_log("应对措施减少损失 %d%%" % roundi(float(c["mitigation_ratio"]) * 100.0))
 	if c.has("settlement"):
 		_apply_settlement(c["settlement"])
 	_sync_species()
@@ -2266,8 +2459,6 @@ func _roll_crisis(at_turn: int, exclude_id: String = "") -> Dictionary:
 	var chance: float = CRISIS_CHANCE[difficulty] + float(at_turn) / float(TOTAL_TURNS) * CRISIS_SLOPE[difficulty]
 	# 天赋加成：降低危机触发概率
 	chance += Talents.get_bonus("crisis_chance")
-	if randf() > chance:
-		return {}
 	# 加权抽选：只抽「当前状态真的吻合」的危机
 	# 预警文案会引用当前值与警戒线（如「水质 90，警戒线 55」），若状态不吻合
 	# 就会在安全区报警、自相矛盾 —— 所以这里必须硬性过滤，而不只是加权。
@@ -2277,7 +2468,13 @@ func _roll_crisis(at_turn: int, exclude_id: String = "") -> Dictionary:
 	# 两条都过滤完之后候选为空 → 不预警，把喘息空间真的留给玩家。
 	var pool: Array = []
 	var total_w := 0.0
+	var natural_available := false
+	var social_chance := seasonal_social_chance()
 	for c in CRISES:
+		if c.has("season") and str(c["season"]) != SEASONS[at_turn % 4]:
+			continue
+		if bool(c.get("seasonal_social", false)) and social_chance <= 0.0:
+			continue
 		if exclude_id != "" and str(c["id"]) == exclude_id:
 			continue
 		if not _eval_condition_simple(c["cond"]):
@@ -2287,12 +2484,15 @@ func _roll_crisis(at_turn: int, exclude_id: String = "") -> Dictionary:
 		if _crisis_cooldown_left(str(c["id"]), at_turn) > 0:
 			continue
 		pool.append(c)
-		total_w += c["weight"]
-	if pool.is_empty():
-		return {}
+		if not bool(c.get("seasonal_social", false)): natural_available = true
+	if pool.is_empty(): return {}
+	var trigger_chance := maxf(chance, social_chance) if natural_available else social_chance
+	if randf() > trigger_chance: return {}
+	for c in pool:
+		total_w += float(c["weight"]) * (social_chance / trigger_chance if bool(c.get("seasonal_social", false)) else 1.0)
 	var roll := randf() * total_w
 	for c in pool:
-		roll -= c["weight"]
+		roll -= float(c["weight"]) * (social_chance / trigger_chance if bool(c.get("seasonal_social", false)) else 1.0)
 		if roll <= 0.0:
 			return c
 	return {}
@@ -2314,6 +2514,8 @@ func record_crisis_notice(c: Dictionary, lead: int = 1, notice_turn: int = -1) -
 	for entry in warn_history:
 		var old_expected := int(entry.get("expected_hit_turn", int(entry.get("turn", 0)) + int(entry.get("lead", 1))))
 		if str(entry.get("id", "")) == id and old_expected == expected:
+			if int(entry.get("hit_turn", -1)) > 0 and entry.get("crisis", {}).has("mitigation_ratio") and not c.has("mitigation_ratio"):
+				return # Reloading the catalog must not overwrite actual damage/legacy history.
 			entry["expected_hit_turn"] = expected
 			entry["crisis"] = c.duplicate(true)
 			if lead == 0:
@@ -2468,6 +2670,7 @@ func draw_cards(n: int, guarantee_season: bool = false) -> Array:
 
 	if guarantee_season:
 		_ensure_one_season_card(picked)
+	_ensure_seasonal_counter(picked)
 	picked.shuffle()
 	return picked
 
@@ -2664,7 +2867,7 @@ func _rescue_metric_set() -> Dictionary:
 	var out: Dictionary = {}
 	for m in metrics:
 		if m == "water_level": continue
-		if int(metrics[m]) < failure_threshold_for(m) + RESCUE_MARGIN:
+		if metric_health(str(m)) < failure_threshold_for(m) + RESCUE_MARGIN:
 			out[m] = true
 	var pressure := water_pressure(int(metrics.get("water_level", 50)))
 	if pressure["side"] != "safe": out["water_level"] = pressure["side"]
@@ -2746,6 +2949,7 @@ func execute_action(card_id: String, tier: String, free: bool = false) -> bool:
 	# 行动位上限只在 free=false 时拦；但两种路径都要记进 used_action_ids ——
 	# 它同时是「本回合打过什么」的依据（自然演化的条件、协同触发都读它）。
 	used_action_ids.append(card_id)
+	action_tiers[card_id] = tier
 	if free:
 		free_actions_executed += 1
 	# 全局累计（**跨回合不清零**）：结算报告的「转产与补偿覆盖率」要按整局口径算，
@@ -2764,7 +2968,7 @@ func execute_action(card_id: String, tier: String, free: bool = false) -> bool:
 				# 记下排入的回合：delay=1 的效果当回合结算就会到期，
 				# 若不记这个，它会和「前几轮留下的」混在一起，第 1 回合就会出现
 				# 「前几轮遗留」这种不存在的说法。见 advance_effects()。
-				"queued_turn": turn,
+				"queued_turn": turn, "ref_id": card_id,
 			})
 			# 延迟效果在流水账里也记一条**预告**：applied 恒为 0（此刻确实还没落地），
 			# 只为让算分动画能在这张牌上标出「N 回合后才生效」。
@@ -2786,6 +2990,7 @@ func execute_action(card_id: String, tier: String, free: bool = false) -> bool:
 				})
 
 	# 科研投入奖励
+	_restore_wetland_food(card, tier)
 	if card_id == "research":
 		research_points += {"basic": 1, "effective": 2, "deep": 3}[tier]
 
@@ -2823,7 +3028,11 @@ func natural_evolution() -> void:
 	for e in natural_evolution_plan():
 		# 统一换算实际变动；水位与洪旱已给最终值，其余负向演化只缩放一次。
 		var d: int = _evolution_delta(e)
-		_apply_delta(str(e["metric"]), d, false, "routine", str(e["why"]))
+		if e.has("bird_state"):
+			_apply_bird_state(e["bird_state"], "routine", str(e["why"]))
+			_add_log("%s：候鸟种群 %+d" % [e["why"], d])
+		else:
+			_apply_delta(str(e["metric"]), d, false, "routine", str(e["why"]))
 		if e.get("hydrology", false) and d != 0:
 			_add_log("%s：%s %+d" % [e["why"], METRIC_NAMES[e["metric"]], d])
 	_sync_species()
@@ -2878,8 +3087,9 @@ func natural_evolution_plan(roll_random: bool = true, water_delta_override: int 
 	# 水位本身不致死；按整季暴露结算一次，再让水质→植被→候鸟继续联动。
 	var pressure := water_turn_pressure(water_before, int(sim["water_level"]))
 	for metric in pressure["effects"]:
+		if str(metric) == "birds": continue # Water stress already enters the shared bird habitat model.
 		var loss: int = int(pressure["effects"][metric])
-		var why := "%s季%s：行动后水位 %d → 自然变化后 %d，参考 %d–%d，季内暴露 ×%.2f" % [
+		var why := "%s季%s：行动后水位 %d → 自然变化后 %d，参考 %d–%d，本回合水位压力 ×%.2f" % [
 			SEASON_NAMES[season], "干旱压力" if pressure["side"] == "low" else "淹水压力",
 			water_before, sim["water_level"], pressure["low"], pressure["high"], pressure["multiplier"]]
 		out.append({"metric": metric, "delta": loss, "applied_delta": loss,
@@ -2911,23 +3121,12 @@ func natural_evolution_plan(roll_random: bool = true, water_delta_override: int 
 		out.append({"metric": "vegetation", "delta": 0, "min": 0, "max": 0, "kind": "none",
 			"why": "水质 %d（45~70）→ 植被本回合不变" % q})
 
-	# 4) 季节迁徙与栖息地变化共同决定候鸟值，预览和实际结算共用。
-	var migration: int = BIRD_MIGRATION_DELTA[season]
-	out.append({"metric": "birds", "delta": migration, "applied_delta": migration,
-		"min": migration, "max": migration, "kind": "loss" if migration < 0 else "gain",
-		"why": BIRD_MIGRATION_REASON[season]})
-	# 植被仍是候鸟食物基础（看推演后的植被）。
-	var veg: int = int(sim.get("vegetation", 0))
-	if veg < 42:
-		out.append({"metric": "birds", "delta": -3,
-			"min": _scaled_delta(-3), "max": _scaled_delta(-3), "kind": "loss",
-			"why": "植被 %d 已低于 42 → 候鸟食物不足" % veg})
-	elif veg > 70:
-		out.append({"metric": "birds", "delta": 1, "min": 1, "max": 1, "kind": "gain",
-			"why": "植被 %d 良好（>70）→ 候鸟种群回升" % veg})
-	else:
-		out.append({"metric": "birds", "delta": 0, "min": 0, "max": 0, "kind": "none",
-			"why": "植被 %d（42~70）→ 候鸟本回合不变" % veg})
+	# Bird health and migration are calculated once from the evolved habitat.
+	var birds := bird_evolution(sim)
+	out.append({"metric": "birds", "delta": int(birds["total"]) - int(sim.get("birds", 0)),
+		"applied_delta": int(birds["total"]) - int(sim.get("birds", 0)),
+		"min": int(birds["total"]) - int(sim.get("birds", 0)), "max": int(birds["total"]) - int(sim.get("birds", 0)),
+		"kind": "random", "bird_state": birds, "why": bird_evolution_reason(birds)})
 
 	# 5) 鱼类：禁渔带来缓慢恢复，但执法不足则恢复停滞
 	if used_action_ids.has("patrol") or used_action_ids.has("guard_team"):
@@ -2936,13 +3135,13 @@ func natural_evolution_plan(roll_random: bool = true, water_delta_override: int 
 	else:
 		out.append({"metric": "fish", "delta": -1,
 			"min": _scaled_delta(-1), "max": _scaled_delta(-1), "kind": "loss",
-			"why": "没打巡护/护渔 → 被非法捕捞蚕食"})
+			"why": "未投入巡护或护渔力度，非法捕捞趁虚而入"})
 
 	# 6) 社区信任：长期缺补偿则持续下降
 	if int(sim.get("community", 0)) < 45 and not used_action_ids.has("community_comp"):
 		out.append({"metric": "community", "delta": -3,
 			"min": _scaled_delta(-3), "max": _scaled_delta(-3), "kind": "loss",
-			"why": "信任度 %d 低于 45 且本回合没打补偿 → 持续下降" % int(sim.get("community", 0))})
+			"why": "下降"})
 	else:
 		out.append({"metric": "community", "delta": 0, "min": 0, "max": 0, "kind": "none",
 			"why": "本回合不变（信任度 ≥ 45，或已投入补偿）"})
@@ -2968,12 +3167,15 @@ func natural_evolution_outcomes(source_metrics: Dictionary = {}) -> Array:
 	for wl in range(int(drift[0]), int(drift[1]) + 1):
 		var snapshot: Dictionary = starting_metrics.duplicate()
 		var pressure_losses: Dictionary = {}
-		for e in natural_evolution_plan(false, wl, starting_metrics):
+		var plan := natural_evolution_plan(false, wl, starting_metrics)
+		var bird_state := bird_snapshot()
+		for e in plan:
 			var metric: String = str(e["metric"])
 			var d := _evolution_delta(e)
 			snapshot[metric] = clampi(int(snapshot.get(metric, 0)) + d, 0, 100)
 			if e.get("hydrology", false): pressure_losses[metric] = d
-		outcomes.append({"metrics": snapshot, "pressure_losses": pressure_losses})
+			if e.has("bird_state"): bird_state = e["bird_state"]
+		outcomes.append({"metrics": snapshot, "pressure_losses": pressure_losses, "bird_state": bird_state})
 	return outcomes
 
 
@@ -2983,7 +3185,7 @@ func natural_evolution_outcomes(source_metrics: Dictionary = {}) -> Array:
 func metric_hover_preview(metric: String) -> Dictionary:
 	# Snapshot all inputs used by the deterministic forecast. Comparing small
 	# values catches in-place changes as well as new games and loaded saves.
-	var key: Array = [metrics, difficulty, turn, run_seed, used_action_ids, pending_crisis]
+	var key: Array = [metrics, bird_population, action_tiers, seasonal_legacy, winter_returns, difficulty, turn, run_seed, used_action_ids, pending_crisis]
 	if key != _hover_preview_key:
 		_hover_preview_key = key.duplicate(true)
 		_hover_previews.clear()
@@ -3006,10 +3208,16 @@ func _compute_metric_hover_preview(metric: String) -> Dictionary:
 
 	var end_min := 100
 	var end_max := 0
-	for outcome in natural_evolution_outcomes(projected_metrics):
+	var health_min := 100
+	var health_max := 0
+	var outcomes := natural_evolution_outcomes(projected_metrics)
+	for outcome in outcomes:
 		var value: int = int(outcome["metrics"].get(metric, cur))
 		end_min = mini(end_min, value)
 		end_max = maxi(end_max, value)
+		var health: int = int(outcome["bird_state"]["base"]) if metric == "birds" else value
+		health_min = mini(health_min, health)
+		health_max = maxi(health_max, health)
 	var nat_min: int = end_min - cur
 	var nat_max: int = end_max - cur
 
@@ -3017,22 +3225,39 @@ func _compute_metric_hover_preview(metric: String) -> Dictionary:
 	var crisis_name := ""
 	var crisis_delta := 0
 	if not pending_crisis.is_empty():
-		for e in pending_crisis.get("effects", []):
+		for e in crisis_effects(pending_crisis):
 			if str(e["metric"]) == metric:
 				crisis_name = str(pending_crisis.get("name", "危机"))
 				crisis_delta = int(e["delta"])
 				break
 
 	var worst: int = clampi(end_min + crisis_delta, 0, 100)
+	var health_crisis: int = 0 if metric == "birds" and bool(pending_crisis.get("migrant_only", false)) else crisis_delta
+	var health_worst: int = clampi(health_min + health_crisis, 0, 100)
+	if metric == "birds":
+		worst = 100
+		health_worst = 100
+		var extra_food_loss := 0
+		for effect in crisis_legacy_effects(pending_crisis):
+			if str(effect["kind"]) == "food": extra_food_loss -= int(effect["delta"])
+		extra_food_loss = mini(extra_food_loss, 30 - wetland_food_loss())
+		if extra_food_loss > 0: crisis_name = str(pending_crisis.get("name", "危机"))
+		for outcome in outcomes:
+			var after_crisis := BirdPopulation.change(outcome["bird_state"], crisis_delta, bool(pending_crisis.get("migrant_only", false)))
+			if extra_food_loss > 0:
+				after_crisis = BirdPopulation.arrivals(after_crisis, current_season(), maxi(0, int(after_crisis["habitat"]) - extra_food_loss), winter_return_loss(), int((maxi(1, turn) - 1) / 4) + 1)
+			worst = mini(worst, int(after_crisis["total"]))
+			health_worst = mini(health_worst, int(after_crisis["base"]))
 	return {
 		"metric": metric, "cur": cur, "line": line,
 		"kind": "random" if end_min != end_max else ("loss" if nat_min < 0 else ("gain" if nat_min > 0 else "none")),
 		"nat_min": nat_min, "nat_max": nat_max,
 		"end_min": end_min, "end_max": end_max,
 		"crisis_name": crisis_name, "crisis_delta": crisis_delta, "worst": worst,
-		"margin_nat": end_min - line,      # 只算自然演化时的余量（取最坏的一头）
-		"break_nat": metric != "water_level" and end_min < line,
-		"break_total": metric != "water_level" and worst < line,
+		"margin_nat": health_min - line,      # 只算自然演化时的余量（取最坏的一头）
+		"break_nat": metric != "water_level" and health_min < line,
+		"break_total": metric != "water_level" and health_worst < line,
+		"health_cur": metric_health(metric), "health_min": health_min, "health_max": health_max, "health_worst": health_worst,
 		"penalty_mult": PENALTY_MULT[difficulty],
 		# 人鸟矛盾 / 候鸟进田的判定原样带上：悬停小窗要显示「回合末会扣多少」，
 		# 数字必须和回合末真正结算的那一次同源（两侧都调 bird_conflict_state）。
@@ -3043,7 +3268,7 @@ func _compute_metric_hover_preview(metric: String) -> Dictionary:
 # ==================== 顶部态势播报 + 人鸟矛盾（0.1.17）====================
 ## 人鸟矛盾差值 = max(0, 候鸟−沉水植被) + max(0, 候鸟−鱼类)。纯只读。
 func bird_conflict_index() -> int:
-	var b: int = int(metrics.get("birds", 0))
+	var b: int = bird_conflict_load()
 	var v: int = int(metrics.get("vegetation", 0))
 	var f: int = int(metrics.get("fish", 0))
 	return maxi(0, b - v) + maxi(0, b - f)
@@ -3053,7 +3278,7 @@ func bird_conflict_index() -> int:
 ## ⚠ 顶部播报、悬停小窗、回合末实际结算**全走这一个入口** —— 提示里写的数字和真正
 ##   扣的数字永远同源，不会各写一套。
 func bird_conflict_state() -> Dictionary:
-	var b: int = int(metrics.get("birds", 0))
+	var b: int = bird_conflict_load()
 	var v: int = int(metrics.get("vegetation", 0))
 	var f: int = int(metrics.get("fish", 0))
 	var gap_v: int = maxi(0, b - v)
@@ -3208,7 +3433,7 @@ func advance_effects() -> void:
 			# 两者执行时机相同，但玩家看到「前几轮遗留」出现在第 1 回合会莫名其妙。
 			# 旧存档的队列条目没有 queued_turn，按 -1 处理 → 归入 leftover，安全。
 			var ph: String = "pending" if int(e.get("queued_turn", -1)) == turn else "leftover"
-			_apply_delta(e["metric"], e["delta"], true, ph, str(e["source"]))
+			_apply_delta(e["metric"], e["delta"], true, ph, str(e["source"]), str(e.get("ref_id", "")))
 			_add_log("「%s」的延迟效果显现：%s %+d" % [e["source"], METRIC_NAMES[e["metric"]], e["delta"]])
 		else:
 			remaining.append(e)
@@ -3222,6 +3447,9 @@ func advance_effects() -> void:
 var _is_settlement_preview := false
 
 func preview_settlement(cards: Array) -> Dictionary:
+	return preview_settlement_detail(cards)["metrics"]
+
+func preview_settlement_detail(cards: Array) -> Dictionary:
 	var forecast = get_script().new()
 	forecast.load_state(serialize().duplicate(true), false)
 	forecast._is_settlement_preview = true
@@ -3230,7 +3458,9 @@ func preview_settlement(cards: Array) -> Dictionary:
 		if forecast.game_over: break
 	if not forecast.game_over:
 		forecast.end_turn()
-	var result: Dictionary = forecast.metrics.duplicate(true)
+	var result: Dictionary = {"metrics": forecast.metrics.duplicate(true), "birds": forecast.bird_snapshot(),
+		"food_loss": forecast.wetland_food_loss(), "water_legacy": forecast.pending_water_legacy(),
+		"return_loss": forecast.winter_return_loss()}
 	forecast.free()
 	return result
 
@@ -3278,7 +3508,7 @@ func end_turn() -> void:
 	if not pending_crisis.is_empty():
 		crisis_warned.emit(pending_crisis)
 
-	# 失败判定：任一指标跌破致死线 → 被撤换，提前结束
+	# 失败判定：水位以外的五项中任一项跌破致死线 → 被撤换，提前结束
 	if _check_failure():
 		return
 
@@ -3326,15 +3556,14 @@ func failure_threshold_for(metric: String) -> int:
 func _check_failure() -> bool:
 	if game_over:
 		return is_failure   # 已经判负，不重复判、不重复发信号
-	for metric in metrics:
-		if metric == "water_level": continue
+	for metric in FAILURE_METRICS:
 		var threshold: int = failure_threshold_for(metric)
-		if metrics[metric] < threshold:
+		if metric_health(str(metric)) < threshold:
 			is_failure = true
 			game_over = true
 			failure_metric = metric
-			failure_value = metrics[metric]
-			failure_reason = "上级对你的政绩不满意，将你撤换。"
+			failure_value = metric_health(str(metric))
+			failure_reason = "候鸟种群基数跌破红线，迁徙候鸟不能掩盖种群衰退。" if metric == "birds" else "上级对你的政绩不满意，将你撤换。"
 			_add_log("✖ %s（%s 只剩 %d，已跌破生态红线 %d）" % [failure_reason, METRIC_NAMES.get(metric, metric), failure_value, threshold])
 			game_ended.emit(generate_report())
 			return true
@@ -3349,11 +3578,10 @@ func check_failure_now() -> bool:
 ## 当前所有跌破致死线的指标（失败报告用来把死因说全）
 func metrics_below_threshold() -> Array:
 	var out: Array = []
-	for metric in metrics:
-		if metric == "water_level": continue
+	for metric in FAILURE_METRICS:
 		var threshold: int = failure_threshold_for(metric)
-		if metrics[metric] < threshold:
-			out.append({"metric": metric, "value": metrics[metric]})
+		if metric_health(str(metric)) < threshold:
+			out.append({"metric": metric, "value": metric_health(str(metric))})
 	out.sort_custom(func(a, b): return int(a["value"]) < int(b["value"]))
 	return out
 
@@ -3526,6 +3754,14 @@ func _apply_delta(metric: String, delta: int, apply_penalty: bool = true,
 	if delta < 0 and apply_penalty and metric != "water_level":
 		delta = _scaled_delta(delta)
 	var before: int = metrics[metric]
+	if metric == "birds":
+		var old := bird_snapshot()
+		var next := BirdPopulation.change(old, delta, false, ref_id == "rescue")
+		_apply_bird_state(next, phase, label, ref_id, delta)
+		if ref_id == "rescue" and str(old["season"]) == "winter" and posmod(turn - 1, 4) == 0:
+			var year := str(int((turn - 1) / 4) + 1)
+			if winter_returns.has(year): winter_returns[year] = mini(20, ceili(int(next["loss"]) * 0.5))
+		return
 	var after: int = clampi(before + delta, 0, 100)
 	metrics[metric] = after
 	if phase != "":
@@ -3595,7 +3831,7 @@ func generate_report() -> Dictionary:
 func _eval_eco() -> Dictionary:
 	var veg: int = metrics["vegetation"]
 	var fish: int = metrics["fish"]
-	var birds: int = metrics["birds"]
+	var birds: int = metric_health("birds")
 	var score: float = (veg + fish + birds) / 3.0
 	var grade := _grade(score)
 	var notes: Array = []
@@ -3667,9 +3903,10 @@ func _grade(score: float) -> String:
 
 func _build_reflection() -> String:
 	var parts: Array = []
-	if metrics["community"] >= 60 and metrics["birds"] < 50:
+	var bird_health := metric_health("birds")
+	if metrics["community"] >= 60 and bird_health < 50:
 		parts.append("你优先安抚了社区，但候鸟食物供给被牺牲，白鹤种群承压。")
-	elif metrics["birds"] >= 60 and metrics["community"] < 50:
+	elif bird_health >= 60 and metrics["community"] < 50:
 		parts.append("你优先保护候鸟，但社区补偿不足，人鸟矛盾可能持续。")
 	else:
 		parts.append("你在生态与生计之间寻求平衡，没有明显的单边倾斜。")
