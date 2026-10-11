@@ -41,6 +41,16 @@ def digest(data):
     return hashlib.sha256(data).hexdigest()
 
 
+def current_version():
+    """游戏内当前版本号（scripts/changelog.gd 的 CURRENT），导出文件名与说明里都用它。"""
+    try:
+        match = re.search(r'const CURRENT\s*:=\s*"([^"]+)"',
+                          (ROOT / "scripts/changelog.gd").read_text(encoding="utf-8"))
+        return match.group(1) if match else "?"
+    except OSError:
+        return "?"
+
+
 def decode_godot(raw, is_raw=False):
     if is_raw:
         return raw
@@ -224,11 +234,11 @@ def extract(output):
         if re.fullmatch(r"[\d.\-/]+", entry["text"]) and entry["category"] == "更新日志": notes.append("版本号/日期，修改文字不会自动升级版本")
         entry["notes"] = "；".join(notes)
     manifest = {"schema": 1, "exported_at": datetime.now().isoformat(timespec="seconds"),
-                "project_root": str(ROOT), "game_version": "0.1.24", "files": files,
+                "project_root": str(ROOT), "game_version": current_version(), "files": files,
                 "numbering": "每种完全相同的原文共用一个编号，关联位置全部保存；编号以此清单为准",
                 "entries": entries, "excluded": skipped}
     (output / "文本编号映射.json").write_text(json.dumps(manifest, ensure_ascii=False, indent=2), encoding="utf-8")
-    (output / "全部文本_编号版.txt").write_text("鄱阳归翎 0.1.24 全部文本\n请保留编号；每条原文为 JSON 字符串，\\n 表示换行。建议在 Excel 的‘修改后文本’列编辑。\n\n" +
+    (output / "全部文本_编号版.txt").write_text("鄱阳归翎 %s 全部文本\n请保留编号；每条原文为 JSON 字符串，\\n 表示换行。建议在 Excel 的‘修改后文本’列编辑。\n\n" % current_version() +
         "\n".join(f'{e["id"]}. {json.dumps(e["text"], ensure_ascii=False)}' for e in entries) + "\n", encoding="utf-8-sig")
     (output / "使用说明.txt").write_text(
         "请修改 Excel 的 D 列‘修改后文本’，该列已填入原文。未修改的条目保持原样即可。\n"
