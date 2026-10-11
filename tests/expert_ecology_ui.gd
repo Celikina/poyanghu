@@ -37,8 +37,9 @@ func _ready() -> void:
 	game._update_hud()
 	game._update_metric_preview()
 	await get_tree().create_timer(0.8).timeout
-	check(game.metric_bars.birds.reference_label.text == "留湖 55 · 迁徙 28 · 红线 53", "Bird HUD exposes the two populations and fixed redline")
-	check(is_equal_approx(game.metric_bars.birds.line.anchor_left, 0.53), "Bird bar uses the fixed opening redline")
+	var bird_line: int = int(GameState.failure_threshold_for("birds"))
+	check(game.metric_bars.birds.reference_label.text == "留湖 55 · 迁徙 28 · 红线 %d" % bird_line, "Bird HUD exposes the two populations and this run's redline")
+	check(is_equal_approx(game.metric_bars.birds.line.anchor_left, bird_line / 100.0), "Bird bar uses the rolled opening redline")
 	check(game.metric_bars.birds.bar.get_theme_stylebox("fill").bg_color == Color.WHITE, "Resident segment is white")
 	check(game.metric_bars.birds.bird_segments.MIGRANT_ALPHA < 0.5 and not game.metric_bars.birds.ripple.visible, "Migrant segment is static translucent white")
 	check(game.metric_bars.birds.bird_segments.residents == 55 and game.metric_bars.birds.bird_segments.migrants == 28, "Segment split matches population snapshot")
@@ -66,15 +67,15 @@ func _ready() -> void:
 	check(row.get_child(0).text.contains("80%") and row.get_child(0).text.contains("实际损失"), "Review displays actual reduced damage")
 	row.free()
 	game.crisis_root.visible = false
-	GameState.bird_population = {"base": 39, "migrants": 28, "loss": 0, "season": "winter", "total": 67}
-	GameState.metrics.birds = 67
+	GameState.bird_population = {"base": 20, "migrants": 28, "loss": 0, "season": "winter", "total": 48}
+	GameState.metrics.birds = 48
 	GameState.metrics.vegetation = 35
 	game._update_hud()
 	game._update_metric_preview()
 	await get_tree().create_timer(0.6).timeout
 	game._update_metric_preview()
-	check(game.metric_bars.birds.reference_label.text.contains("留湖 39"), "HUD still shows resident population after damage")
-	check(is_equal_approx(game.metric_bars.birds.line.anchor_left, 0.53), "Resident damage cannot move the redline")
+	check(game.metric_bars.birds.reference_label.text.contains("留湖 20"), "HUD still shows resident population after damage")
+	check(is_equal_approx(game.metric_bars.birds.line.anchor_left, bird_line / 100.0), "Resident damage cannot move the redline")
 	check(game.metric_bars.birds.reference_label.tooltip_text.contains("将跌破"), "Unplayed-hand forecast exposes impending total failure")
 	await capture("expert-birds-risk")
 	GameState.metrics.vegetation = 70

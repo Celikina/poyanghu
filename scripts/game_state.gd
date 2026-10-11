@@ -212,7 +212,13 @@ const METRIC_NAMES := {
 
 # 提前判负只检查这五项；水位通过季节生态影响间接作用，不直接判负。
 const FAILURE_METRICS := ["vegetation", "water_quality", "fish", "birds", "community"]
-const BIRD_REDLINE_PERCENT := [80, 85, 88, 90]
+## 候鸟红线 = 与其它五项同一套生成逻辑（FAILURE_THRESHOLD + 指标偏移，即简单 20 / 普通 30 /
+## 困难 40 / 噩梦 45），但**每局按种子在这个区间里随机抽一条**，抽完整局不变、存档一起保存。
+## 上限是开局留湖基数的 85%（向下取整）：留湖自己就是开局滚出来的 48~60，天赋还会往上加，
+## 不设上限的话「难度线」与「开局就贴着线」这两种坏情况都会出现。
+## ⚠ 抽签必须只在开新局时做一次：存档、预览、悬停都不能重抽（会消耗随机数序列，
+##   还会让同一条线在同一个回合里变来变去）。
+const BIRD_REDLINE_CAP_PERCENT := 85
 
 # ==================== 提前胜利（0.1.29）====================
 # 四项常驻指标都**严格高于** EARLY_WIN_THRESHOLD，且留湖候鸟基数达标，
@@ -1830,9 +1836,9 @@ func metric_health(metric: String) -> int:
 var bird_initial_residents := -1
 var bird_fixed_redline := 0
 
-func _set_bird_baseline(residents: int) -> void:
+func _set_bird_baseline(residents: int, roll_line: bool = true) -> void:
 	bird_initial_residents = clampi(residents, 0, BirdPopulation.BASE_CAP)
-	bird_fixed_redline = ceili(float(bird_initial_residents * BIRD_REDLINE_PERCENT[difficulty]) / 100.0)
+	bird_fixed_redline = bird_redline_roll(bird_initial_residents) if roll_line else bird_redline_cap(bird_initial_residents)
 
 func metric_failure_value(metric: String) -> int:
 	return int(metrics.get(metric, 0))
@@ -2107,9 +2113,13 @@ func load_state(d: Dictionary, restore_talents: bool = true) -> void:
 	difficulty = int(d.get("difficulty", 1 if d.get("hard_mode", false) else 0))
 	bird_population = BirdPopulation.snapshot(d.get("bird_population", {}), int(metrics.get("birds", 0)), current_season())
 	# Older saves have no opening baseline: freeze their resident count once on migration.
-	_set_bird_baseline(int(d.get("bird_initial_residents", bird_population["base"])))
+	# ⚠ 读档不重抽：存档里那条就是本局的线（roll_line=false 只算上限），上面这条 clampi 再
+	#   把 0.1.28 那种「留湖 × 88%」的旧线压到 85% 以内。
+	#   没存红线的老存档（0.1.27 之前）落在 85% 上限上：读档时抽不了签（会动随机序列，
+	#   而且每次读出来的线还可能不一样），索性给最宽的那条，不让旧档凭空变难。
+	_set_bird_baseline(int(d.get("bird_initial_residents", bird_population["base"])), false)
 	bird_fixed_redline = clampi(int(d.get("bird_fixed_redline", bird_fixed_redline)), 0, BirdPopulation.BASE_CAP)
-	bird_fixed_redline = mini(bird_fixed_redline, ceili(float(bird_initial_residents * BIRD_REDLINE_PERCENT[difficulty]) / 100.0))
+	bird_fixed_redline = mini(bird_fixed_redline, bird_redline_cap(bird_initial_residents))
 	action_tiers = d.get("action_tiers", {}).duplicate()
 	seasonal_legacy = d.get("seasonal_legacy", []).duplicate(true)
 	for entry in seasonal_legacy:
@@ -3501,10 +3511,14 @@ func preview_settlement_detail(cards: Array) -> Dictionary:
 	forecast.load_state(serialize().duplicate(true), false)
 	forecast._is_settlement_preview = true
 	for card in cards:
-		forecast.execute_action(str(card["card_id"]), str(card["tier"]), bool(card.get("dispatched", false)))
 		if forecast.game_over: break
-	if not forecast.game_over:
-		forecast.end_turn()
+		forecast.execute_action(str(card["card_id"]), str(card["tier"]), bool(card.get("dispatched", false)))
+	# ⚠ 就算出牌途中已经判负，也照走这一回合的自然演化：真实结算里 `_finish_turn()` 无条件调
+	#   `end_turn()`，预览少这一步就会和结算差一整段（水位自然涨落、水质恶化、候鸟迁徙全对不上）
+	#   —— 而且偏偏是「这一手已经出事」的回合最容易差，玩家最需要看到真实数字的时候它在说假话。
+	#   0.1.29 用 _probe_preview 在困难/噩梦各跑一遍才对出来：出牌后 game_over 为真的那两个
+	#   回合，预览值正好等于「出牌后」的面板值，实结算却多走了一轮自然演化。
+	forecast.end_turn()
 	var result: Dictionary = {"metrics": forecast.metrics.duplicate(true), "birds": forecast.bird_snapshot(),
 		"food_loss": forecast.wetland_food_loss(), "water_legacy": forecast.pending_water_legacy(),
 		"return_loss": forecast.winter_return_loss()}
@@ -3594,13 +3608,8 @@ func failure_threshold() -> int:
 
 ## 某一项指标的判负阈值 = 难度线 + 该项偏移 + 该难度下的额外调整
 ## （两张表里都没写就是难度线本身）
-func failure_threshold_for(metric: String) -> int:
-	# -1 表示没有致死线；所有难度（包括噩梦）都按季节生态影响处理水位。
-	if metric == "water_level": return -1
-	if metric == "birds":
-		if bird_initial_residents >= 0: return bird_fixed_redline
-		# Opening safety checks run before the baseline is captured.
-		return ceili(float(clampi(int(metrics.get("birds", 50)), 0, BirdPopulation.BASE_CAP) * BIRD_REDLINE_PERCENT[difficulty]) / 100.0)
+## 五项共用的红线生成方式：FAILURE_THRESHOLD + 该指标的偏移 + 个别难度的追加调整。
+func base_metric_line(metric: String) -> int:
 	# ⚠ 噩梦档**不叠任何偏移**：995f784 那版就是六项共用一条线，
 	#   "每指标单独红线"是后来才加的。照搬偏移会把噩梦档悄悄变简单
 	#   （社区 +10 会把它的线从 45 抬到 55，等于开局凭空多出 7 点余量）。
@@ -3609,6 +3618,30 @@ func failure_threshold_for(metric: String) -> int:
 	var offset: int = int(FAILURE_THRESHOLD_OFFSET.get(metric, 0))
 	offset += int(FAILURE_THRESHOLD_EXTRA.get(difficulty, {}).get(metric, 0))
 	return clampi(failure_threshold() + offset, 5, 95)
+
+
+## 候鸟红线的上限：开局留湖基数的 85%（向下取整，宁可松一点）。
+func bird_redline_cap(residents: int) -> int:
+	return clampi(residents, 0, BirdPopulation.BASE_CAP) * BIRD_REDLINE_CAP_PERCENT / 100
+
+
+## 开新局时抽这一局的候鸟红线：下限是难度那张表的线，上限是留湖的 85%，按局种子均匀抽。
+## 上限比难度线还低时（噩梦档 + 留湖偏少）以上限为准 —— 永远留出 15% 的容错。
+func bird_redline_roll(residents: int) -> int:
+	var line := base_metric_line("birds")
+	var cap := bird_redline_cap(residents)
+	return cap if cap <= line else _randi_range(line, cap)
+
+
+func failure_threshold_for(metric: String) -> int:
+	# -1 表示没有致死线；所有难度（包括噩梦）都按季节生态影响处理水位。
+	if metric == "water_level": return -1
+	if metric == "birds":
+		if bird_initial_residents >= 0: return bird_fixed_redline
+		# Opening safety checks run before the baseline is captured: 这里不能抽签（会动随机序列），
+		# 取「难度线」与「85% 上限」里更严的那个。
+		return mini(base_metric_line("birds"), bird_redline_cap(int(metrics.get("birds", 50))))
+	return base_metric_line(metric)
 
 
 ## 检查是否有指标跌破失败线（上级对政绩不满，将你撤换）

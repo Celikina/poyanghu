@@ -57,7 +57,10 @@ func _ready() -> void:
 		state.bird_population.total += 30
 		state.metrics.birds = state.bird_population.total
 		check(not state.check_failure_now(), "Migrants count toward the fixed redline")
-		state._apply_delta("birds", -30, false)
+		# 来客按真实回合末那样迁走（红线以内掉下去），而不是硬扣 30 —— 留湖不足 30 时
+		# 扣值会先把留湖吃光，总数反而还在线上。
+		state._apply_bird_state({"base": state.failure_threshold_for("birds") - 1, "migrants": 0, "loss": 0,
+			"season": state.current_season(), "total": state.failure_threshold_for("birds") - 1}, "", "")
 		check(state.check_failure_now() and state.failure_metric == "birds", "Combined total below the fixed redline fails")
 	fixture(state, 2, 4)
 	check(Model.habitat({"vegetation": 35, "water_quality": 100, "fish": 80}, 0) <= 39, "Weighted average cannot hide food shortage")
