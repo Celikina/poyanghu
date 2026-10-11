@@ -3,6 +3,12 @@ extends RefCounted
 const BASE_CAP := 60
 const MIGRANT_CAP := 40
 const SEASON_CAPACITY := {"spring": 8, "summer": 4, "autumn": 20, "winter": 40}
+## 留湖基数单回合最多掉这么多点（恢复方向不限速）。
+## 环境撞到 habitat() 里「植被 < 42 或 水质 < 45」那条台阶时，系数会从 0.7 左右直接摔到
+## 0.3，按比例一步就是 60 → 25 的腰斩，固定红线（困难档 = 开局留湖的 88%）当场判负，
+## 玩家连补水补种的机会都没有 —— 0.1.29 困难档实测「开局必被候鸟扣死」。限速之后退化
+## 仍是连续的，但每一次结算最多掉 6 点，够玩家看清趋势再救。
+const BASE_DROP_STEP := 6
 
 static func snapshot(saved: Dictionary, total: int, season: String) -> Dictionary:
 	total = clampi(total, 0, 100)
@@ -62,7 +68,11 @@ static func arrivals(saved: Dictionary, season: String, suitability: int, return
 	if not out.has("base_reference"):
 		out = anchor_environment(out, int(saved.get("habitat", suitability)))
 	var score := clampi(suitability - 20, 0, 60)
-	out["base"] = clampi(roundi(float(int(out["base_reference"]) * score) / maxi(1, int(out["base_environment"]))), 0, BASE_CAP)
+	var target := clampi(roundi(float(int(out["base_reference"]) * score) / maxi(1, int(out["base_environment"]))), 0, BASE_CAP)
+	# 退化按比例算、但单回合掉幅封顶（见 BASE_DROP_STEP）：不然环境一撞台阶就是腰斩，
+	# 判负即刻发生。恢复方向不设限速 —— 补种、护鸟这类投入本来就该立竿见影。
+	var previous := clampi(int(saved.get("base", target)), 0, BASE_CAP)
+	out["base"] = target if target >= previous else maxi(target, previous - BASE_DROP_STEP)
 	# Once the resident cap is reached, discard invisible surplus. Subsequent
 	# habitat deterioration must affect the actual sixty birds proportionally.
 	if out["base"] == BASE_CAP and score > 0:
