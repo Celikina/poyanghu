@@ -3510,8 +3510,9 @@ func preview_settlement_detail(cards: Array) -> Dictionary:
 	var forecast = get_script().new()
 	forecast.load_state(serialize().duplicate(true), false)
 	forecast._is_settlement_preview = true
+	# ⚠ 这一手排了几张就如实演几张：真实结算会把手牌全部执行完（can_execute 不拦判负），
+	#   预览少演一张就会和结算差出一张牌的数值。
 	for card in cards:
-		if forecast.game_over: break
 		forecast.execute_action(str(card["card_id"]), str(card["tier"]), bool(card.get("dispatched", false)))
 	# ⚠ 就算出牌途中已经判负，也照走这一回合的自然演化：真实结算里 `_finish_turn()` 无条件调
 	#   `end_turn()`，预览少这一步就会和结算差一整段（水位自然涨落、水质恶化、候鸟迁徙全对不上）
