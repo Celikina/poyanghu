@@ -3,7 +3,7 @@
 回归：十组，20402 项，0 失败
 最终完整模拟：1600 局，四难度 × 四策略 × 100 种子
 导出：Windows Desktop；退出码 0
-启动：PID 
+启动：PID
 43340
 ；Responding=
 True
