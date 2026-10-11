@@ -1,0 +1,106 @@
+{
+	"difficulty": 1,
+	"elapsed_ms": 128327,
+	"games_per_policy": 100,
+	"seed_start": 1000,
+	"strategies": {
+		"ignore_birds": {
+			"avg_eco_score": 75.95,
+			"avg_extra_funding": 233.91,
+			"avg_turns": 16.0,
+			"bird_cards_per_game": 0.0,
+			"conflicts_per_game": 0.0,
+			"deaths": {},
+			"events": {
+				"algal_bloom": 2,
+				"disease": 7,
+				"drought": 28,
+				"flood": 12,
+				"illegal_fishing": 20,
+				"invasive": 31,
+				"pollution": 87,
+				"wetland_encroach": 30,
+				"winter_poaching": 16
+			},
+			"games": 100,
+			"win_rate": 1.0,
+			"wins": 100
+		},
+		"ignore_trust": {
+			"avg_eco_score": 61.95,
+			"avg_extra_funding": 25.77,
+			"avg_turns": 6.5,
+			"bird_cards_per_game": 2.77,
+			"conflicts_per_game": 0.08,
+			"deaths": {
+				"community": 100
+			},
+			"events": {
+				"algal_bloom": 1,
+				"bird_conflict": 22,
+				"disease": 11,
+				"drought": 6,
+				"flood": 7,
+				"illegal_fishing": 7,
+				"invasive": 20,
+				"pollution": 28,
+				"wetland_encroach": 5,
+				"winter_poaching": 8
+			},
+			"games": 100,
+			"win_rate": 0.0,
+			"wins": 0
+		},
+		"planned": {
+			"avg_eco_score": 74.4933333333333,
+			"avg_extra_funding": 279.35,
+			"avg_turns": 16.0,
+			"bird_cards_per_game": 7.83,
+			"conflicts_per_game": 0.02,
+			"deaths": {},
+			"events": {
+				"algal_bloom": 3,
+				"disease": 16,
+				"drought": 30,
+				"flood": 11,
+				"illegal_fishing": 16,
+				"invasive": 44,
+				"pollution": 115,
+				"wetland_encroach": 36,
+				"winter_poaching": 21
+			},
+			"games": 100,
+			"win_rate": 1.0,
+			"wins": 100
+		},
+		"random": {
+			"avg_eco_score": 48.4166666666667,
+			"avg_extra_funding": 105.29,
+			"avg_turns": 9.0,
+			"bird_cards_per_game": 4.62,
+			"conflicts_per_game": 0.93,
+			"deaths": {
+				"community": 6,
+				"fish": 10,
+				"vegetation": 48,
+				"water_quality": 24
+			},
+			"events": {
+				"algal_bloom": 21,
+				"bird_conflict": 2,
+				"disease": 38,
+				"drought": 31,
+				"flood": 15,
+				"illegal_fishing": 5,
+				"invasive": 44,
+				"pollution": 52,
+				"wetland_encroach": 2,
+				"winter_poaching": 11
+			},
+			"games": 100,
+			"win_rate": 0.12,
+			"wins": 12
+		}
+	},
+	"version": "updated"
+}

@@ -144,7 +144,11 @@ func _ready() -> void:
 	check(summer_pressure["effects"].get("water_quality") == -3, "Normal summer drought 10 points out must cost 3 quality")
 	check(summer_pressure["effects"].get("fish") == -5, "Normal summer drought 10 points out must cost 5 fish")
 	fixture(0, 3, 60)
-	check(GameState.water_pressure(60)["effects"].get("birds") == -3, "Easy winter flood 10 points out must cost 3 birds")
+	GameState.metrics.birds = 55 # Leave recovery room below the base-health cap.
+	var flooded: Dictionary = GameState.bird_evolution(GameState.metrics)
+	var safe_habitat: Dictionary = GameState.metrics.duplicate(true)
+	safe_habitat.water_level = 45
+	check(flooded.base < GameState.bird_evolution(safe_habitat).base, "Winter flooding must reduce health recovery through habitat suitability")
 	# Natural recovery cannot erase exposure; actual intervention before nature can.
 	fixture(0, 1, 52)
 	var recovered: Dictionary = GameState.water_turn_pressure(52, 60)
@@ -153,7 +157,7 @@ func _ready() -> void:
 	check(recovered["effects"].get("fish") == -1, "Summer recovery must retain earlier fish damage")
 	check(GameState.water_turn_pressure(60, 66)["effects"].is_empty(), "Entirely safe exposure must cause no damage")
 	fixture(0, 3, 56)
-	check(GameState.water_turn_pressure(56, 49)["effects"].get("birds") == -1, "Natural retreat must not erase prior flooded bird habitat")
+	check(not GameState.water_turn_pressure(56, 49)["effects"].has("birds"), "Bird habitat damage must not be charged a second time as a fixed water loss")
 	check(GameState.water_turn_pressure(60, 60)["effects"] == GameState.water_pressure(60)["effects"], "Unchanged out-of-range water must retain full pressure")
 	fixture(0, 1, 52)
 	GameState.funds = 500
@@ -220,7 +224,7 @@ func _ready() -> void:
 	game._update_hud()
 	game._update_3d()
 	game._fill_metric_tip("water_level")
-	check("候鸟种群" in game.metric_tip_body.text, "Winter flooding must preview bird losses")
+	check("候鸟种群受栖息地影响" in game.metric_tip_body.text, "Winter flood tip must direct players to the integrated bird forecast")
 	game.metric_tip.show()
 	game._place_metric_tip(Vector2(1050, 150))
 	await settle(0.3)

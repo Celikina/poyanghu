@@ -1,0 +1,14 @@
+{
+  "version": "0.1.26.0",
+  "pid": 46404,
+  "responding": true,
+  "window_title": "鄱阳归翎-生态修复手记",
+  "window_handle": 398492,
+  "executable": "F:\\保卫鄱阳湖\\保卫鄱阳湖\\build\\鄱阳归翎-生态修复手记_规则更新.exe",
+  "tests": {
+    "expert_ecology_ui": 404,
+    "five_metric_failure": 184,
+    "seasonal_legacy": 304
+  },
+  "failures": 0
+}

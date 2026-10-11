@@ -1,0 +1,22 @@
+{
+  "version": "0.1.28.0",
+  "pid": 45312,
+  "responding": true,
+  "window_title": "鄱阳归翎-生态修复手记",
+  "window_handle": 527498,
+  "executable": "F:\\保卫鄱阳湖\\保卫鄱阳湖\\build\\鄱阳归翎-生态修复手记_鸟群模型更新.exe",
+  "tests": {
+    "fixed_bird_redline": 700,
+    "bird_environment": 1669,
+    "expert_ecology_ui": 408,
+    "five_metric_failure": 192,
+    "seasonal_water": 10516,
+    "bird_migration": 347,
+    "seasonal_events": 8502,
+    "seasonal_legacy": 304
+  },
+  "total_checks": 22638,
+  "failures": 0,
+  "automatic_policy_games": 160,
+  "policy_sample_seeds": "1000-1009"
+}

@@ -1,0 +1,98 @@
+{
+	"difficulty": 0,
+	"elapsed_ms": 160945,
+	"games_per_policy": 100,
+	"seed_start": 1000,
+	"strategies": {
+		"ignore_birds": {
+			"avg_turns": 16.0,
+			"bird_cards_per_game": 0.0,
+			"conflicts_per_game": 0.0,
+			"deaths": {},
+			"events": {
+				"algal_bloom": 12,
+				"disease": 27,
+				"drought": 26,
+				"flood": 16,
+				"illegal_fishing": 24,
+				"invasive": 17,
+				"pollution": 49,
+				"wetland_encroach": 29,
+				"winter_poaching": 26
+			},
+			"games": 100,
+			"win_rate": 1.0,
+			"wins": 100
+		},
+		"ignore_trust": {
+			"avg_turns": 10.33,
+			"bird_cards_per_game": 5.67,
+			"conflicts_per_game": 0.06,
+			"deaths": {
+				"community": 97
+			},
+			"events": {
+				"algal_bloom": 8,
+				"bird_conflict": 15,
+				"disease": 13,
+				"drought": 33,
+				"flood": 9,
+				"illegal_fishing": 20,
+				"invasive": 17,
+				"pollution": 41,
+				"wetland_encroach": 14,
+				"winter_poaching": 19
+			},
+			"games": 100,
+			"win_rate": 0.03,
+			"wins": 3
+		},
+		"planned": {
+			"avg_turns": 16.0,
+			"bird_cards_per_game": 12.09,
+			"conflicts_per_game": 0.16,
+			"deaths": {},
+			"events": {
+				"algal_bloom": 35,
+				"disease": 55,
+				"drought": 18,
+				"flood": 7,
+				"illegal_fishing": 25,
+				"invasive": 22,
+				"pollution": 84,
+				"wetland_encroach": 24,
+				"winter_poaching": 18
+			},
+			"games": 100,
+			"win_rate": 1.0,
+			"wins": 100
+		},
+		"random": {
+			"avg_turns": 15.17,
+			"bird_cards_per_game": 9.22,
+			"conflicts_per_game": 0.6,
+			"deaths": {
+				"community": 1,
+				"fish": 3,
+				"vegetation": 13,
+				"water_quality": 7
+			},
+			"events": {
+				"algal_bloom": 23,
+				"bird_conflict": 2,
+				"disease": 40,
+				"drought": 83,
+				"flood": 31,
+				"illegal_fishing": 11,
+				"invasive": 37,
+				"pollution": 40,
+				"wetland_encroach": 15,
+				"winter_poaching": 14
+			},
+			"games": 100,
+			"win_rate": 0.76,
+			"wins": 76
+		}
+	},
+	"version": "updated"
+}

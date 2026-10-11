@@ -1,0 +1,111 @@
+{
+	"difficulty": 3,
+	"elapsed_ms": 30312,
+	"games_per_policy": 100,
+	"seed_start": 1000,
+	"strategies": {
+		"ignore_birds": {
+			"avg_eco_score": 54.5866666666666,
+			"avg_extra_funding": 40.85,
+			"avg_turns": 5.55,
+			"bird_cards_per_game": 0.0,
+			"conflicts_per_game": 0.0,
+			"deaths": {
+				"birds": 35,
+				"community": 7,
+				"fish": 6,
+				"vegetation": 20,
+				"water_quality": 16
+			},
+			"events": {
+				"disease": 1,
+				"drought": 16,
+				"flood": 14,
+				"illegal_fishing": 4,
+				"invasive": 22,
+				"pollution": 17,
+				"wetland_encroach": 6
+			},
+			"games": 100,
+			"win_rate": 0.16,
+			"wins": 16
+		},
+		"ignore_trust": {
+			"avg_eco_score": 53.2533333333333,
+			"avg_extra_funding": 11.2,
+			"avg_turns": 3.65,
+			"bird_cards_per_game": 1.18,
+			"conflicts_per_game": 0.01,
+			"deaths": {
+				"birds": 18,
+				"community": 41,
+				"fish": 14,
+				"vegetation": 19,
+				"water_quality": 8
+			},
+			"events": {
+				"disease": 1,
+				"drought": 5,
+				"flood": 6,
+				"illegal_fishing": 2,
+				"invasive": 8,
+				"pollution": 5,
+				"wetland_encroach": 16
+			},
+			"games": 100,
+			"win_rate": 0.0,
+			"wins": 0
+		},
+		"planned": {
+			"avg_eco_score": 55.4933333333333,
+			"avg_extra_funding": 51.71,
+			"avg_turns": 6.74,
+			"bird_cards_per_game": 1.99,
+			"conflicts_per_game": 0.0,
+			"deaths": {
+				"birds": 19,
+				"community": 6,
+				"fish": 8,
+				"vegetation": 30,
+				"water_quality": 17
+			},
+			"events": {
+				"disease": 4,
+				"drought": 24,
+				"flood": 24,
+				"illegal_fishing": 8,
+				"invasive": 30,
+				"pollution": 23,
+				"wetland_encroach": 10
+			},
+			"games": 100,
+			"win_rate": 0.2,
+			"wins": 20
+		},
+		"random": {
+			"avg_eco_score": 48.7233333333333,
+			"avg_extra_funding": 10.8,
+			"avg_turns": 2.0,
+			"bird_cards_per_game": 0.76,
+			"conflicts_per_game": 0.01,
+			"deaths": {
+				"birds": 12,
+				"community": 1,
+				"fish": 19,
+				"vegetation": 42,
+				"water_quality": 26
+			},
+			"events": {
+				"flood": 1,
+				"illegal_fishing": 3,
+				"invasive": 6,
+				"pollution": 3,
+				"wetland_encroach": 1
+			},
+			"games": 100,
+			"win_rate": 0.0,
+			"wins": 0
+		}
+	},
+	"version": "baseline"
+}
