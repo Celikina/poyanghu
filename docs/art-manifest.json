@@ -103,6 +103,17 @@
       "transparent_background": true,
       "layout": "4x4, sixteen animation frames",
       "prompt": "ONE transparent pixel animation sprite sheet of ONE bird species only: Greater white-fronted goose: compact gray-brown body, short stout brown neck, WHITE forehead right above ORANGE-PINK bill, orange webbed feet, black belly bars. Wings brown-gray, pale belly. Not a swan or crane. Original minimalist charming pixel game art inspired by simple cute duck sprites. IMPORTANT style: tiny 32x32 logical pixels enlarged nearest-neighbor, only 6 flat colors, simple clean silhouette, NO realistic feather details, NO dithering or gradients, NO antialiasing. Canvas square 1024x1024. EXACTLY FOUR columns and FOUR rows, 16 EQUAL 256x256 cells. Each cell holds exactly one entire bird facing RIGHT, feet always down. Maintain same bird design and proportions in ALL 16 cells, particularly BROWN body, WHITE forehead. Each bird about 150x180 pixels high when standing, with comfortable transparent padding in its own cell. FEET BASELINE exactly 224 pixels down in every cell, head stays well within cell. No sprite may touch the cell boundaries. No text, labels, lines, shadows, background or grid. Strict fully transparent background. Row 1: IDLE normal, IDLE breathing, WALK left foot forward, WALK legs crossing. Row 2: WALK right foot forward, WALK legs crossing other phase, PECK lowering head, PECK touching ground. Row 3: PECK raising head, FLY wings raised fully, FLY wings horizontal, FLY wings down. Row 4: FLY wings recovering, REST folded wings, TAKEOFF wings raised feet pushing, LAND wings spread braking feet DOWN. Flight body horizontal with neck extending forward, actual wings instead of circles. Standing head on upper right, feet on lower portion. Keep feet baseline stable. Frame consistency is critical, this is a functional animation asset, not an illustration board."
+    },
+    {
+      "path": "icon.png",
+      "generator": "tools/make_app_icon.py",
+      "source": "assets/art/ui/app-icon-source.png",
+      "source_description": "用户手绘的《鄱阳归翎》图标原稿：白纸底加灰点阵，287×282",
+      "size": [
+        256,
+        256
+      ],
+      "notes": "工程根 icon.png（引擎与窗口图标）和 icon.ico（Windows 导出用，16 到 256 共七档）都由脚本从原稿裁方、分档缩放得到；48px 及以下先压成纯黑白再缩放，否则标题栏那一档线条会淡成灰的。"
     }
   ],
   "references": [
