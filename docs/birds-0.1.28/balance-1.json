@@ -1,0 +1,108 @@
+{
+	"difficulty": 1,
+	"elapsed_ms": 12177,
+	"games_per_policy": 10,
+	"seed_start": 1000,
+	"strategies": {
+		"ignore_birds": {
+			"avg_eco_score": 67.6,
+			"avg_extra_funding": 156.9,
+			"avg_turns": 13.5,
+			"bird_cards_per_game": 0.0,
+			"conflicts_per_game": 0.0,
+			"deaths": {
+				"birds": 2
+			},
+			"events": {
+				"autumn_lake_fishing": 2,
+				"drought": 1,
+				"invasive": 1,
+				"pollution": 3,
+				"spring_overgrazing": 1,
+				"spring_reclamation": 1,
+				"spring_runoff": 1,
+				"summer_sand_mining": 1,
+				"summer_water_dispute": 1,
+				"wetland_encroach": 2,
+				"winter_drone_disturbance": 2,
+				"winter_poaching": 2
+			},
+			"games": 10,
+			"win_rate": 0.8,
+			"wins": 8
+		},
+		"ignore_trust": {
+			"avg_eco_score": 61.7666666666667,
+			"avg_extra_funding": 14.2,
+			"avg_turns": 7.0,
+			"bird_cards_per_game": 3.2,
+			"conflicts_per_game": 0.0,
+			"deaths": {
+				"community": 10
+			},
+			"events": {
+				"autumn_lake_fishing": 2,
+				"bird_conflict": 2,
+				"flood": 1,
+				"invasive": 1,
+				"spring_runoff": 1,
+				"summer_sand_mining": 1,
+				"summer_water_dispute": 2,
+				"winter_poaching": 2
+			},
+			"games": 10,
+			"win_rate": 0.0,
+			"wins": 0
+		},
+		"planned": {
+			"avg_eco_score": 73.7,
+			"avg_extra_funding": 181.9,
+			"avg_turns": 16.0,
+			"bird_cards_per_game": 8.9,
+			"conflicts_per_game": 0.0,
+			"deaths": {},
+			"events": {
+				"autumn_burning": 1,
+				"autumn_lake_fishing": 2,
+				"bird_conflict": 1,
+				"disease": 1,
+				"drought": 3,
+				"invasive": 3,
+				"pollution": 4,
+				"spring_overgrazing": 2,
+				"spring_reclamation": 1,
+				"spring_runoff": 1,
+				"spring_spawning_fishing": 1,
+				"summer_water_dispute": 1,
+				"wetland_encroach": 2,
+				"winter_drone_disturbance": 1,
+				"winter_poaching": 1
+			},
+			"games": 10,
+			"win_rate": 1.0,
+			"wins": 10
+		},
+		"random": {
+			"avg_eco_score": 43.7666666666667,
+			"avg_extra_funding": 52.5,
+			"avg_turns": 5.5,
+			"bird_cards_per_game": 2.9,
+			"conflicts_per_game": 0.0,
+			"deaths": {
+				"birds": 8,
+				"community": 1
+			},
+			"events": {
+				"drought": 2,
+				"flood": 2,
+				"invasive": 2,
+				"pollution": 1,
+				"winter_poaching": 1
+			},
+			"games": 10,
+			"win_rate": 0.1,
+			"wins": 1
+		}
+	},
+	"version": "birds-0.1.28"
+}

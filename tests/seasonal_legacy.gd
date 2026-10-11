@@ -122,16 +122,16 @@ func _ready() -> void:
 	control.load_state(legacy, false)
 	check(control.wetland_food_loss() == 0 and control.winter_return_loss() == 0, "Old saves do not acquire invented legacies")
 	fixture(state, 2, 4)
-	state.bird_population = {"base": 80, "migrants": 20, "loss": 0, "season": "winter", "year": 1, "total": 100}
+	state.bird_population = {"base": 60, "migrants": 40, "loss": 0, "season": "winter", "year": 1, "total": 100}
 	state.metrics.birds = 100
 	state.pending_crisis = state.crisis_by_id("winter_poaching").duplicate(true)
 	state._resolve_pending_crisis()
-	check(state.bird_evolution(state.metrics).migrants == 8, "Same-winter recalculation cannot refill injuries hidden by the total cap")
+	check(state.bird_evolution(state.metrics).migrants == 28, "Same-winter recalculation cannot refill injuries hidden by the total cap")
 	state.execute_action("rescue", "deep")
-	check(state.bird_evolution(state.metrics).migrants == 14, "Rescued migrants remain recovered at the total cap")
+	check(state.bird_evolution(state.metrics).migrants == 34, "Rescued migrants remain recovered at the total cap")
 	state.start_new_turn()
 	state.turn = 8
-	check(state.bird_evolution(state.metrics).migrants == 17, "Next-year return debt also remains visible at the total cap")
+	check(state.bird_evolution(state.metrics).migrants == 37, "Next-year return debt also remains visible at the total cap")
 	state.reset_game()
 	check(state.seasonal_legacy.is_empty() and state.winter_returns.is_empty(), "New game clears all cross-season state")
 	state.free()

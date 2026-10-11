@@ -1,0 +1,103 @@
+{
+	"difficulty": 2,
+	"elapsed_ms": 6101,
+	"games_per_policy": 10,
+	"seed_start": 1000,
+	"strategies": {
+		"ignore_birds": {
+			"avg_eco_score": 62.2,
+			"avg_extra_funding": 132.7,
+			"avg_turns": 10.0,
+			"bird_cards_per_game": 0.0,
+			"conflicts_per_game": 0.0,
+			"deaths": {
+				"birds": 2,
+				"community": 2
+			},
+			"events": {
+				"autumn_lake_fishing": 1,
+				"disease": 1,
+				"drought": 1,
+				"flood": 1,
+				"invasive": 1,
+				"pollution": 1,
+				"spring_reclamation": 2,
+				"spring_spawning_fishing": 1,
+				"summer_sand_mining": 1,
+				"wetland_encroach": 1,
+				"winter_drone_disturbance": 1,
+				"winter_poaching": 1
+			},
+			"games": 10,
+			"win_rate": 0.6,
+			"wins": 6
+		},
+		"ignore_trust": {
+			"avg_eco_score": 52.6,
+			"avg_extra_funding": 15.7,
+			"avg_turns": 3.7,
+			"bird_cards_per_game": 1.4,
+			"conflicts_per_game": 0.0,
+			"deaths": {
+				"birds": 4,
+				"community": 6
+			},
+			"events": {
+				"disease": 2,
+				"flood": 1,
+				"invasive": 2,
+				"summer_destructive_fishing": 1,
+				"summer_water_dispute": 1,
+				"winter_drone_disturbance": 1
+			},
+			"games": 10,
+			"win_rate": 0.0,
+			"wins": 0
+		},
+		"planned": {
+			"avg_eco_score": 61.0333333333333,
+			"avg_extra_funding": 127.8,
+			"avg_turns": 10.0,
+			"bird_cards_per_game": 3.5,
+			"conflicts_per_game": 0.0,
+			"deaths": {
+				"birds": 2,
+				"community": 2
+			},
+			"events": {
+				"autumn_lake_fishing": 1,
+				"disease": 2,
+				"drought": 1,
+				"flood": 1,
+				"invasive": 3,
+				"spring_reclamation": 1,
+				"spring_spawning_fishing": 1,
+				"summer_sand_mining": 1,
+				"winter_drone_disturbance": 1,
+				"winter_poaching": 1
+			},
+			"games": 10,
+			"win_rate": 0.6,
+			"wins": 6
+		},
+		"random": {
+			"avg_eco_score": 44.7666666666667,
+			"avg_extra_funding": 11.5,
+			"avg_turns": 1.6,
+			"bird_cards_per_game": 0.6,
+			"conflicts_per_game": 0.0,
+			"deaths": {
+				"birds": 7,
+				"community": 2,
+				"water_quality": 1
+			},
+			"events": {
+				"pollution": 1
+			},
+			"games": 10,
+			"win_rate": 0.0,
+			"wins": 0
+		}
+	},
+	"version": "birds-0.1.28"
+}

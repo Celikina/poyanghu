@@ -6104,6 +6104,16 @@ func _make_metric_row(metric: String) -> VBoxContainer:
 	bar.set_anchors_preset(Control.PRESET_FULL_RECT)
 	bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	wrap.add_child(bar)
+	var bird_segments: Control
+	if metric == "birds":
+		bar.add_theme_stylebox_override("fill", VisualTheme.box(Color.WHITE, Color.WHITE, 0))
+		bird_segments = Control.new()
+		bird_segments.set_script(preload("res://scripts/bird_metric_segments.gd"))
+		bird_segments.name = "BirdSegments"
+		bird_segments.bar = bar
+		bird_segments.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		bird_segments.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+		wrap.add_child(bird_segments)
 	var ripple := ColorRect.new()
 	ripple.set_script(preload("res://scripts/metric_bar_ripple.gd"))
 	ripple.name = "MetricRipple"
@@ -6115,6 +6125,9 @@ func _make_metric_row(metric: String) -> VBoxContainer:
 	ripple.offset_top = 2
 	ripple.offset_bottom = -2
 	wrap.add_child(ripple)
+	if metric == "birds":
+		ripple.hide()
+		ripple.set_process(false)
 	var preview := Control.new()
 	preview.set_script(preload("res://scripts/metric_bar_preview.gd"))
 	preview.name = "MetricPreview"
@@ -6164,7 +6177,8 @@ func _make_metric_row(metric: String) -> VBoxContainer:
 		vb.add_child(reference_label)
 
 	metric_bars[metric] = {"bar": bar, "val": val, "line": line, "row": vb, "icon": icon,
-		"band": band, "high_line": high_line, "reference_label": reference_label, "ripple": ripple, "preview": preview}
+		"band": band, "high_line": high_line, "reference_label": reference_label, "ripple": ripple, "preview": preview,
+		"bird_segments": bird_segments}
 	return vb
 
 
@@ -6196,11 +6210,13 @@ func _update_threshold_lines() -> void:
 			line.anchor_left = ratio
 			line.anchor_right = ratio
 		if metric == "birds":
-			var health: int = GameState.metric_health("birds")
+			var birds: Dictionary = GameState.bird_snapshot()
+			metric_bars[metric]["bird_segments"].configure(int(birds["base"]), int(birds["migrants"]))
+			var total: int = GameState.metric_failure_value("birds")
 			var health_line: int = GameState.failure_threshold_for("birds")
 			var label: Label = metric_bars[metric]["reference_label"]
-			label.text = "种群基数告急" if health <= health_line + 5 else "种群基数稳定"
-			label.add_theme_color_override("font_color", Color("ffcc66") if health <= health_line + 5 else Color("b6ebae"))
+			label.text = "留湖 %d · 迁徙 %d · 红线 %d" % [birds["base"], birds["migrants"], health_line]
+			label.add_theme_color_override("font_color", Color("ffcc66") if total <= health_line + 5 else Color("b6ebae"))
 
 
 # ==================== 指标悬停小窗 ====================
@@ -6412,13 +6428,14 @@ func _fill_metric_tip(metric: String) -> void:
 
 func _fill_bird_metric_tip(p: Dictionary) -> void:
 	var line: int = int(p["line"])
-	var color := "#ffcc66" if int(p["health_min"]) <= line + 5 else "#7ee08a"
+	var color := "#ffcc66" if int(p["end_min"]) <= line + 5 else "#7ee08a"
+	var birds := GameState.bird_snapshot()
 	var rows: Array[String] = [
-		"种群基数 [b]%d[/b]/80 · 红线 %d" % [int(p["health_cur"]), line],
+		"留湖 [b]%d[/b] · 迁徙 [b]%d[/b]" % [birds["base"], birds["migrants"]],
+		"固定红线 %d · 开局留湖 %d" % [line, GameState.bird_initial_residents],
 		"自然变化 %+d ~ %+d" % [int(p["nat_min"]), int(p["nat_max"])],
-		"回合末总量 %d ~ %d" % [int(p["end_min"]), int(p["end_max"])],
-		"[color=%s]回合末健康 %d ~ %d[/color]" % [color, int(p["health_min"]), int(p["health_max"])],
-		"[color=#8e9aa4]正常迁出不判负；环境退化影响健康。[/color]",
+		"[color=%s]回合末总量 %d ~ %d[/color]" % [color, int(p["end_min"]), int(p["end_max"])],
+		"[color=#8e9aa4]留湖＋迁徙总量低于红线即判负。[/color]",
 	]
 	var food_loss := GameState.wetland_food_loss()
 	var returns := GameState.winter_return_loss()
@@ -6426,7 +6443,7 @@ func _fill_bird_metric_tip(p: Dictionary) -> void:
 		rows.append("候鸟食物损失 %d · 本年迁入遗留 %d" % [food_loss, returns])
 	if str(p["crisis_name"]) != "":
 		rows.append("[color=#ffb060]%s：总量约 %d[/color]" % [str(p["crisis_name"]), int(p["worst"])])
-	if bool(p["break_total"]): rows.append("[color=#ff5a5a]⚠ 种群基数将跌破红线[/color]")
+	if bool(p["break_total"]): rows.append("[color=#ff5a5a]⚠ 候鸟总量将跌破红线[/color]")
 	var text := "\n".join(rows)
 	if text != _tip_last_text:
 		_tip_last_text = text
@@ -7671,15 +7688,12 @@ func _update_metric_preview() -> void:
 		metric_bars[metric]["preview"].configure(current, predicted)
 		metric_bars[metric]["val"].tooltip_text = "结算预览：%d → %d（%+d）\n含本回合到期的遗留效果、协同、自然变化、六值联动与已预警危机；与实际结算共用本回合水位结果。" % [int(current), int(predicted), int(predicted - current)]
 		if metric == "birds":
-			metric_bars[metric]["val"].tooltip_text += "\n种群基数：%d → %d；红线 %d。正常迁出不判负。" % [GameState.metric_health("birds"), int(forecast["birds"]["base"]), GameState.failure_threshold_for("birds")]
+			metric_bars[metric]["val"].tooltip_text += "\n留湖 %d、迁徙 %d → 留湖 %d、迁徙 %d；固定红线 %d，按总量判负。" % [GameState.bird_snapshot()["base"], GameState.bird_snapshot()["migrants"], forecast["birds"]["base"], forecast["birds"]["migrants"], GameState.failure_threshold_for("birds")]
 			if int(forecast["food_loss"]) > 0:
 				metric_bars[metric]["val"].tooltip_text += "\n候鸟食物损失 %d，持续至本年冬末，可用修复牌恢复。" % int(forecast["food_loss"])
 			if GameState.current_season() == "winter" and int(forecast["birds"]["loss"]) > 0:
 				metric_bars[metric]["val"].tooltip_text += "\n次年迁入遗留预计 %d（冬季口径）。" % mini(20, ceili(int(forecast["birds"]["loss"]) * 0.5))
-			if int(forecast["birds"]["base"]) < GameState.failure_threshold_for("birds"):
-				metric_bars[metric]["reference_label"].text = "⚠ 预览：种群基数将跌破红线"
-			else:
-				metric_bars[metric]["reference_label"].text = "种群基数告急" if GameState.metric_health("birds") <= GameState.failure_threshold_for("birds") + 5 else "种群基数稳定"
+			metric_bars[metric]["reference_label"].tooltip_text = "⚠ 预览：候鸟总量将跌破红线" if int(forecast["birds"]["total"]) < GameState.failure_threshold_for("birds") else "左段白色为留湖候鸟，右段静态半透明白色为迁徙候鸟；闪烁白色表示预计增加，红色表示预计减少。"
 		if metric == "water_level" and int(forecast["water_legacy"]) != 0:
 			metric_bars[metric]["val"].tooltip_text += "\n秋季开局水位遗留 %+d，当季预览不重复扣除。" % int(forecast["water_legacy"])
 
@@ -8033,13 +8047,13 @@ func _finish_turn() -> void:
 		for e in GameState.pending_crisis.get("effects", []):
 			var em := str(e["metric"])
 			var ed := int(e["delta"])
-			var ecur := GameState.metric_health(em)
+			var ecur := GameState.metric_failure_value(em)
 			var eline := GameState.failure_threshold_for(em)
 			var eafter := clampi(ecur + ed, 0, 100)
 			var verdict := "[color=#7ee08a]仍在生态红线 %d 之上[/color]" % eline
 			if em == "birds" and bool(GameState.pending_crisis.get("migrant_only", false)):
-				lines.append("  季节候鸟最多 %+d；候鸟种群不直接扣减，可用应对措施减少损失。" % ed)
-				continue
+				ed = -mini(-ed, int(GameState.bird_snapshot()["migrants"])) if ed < 0 else ed
+				eafter = clampi(ecur + ed, 0, 100)
 			if em == "water_level":
 				var next_season: String = GameState.SEASONS[GameState.turn % 4]
 				var pressure: Dictionary = GameState.water_pressure(eafter, next_season)
@@ -8047,7 +8061,7 @@ func _finish_turn() -> void:
 			elif eafter < eline:
 				verdict = "[color=#ff5a5a]会跌破生态红线 %d[/color]" % eline
 				fatal_names.append(str(GameState.METRIC_NAMES.get(em, em)))
-			var effect_name: String = "候鸟种群基数" if em == "birds" else str(GameState.METRIC_NAMES.get(em, em))
+			var effect_name: String = "候鸟总量" if em == "birds" else str(GameState.METRIC_NAMES.get(em, em))
 			lines.append("  %s %+d → 约 %d，%s" % [effect_name, ed, eafter, verdict])
 		for legacy in GameState.pending_crisis.get("legacy_effects", []):
 			lines.append("  %s %+d，%s" % ["候鸟食物" if str(legacy["kind"]) == "food" else "秋季水位遗留", int(legacy["delta"]),

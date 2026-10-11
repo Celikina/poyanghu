@@ -212,6 +212,7 @@ const METRIC_NAMES := {
 
 # 提前判负只检查这五项；水位通过季节生态影响间接作用，不直接判负。
 const FAILURE_METRICS := ["vegetation", "water_quality", "fish", "birds", "community"]
+const BIRD_REDLINE_PERCENT := [80, 85, 88, 90]
 
 # 死因 → 下一局优先补强的方向（失败报告用来交代「输在哪、下次怎么打」）
 # ⚠ 只给「打什么」，不给「为什么」：指标之间的因果链（水质→植被→候鸟…）是隐性参数，
@@ -1801,6 +1802,9 @@ func _ready() -> void:
 # ==================== 存档 ====================
 func bird_snapshot() -> Dictionary:
 	var snapshot := BirdPopulation.snapshot(bird_population, int(metrics.get("birds", 0)), current_season())
+	if not snapshot.has("base_reference"):
+		var habitat := clampi(BirdPopulation.habitat(metrics, int(water_pressure(int(metrics.get("water_level", 50)))["deviation"])) - wetland_food_loss(), 0, 100)
+		snapshot = BirdPopulation.anchor_environment(snapshot, habitat)
 	if not snapshot.has("year"):
 		snapshot["year"] = int((maxi(1, turn) - 1) / 4) + 1
 		if current_season() == "spring" and snapshot["season"] == "winter": snapshot["year"] -= 1
@@ -1809,8 +1813,18 @@ func bird_snapshot() -> Dictionary:
 func metric_health(metric: String) -> int:
 	return int(bird_snapshot()["base"]) if metric == "birds" else int(metrics.get(metric, 0))
 
+var bird_initial_residents := -1
+var bird_fixed_redline := 0
+
+func _set_bird_baseline(residents: int) -> void:
+	bird_initial_residents = clampi(residents, 0, BirdPopulation.BASE_CAP)
+	bird_fixed_redline = ceili(float(bird_initial_residents * BIRD_REDLINE_PERCENT[difficulty]) / 100.0)
+
+func metric_failure_value(metric: String) -> int:
+	return int(metrics.get(metric, 0))
+
 func metric_display_line(metric: String) -> int:
-	return failure_threshold_for(metric) + (int(bird_snapshot()["migrants"]) if metric == "birds" else 0)
+	return failure_threshold_for(metric)
 
 func bird_evolution(source_metrics: Dictionary) -> Dictionary:
 	var current := bird_snapshot()
@@ -1858,6 +1872,7 @@ func _refresh_food_arrivals(phase: String, label: String, ref_id: String = "") -
 	_apply_bird_state(next, phase, label, ref_id)
 
 func _resolve_seasonal_legacy(crisis: Dictionary) -> void:
+	bird_population = bird_snapshot()
 	for effect in crisis.get("legacy_effects", []):
 		var delta := int(effect["delta"])
 		if delta == 0: continue
@@ -1907,6 +1922,7 @@ func _advance_seasonal_legacy() -> void:
 func _restore_wetland_food(card: Dictionary, tier: String) -> void:
 	var tags: Array = card.get("tags", [])
 	if not tags.has("生态修复") and not tags.has("栖息地营造"): return
+	bird_population = bird_snapshot()
 	var amount := food_restoration_amount(card, tier)
 	var restored := 0
 	for entry in seasonal_legacy:
@@ -1999,6 +2015,7 @@ func serialize() -> Dictionary:
 		"metrics": metrics.duplicate(),
 		"bird_population": bird_snapshot(), "action_tiers": action_tiers.duplicate(),
 		"seasonal_legacy": seasonal_legacy.duplicate(true), "winter_returns": winter_returns.duplicate(),
+		"bird_initial_residents": bird_initial_residents, "bird_fixed_redline": bird_fixed_redline,
 		"species_pop": species_pop.duplicate(),
 		"plant_pop": plant_pop.duplicate(),
 		"effects_queue": effects_queue.duplicate(true),
@@ -2074,12 +2091,19 @@ func load_state(d: Dictionary, restore_talents: bool = true) -> void:
 	settlement = int(d.get("settlement", 70))
 	difficulty = int(d.get("difficulty", 1 if d.get("hard_mode", false) else 0))
 	bird_population = BirdPopulation.snapshot(d.get("bird_population", {}), int(metrics.get("birds", 0)), current_season())
+	# Older saves have no opening baseline: freeze their resident count once on migration.
+	_set_bird_baseline(int(d.get("bird_initial_residents", bird_population["base"])))
+	bird_fixed_redline = clampi(int(d.get("bird_fixed_redline", bird_fixed_redline)), 0, BirdPopulation.BASE_CAP)
+	bird_fixed_redline = mini(bird_fixed_redline, ceili(float(bird_initial_residents * BIRD_REDLINE_PERCENT[difficulty]) / 100.0))
 	action_tiers = d.get("action_tiers", {}).duplicate()
 	seasonal_legacy = d.get("seasonal_legacy", []).duplicate(true)
 	for entry in seasonal_legacy:
 		for key in ["delta", "hit_turn", "due_turn", "until_turn"]:
 			if entry.has(key): entry[key] = int(entry[key])
 	winter_returns = _int_dict(d.get("winter_returns", {}))
+	# Do this after restoring environmental legacies: reused nodes may still
+	# contain the previous run's food loss until that point.
+	bird_population = bird_snapshot()
 	run_id = str(d.get("run_id", "legacy:%d:%d" % [run_seed, difficulty]))
 	floating_islands = int(d.get("floating_islands", 0))
 	pending_crisis = d.get("pending_crisis", {})
@@ -2116,6 +2140,8 @@ func _int_dict(d: Dictionary) -> Dictionary:
 
 
 func reset_game() -> void:
+	bird_initial_residents = -1
+	bird_fixed_redline = 0
 	run_id = Crypto.new().generate_random_bytes(16).hex_encode()
 	turn = 0
 	carry = 0
@@ -2172,7 +2198,11 @@ func reset_game() -> void:
 	Talents.roll_for_run(run_seed, difficulty)
 	metrics = _roll_starting_metrics()
 	_guard_starting_metrics()
+	metrics["birds"] = mini(int(metrics["birds"]), BirdPopulation.BASE_CAP)
 	bird_population = BirdPopulation.snapshot({}, int(metrics["birds"]), current_season())
+	var opening_habitat := BirdPopulation.habitat(metrics, int(water_pressure(int(metrics["water_level"]))["deviation"]))
+	bird_population = BirdPopulation.anchor_environment(bird_population, opening_habitat)
+	_set_bird_baseline(int(bird_population["base"]))
 	action_tiers = {}
 	seasonal_legacy = []
 	winter_returns = {}
@@ -2867,7 +2897,7 @@ func _rescue_metric_set() -> Dictionary:
 	var out: Dictionary = {}
 	for m in metrics:
 		if m == "water_level": continue
-		if metric_health(str(m)) < failure_threshold_for(m) + RESCUE_MARGIN:
+		if metric_failure_value(str(m)) < failure_threshold_for(m) + RESCUE_MARGIN:
 			out[m] = true
 	var pressure := water_pressure(int(metrics.get("water_level", 50)))
 	if pressure["side"] != "safe": out["water_level"] = pressure["side"]
@@ -3185,7 +3215,7 @@ func natural_evolution_outcomes(source_metrics: Dictionary = {}) -> Array:
 func metric_hover_preview(metric: String) -> Dictionary:
 	# Snapshot all inputs used by the deterministic forecast. Comparing small
 	# values catches in-place changes as well as new games and loaded saves.
-	var key: Array = [metrics, bird_population, action_tiers, seasonal_legacy, winter_returns, difficulty, turn, run_seed, used_action_ids, pending_crisis]
+	var key: Array = [metrics, bird_population, bird_fixed_redline, action_tiers, seasonal_legacy, winter_returns, difficulty, turn, run_seed, used_action_ids, pending_crisis]
 	if key != _hover_preview_key:
 		_hover_preview_key = key.duplicate(true)
 		_hover_previews.clear()
@@ -3254,9 +3284,9 @@ func _compute_metric_hover_preview(metric: String) -> Dictionary:
 		"nat_min": nat_min, "nat_max": nat_max,
 		"end_min": end_min, "end_max": end_max,
 		"crisis_name": crisis_name, "crisis_delta": crisis_delta, "worst": worst,
-		"margin_nat": health_min - line,      # 只算自然演化时的余量（取最坏的一头）
-		"break_nat": metric != "water_level" and health_min < line,
-		"break_total": metric != "water_level" and health_worst < line,
+		"margin_nat": end_min - line,      # 只算自然演化时的总量余量（取最坏的一头）
+		"break_nat": metric != "water_level" and end_min < line,
+		"break_total": metric != "water_level" and worst < line,
 		"health_cur": metric_health(metric), "health_min": health_min, "health_max": health_max, "health_worst": health_worst,
 		"penalty_mult": PENALTY_MULT[difficulty],
 		# 人鸟矛盾 / 候鸟进田的判定原样带上：悬停小窗要显示「回合末会扣多少」，
@@ -3542,6 +3572,10 @@ func failure_threshold() -> int:
 func failure_threshold_for(metric: String) -> int:
 	# -1 表示没有致死线；所有难度（包括噩梦）都按季节生态影响处理水位。
 	if metric == "water_level": return -1
+	if metric == "birds":
+		if bird_initial_residents >= 0: return bird_fixed_redline
+		# Opening safety checks run before the baseline is captured.
+		return ceili(float(clampi(int(metrics.get("birds", 50)), 0, BirdPopulation.BASE_CAP) * BIRD_REDLINE_PERCENT[difficulty]) / 100.0)
 	# ⚠ 噩梦档**不叠任何偏移**：995f784 那版就是六项共用一条线，
 	#   "每指标单独红线"是后来才加的。照搬偏移会把噩梦档悄悄变简单
 	#   （社区 +10 会把它的线从 45 抬到 55，等于开局凭空多出 7 点余量）。
@@ -3558,12 +3592,12 @@ func _check_failure() -> bool:
 		return is_failure   # 已经判负，不重复判、不重复发信号
 	for metric in FAILURE_METRICS:
 		var threshold: int = failure_threshold_for(metric)
-		if metric_health(str(metric)) < threshold:
+		if metric_failure_value(str(metric)) < threshold:
 			is_failure = true
 			game_over = true
 			failure_metric = metric
-			failure_value = metric_health(str(metric))
-			failure_reason = "候鸟种群基数跌破红线，迁徙候鸟不能掩盖种群衰退。" if metric == "birds" else "上级对你的政绩不满意，将你撤换。"
+			failure_value = metric_failure_value(str(metric))
+			failure_reason = "留湖与迁徙候鸟总量跌破固定生态红线。" if metric == "birds" else "上级对你的政绩不满意，将你撤换。"
 			_add_log("✖ %s（%s 只剩 %d，已跌破生态红线 %d）" % [failure_reason, METRIC_NAMES.get(metric, metric), failure_value, threshold])
 			game_ended.emit(generate_report())
 			return true
@@ -3580,8 +3614,8 @@ func metrics_below_threshold() -> Array:
 	var out: Array = []
 	for metric in FAILURE_METRICS:
 		var threshold: int = failure_threshold_for(metric)
-		if metric_health(str(metric)) < threshold:
-			out.append({"metric": metric, "value": metric_health(str(metric))})
+		if metric_failure_value(str(metric)) < threshold:
+			out.append({"metric": metric, "value": metric_failure_value(str(metric))})
 	out.sort_custom(func(a, b): return int(a["value"]) < int(b["value"]))
 	return out
 

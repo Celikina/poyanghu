@@ -12,6 +12,7 @@ func _initialize() -> void:
 	if args.size() > 2: label = str(args[2])
 	call_deferred("run")
 func health(node: Node, metric: String) -> int:
+	if node.has_method("metric_failure_value"): return int(node.metric_failure_value(metric))
 	return int(node.metric_health(metric)) if node.has_method("metric_health") else int(node.metrics[metric])
 func value(node: Node) -> float:
 	var result := 0.0

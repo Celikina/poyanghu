@@ -16,6 +16,7 @@ func fixture(state: Node, difficulty: int, at_turn: int, base: int = 55) -> void
 	var rule: Dictionary = state.water_reference()
 	state.metrics = {"water_level": (int(rule.low) + int(rule.high)) / 2, "water_quality": 70, "vegetation": 65, "fish": 70, "birds": base, "community": 75}
 	state.bird_population = {"base": base, "migrants": 0, "loss": 0, "season": state.current_season(), "total": base}
+	state._set_bird_baseline(55)
 	state.used_action_ids = ["water_monitor", "patrol"]
 	state.action_tiers = {}
 	state._is_settlement_preview = true
@@ -55,7 +56,9 @@ func _ready() -> void:
 		state.bird_population.migrants = 30
 		state.bird_population.total += 30
 		state.metrics.birds = state.bird_population.total
-		check(state.check_failure_now() and state.failure_metric == "birds", "Migrants cannot mask a base below its health redline")
+		check(not state.check_failure_now(), "Migrants count toward the fixed redline")
+		state._apply_delta("birds", -30, false)
+		check(state.check_failure_now() and state.failure_metric == "birds", "Combined total below the fixed redline fails")
 	fixture(state, 2, 4)
 	check(Model.habitat({"vegetation": 35, "water_quality": 100, "fish": 80}, 0) <= 39, "Weighted average cannot hide food shortage")
 	var harmed: Dictionary = Model.change(Model.project(state.bird_snapshot(), "winter", 72, 1.0), -12, true)
@@ -79,9 +82,11 @@ func _ready() -> void:
 	state.funds = 500
 	state.used_action_ids = []
 	var before: int = state.metric_health("birds")
+	actual.load_state(state.serialize(), false)
+	actual.natural_evolution()
 	state.execute_action("waterbird_food_supply", "deep")
 	state.natural_evolution()
-	check(state.metric_health("birds") >= before + 10, "Card protection persists through migration recomputation")
+	check(state.metric_health("birds") <= Model.BASE_CAP and state.metric_health("birds") > actual.metric_health("birds") and state.metric_health("birds") >= before, "Card protection persists through environmental recomputation up to the sixty-point cap")
 	fixture(state, 2, 2)
 	var income: int = state._metric_funding()
 	var score: Dictionary = state._eval_eco()
@@ -89,7 +94,7 @@ func _ready() -> void:
 	state.bird_population.total += 30
 	state.metrics.birds = state.bird_population.total
 	check(state._metric_funding() == income and state._eval_eco().score == score.score, "Visitors cannot manufacture funding or conservation score")
-	fixture(state, 2, 2, 79)
+	fixture(state, 2, 2, 59)
 	state._apply_delta("birds", 10, true, "card", "protection", "waterbird_food_supply")
 	check(state.score_ledger.back().raw == 10 and state.score_ledger.back().applied == 1, "Capped protection retains requested and actual ledger values")
 	fixture(state, 2, 4, 49)

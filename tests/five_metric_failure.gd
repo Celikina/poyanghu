@@ -15,6 +15,7 @@ func fixture(state: Node, mode: int, water: int) -> void:
 	state.failure_metric = ""
 	state.metrics = {"water_level": water, "vegetation": 80, "water_quality": 80, "fish": 80, "birds": 80, "community": 80}
 	state.bird_population = {"base": 80, "migrants": 0, "loss": 0, "season": "winter", "total": 80}
+	state._set_bird_baseline(60)
 	reports = 0
 func _ready() -> void:
 	var state = load("res://scripts/game_state.gd").new()
@@ -37,7 +38,11 @@ func _ready() -> void:
 					state.bird_population.migrants = 40
 					state.bird_population.total = line + 39
 					state.metrics.birds = line + 39
-				check(state.check_failure_now() and state.is_failure and state.failure_metric == metric and reports == 1, "Each of five metrics can end the run, migrants cannot hide base loss: " + metric)
+					check(not state.check_failure_now(), "Resident and migrant total above redline remains safe")
+					state.bird_population.migrants = 0
+					state.bird_population.total = line - 1
+					state.metrics.birds = line - 1
+				check(state.check_failure_now() and state.is_failure and state.failure_metric == metric and reports == 1, "Each of five metrics can end the run; birds use total: " + metric)
 				var below: Array = state.metrics_below_threshold()
 				check(below.size() == 1 and below[0].metric == metric and below[0].value == line - 1, "Report matches failing metric: " + metric)
 				state.check_failure_now()

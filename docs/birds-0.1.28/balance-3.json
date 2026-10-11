@@ -1,0 +1,102 @@
+{
+	"difficulty": 3,
+	"elapsed_ms": 6513,
+	"games_per_policy": 10,
+	"seed_start": 1000,
+	"strategies": {
+		"ignore_birds": {
+			"avg_eco_score": 61.8333333333333,
+			"avg_extra_funding": 111.2,
+			"avg_turns": 10.9,
+			"bird_cards_per_game": 0.0,
+			"conflicts_per_game": 0.0,
+			"deaths": {
+				"birds": 2,
+				"vegetation": 3
+			},
+			"events": {
+				"autumn_lake_fishing": 1,
+				"drought": 4,
+				"flood": 3,
+				"invasive": 2,
+				"pollution": 1,
+				"spring_overgrazing": 1,
+				"spring_reclamation": 1,
+				"spring_spawning_fishing": 1,
+				"wetland_encroach": 1
+			},
+			"games": 10,
+			"win_rate": 0.5,
+			"wins": 5
+		},
+		"ignore_trust": {
+			"avg_eco_score": 59.1333333333333,
+			"avg_extra_funding": 19.6,
+			"avg_turns": 6.0,
+			"bird_cards_per_game": 2.4,
+			"conflicts_per_game": 0.0,
+			"deaths": {
+				"community": 7,
+				"vegetation": 1,
+				"water_quality": 2
+			},
+			"events": {
+				"bird_conflict": 2,
+				"drought": 1,
+				"flood": 2,
+				"pollution": 1,
+				"spring_reclamation": 1,
+				"summer_water_dispute": 1,
+				"winter_drone_disturbance": 1,
+				"winter_poaching": 1
+			},
+			"games": 10,
+			"win_rate": 0.0,
+			"wins": 0
+		},
+		"planned": {
+			"avg_eco_score": 60.3,
+			"avg_extra_funding": 116.7,
+			"avg_turns": 10.7,
+			"bird_cards_per_game": 3.9,
+			"conflicts_per_game": 0.0,
+			"deaths": {
+				"birds": 1,
+				"vegetation": 4
+			},
+			"events": {
+				"drought": 3,
+				"flood": 2,
+				"invasive": 3,
+				"pollution": 1,
+				"spring_reclamation": 2,
+				"spring_spawning_fishing": 1,
+				"wetland_encroach": 1
+			},
+			"games": 10,
+			"win_rate": 0.5,
+			"wins": 5
+		},
+		"random": {
+			"avg_eco_score": 44.0,
+			"avg_extra_funding": 17.0,
+			"avg_turns": 2.5,
+			"bird_cards_per_game": 1.7,
+			"conflicts_per_game": 0.0,
+			"deaths": {
+				"vegetation": 6,
+				"water_quality": 4
+			},
+			"events": {
+				"flood": 1,
+				"invasive": 1,
+				"pollution": 1,
+				"winter_poaching": 1
+			},
+			"games": 10,
+			"win_rate": 0.0,
+			"wins": 0
+		}
+	},
+	"version": "birds-0.1.28"
+}

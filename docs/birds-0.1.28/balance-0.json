@@ -1,0 +1,106 @@
+{
+	"difficulty": 0,
+	"elapsed_ms": 15615,
+	"games_per_policy": 10,
+	"seed_start": 1000,
+	"strategies": {
+		"ignore_birds": {
+			"avg_eco_score": 80.1333333333333,
+			"avg_extra_funding": 188.0,
+			"avg_turns": 14.9,
+			"bird_cards_per_game": 0.0,
+			"conflicts_per_game": 0.0,
+			"deaths": {
+				"birds": 1
+			},
+			"events": {
+				"autumn_burning": 1,
+				"autumn_lake_fishing": 1,
+				"bird_conflict": 2,
+				"drought": 5,
+				"flood": 1,
+				"pollution": 1,
+				"spring_reclamation": 1,
+				"summer_sand_mining": 1,
+				"summer_water_dispute": 1,
+				"winter_poaching": 2
+			},
+			"games": 10,
+			"win_rate": 0.9,
+			"wins": 9
+		},
+		"ignore_trust": {
+			"avg_eco_score": 72.0333333333333,
+			"avg_extra_funding": 15.9,
+			"avg_turns": 11.2,
+			"bird_cards_per_game": 6.4,
+			"conflicts_per_game": 0.0,
+			"deaths": {
+				"community": 10
+			},
+			"events": {
+				"autumn_burning": 2,
+				"bird_conflict": 3,
+				"drought": 1,
+				"illegal_fishing": 1,
+				"pollution": 1,
+				"spring_spawning_fishing": 1,
+				"summer_sand_mining": 1,
+				"winter_poaching": 3
+			},
+			"games": 10,
+			"win_rate": 0.0,
+			"wins": 0
+		},
+		"planned": {
+			"avg_eco_score": 78.5666666666667,
+			"avg_extra_funding": 188.8,
+			"avg_turns": 14.6,
+			"bird_cards_per_game": 12.2,
+			"conflicts_per_game": 0.0,
+			"deaths": {
+				"birds": 1
+			},
+			"events": {
+				"bird_conflict": 3,
+				"drought": 1,
+				"invasive": 1,
+				"pollution": 2,
+				"spring_reclamation": 1,
+				"summer_sand_mining": 1,
+				"summer_water_dispute": 2,
+				"wetland_encroach": 1,
+				"winter_poaching": 2
+			},
+			"games": 10,
+			"win_rate": 0.9,
+			"wins": 9
+		},
+		"random": {
+			"avg_eco_score": 58.3666666666667,
+			"avg_extra_funding": 97.3,
+			"avg_turns": 9.7,
+			"bird_cards_per_game": 7.0,
+			"conflicts_per_game": 0.0,
+			"deaths": {
+				"birds": 7
+			},
+			"events": {
+				"disease": 1,
+				"drought": 4,
+				"flood": 3,
+				"illegal_fishing": 1,
+				"invasive": 1,
+				"pollution": 4,
+				"spring_overgrazing": 1,
+				"spring_spawning_fishing": 2,
+				"summer_water_dispute": 1,
+				"winter_poaching": 1
+			},
+			"games": 10,
+			"win_rate": 0.3,
+			"wins": 3
+		}
+	},
+	"version": "birds-0.1.28"
+}

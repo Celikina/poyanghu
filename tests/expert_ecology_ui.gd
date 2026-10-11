@@ -30,17 +30,21 @@ func _ready() -> void:
 	GameState.turn = 4
 	GameState.metrics = {"water_level": 46, "water_quality": 70, "vegetation": 65, "fish": 65, "birds": 83, "community": 54}
 	GameState.bird_population = {"base": 55, "migrants": 28, "loss": 0, "season": "winter", "total": 83}
+	GameState._set_bird_baseline(60)
 	GameState.pending_crisis = GameState.crisis_by_id("winter_poaching").duplicate(true)
 	GameState.action_tiers = {}
 	GameState.used_action_ids = []
 	game._update_hud()
 	game._update_metric_preview()
 	await get_tree().create_timer(0.8).timeout
-	check(game.metric_bars.birds.reference_label.text.contains("种群基数稳定"), "Bird HUD exposes healthy base despite seasonal abundance")
-	check(is_equal_approx(game.metric_bars.birds.line.anchor_left, 0.68), "Abundance bar marks the equivalent health boundary")
+	check(game.metric_bars.birds.reference_label.text == "留湖 55 · 迁徙 28 · 红线 53", "Bird HUD exposes the two populations and fixed redline")
+	check(is_equal_approx(game.metric_bars.birds.line.anchor_left, 0.53), "Bird bar uses the fixed opening redline")
+	check(game.metric_bars.birds.bar.get_theme_stylebox("fill").bg_color == Color.WHITE, "Resident segment is white")
+	check(game.metric_bars.birds.bird_segments.MIGRANT_ALPHA < 0.5 and not game.metric_bars.birds.ripple.visible, "Migrant segment is static translucent white")
+	check(game.metric_bars.birds.bird_segments.residents == 55 and game.metric_bars.birds.bird_segments.migrants == 28, "Segment split matches population snapshot")
 	game._fill_metric_tip("birds")
-	check(game.metric_tip_body.text.contains("种群基数") and game.metric_tip_body.text.contains("正常迁出不判负"), "Compact tip explains abundance versus health")
-	check(game.metric_bars.birds.val.tooltip_text.contains("种群基数"), "Staged forecast includes the health consequence")
+	check(game.metric_tip_body.text.contains("留湖") and game.metric_tip_body.text.contains("低于红线即判负"), "Compact tip explains the combined-total rule")
+	check(game.metric_bars.birds.val.tooltip_text.contains("固定红线"), "Staged forecast includes the fixed redline")
 	game.metric_tip.visible = true
 	game._place_metric_tip(game.metric_bars.birds.row.get_global_rect().get_center())
 	await get_tree().process_frame
@@ -62,20 +66,21 @@ func _ready() -> void:
 	check(row.get_child(0).text.contains("80%") and row.get_child(0).text.contains("实际损失"), "Review displays actual reduced damage")
 	row.free()
 	game.crisis_root.visible = false
-	GameState.bird_population = {"base": 41, "migrants": 28, "loss": 0, "season": "winter", "total": 69}
-	GameState.metrics.birds = 69
+	GameState.bird_population = {"base": 39, "migrants": 28, "loss": 0, "season": "winter", "total": 67}
+	GameState.metrics.birds = 67
 	GameState.metrics.vegetation = 35
 	game._update_hud()
 	game._update_metric_preview()
 	await get_tree().create_timer(0.6).timeout
 	game._update_metric_preview()
-	check(game.metric_bars.birds.reference_label.text.contains("种群基数"), "High bird total cannot hide damaged base on HUD")
-	check(game.metric_bars.birds.reference_label.text.contains("将跌破"), "Unplayed-hand forecast exposes impending health failure")
+	check(game.metric_bars.birds.reference_label.text.contains("留湖 39"), "HUD still shows resident population after damage")
+	check(is_equal_approx(game.metric_bars.birds.line.anchor_left, 0.53), "Resident damage cannot move the redline")
+	check(game.metric_bars.birds.reference_label.tooltip_text.contains("将跌破"), "Unplayed-hand forecast exposes impending total failure")
 	await capture("expert-birds-risk")
 	GameState.metrics.vegetation = 70
 	game._metric_preview_dirty = true
 	game._update_metric_preview()
-	check(not game.metric_bars.birds.reference_label.text.contains("将跌破"), "Improved forecast clears a stale health failure warning")
+	check(not game.metric_bars.birds.reference_label.tooltip_text.contains("将跌破"), "Improved forecast clears a stale total failure warning")
 	GameState.metrics.vegetation = 35
 	game._metric_preview_dirty = true
 	game._update_metric_preview()
