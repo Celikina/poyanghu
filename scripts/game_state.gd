@@ -3656,7 +3656,7 @@ func _check_failure() -> bool:
 			game_over = true
 			failure_metric = metric
 			failure_value = metric_failure_value(str(metric))
-			failure_reason = "留湖与迁徙候鸟总量跌破固定生态红线。" if metric == "birds" else "上级对你的政绩不满意，将你撤换。"
+			failure_reason = "留湖与迁徙候鸟总量跌破生态红线。" if metric == "birds" else "上级对你的政绩不满意，将你撤换。"
 			_add_log("✖ %s（%s 只剩 %d，已跌破生态红线 %d）" % [failure_reason, METRIC_NAMES.get(metric, metric), failure_value, threshold])
 			game_ended.emit(generate_report())
 			return true

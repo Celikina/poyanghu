@@ -38,14 +38,14 @@ func _ready() -> void:
 	game._update_metric_preview()
 	await get_tree().create_timer(0.8).timeout
 	var bird_line: int = int(GameState.failure_threshold_for("birds"))
-	check(game.metric_bars.birds.reference_label.text == "留湖 55 · 迁徙 28 · 红线 %d" % bird_line, "Bird HUD exposes the two populations and this run's redline")
+	check(game.metric_bars.birds.reference_label.text == "留湖 55 · 迁徙 28 · 生态红线 %d" % bird_line, "Bird HUD exposes the two populations and this run's redline")
 	check(is_equal_approx(game.metric_bars.birds.line.anchor_left, bird_line / 100.0), "Bird bar uses the rolled opening redline")
 	check(game.metric_bars.birds.bar.get_theme_stylebox("fill").bg_color == Color.WHITE, "Resident segment is white")
 	check(game.metric_bars.birds.bird_segments.MIGRANT_ALPHA < 0.5 and not game.metric_bars.birds.ripple.visible, "Migrant segment is static translucent white")
 	check(game.metric_bars.birds.bird_segments.residents == 55 and game.metric_bars.birds.bird_segments.migrants == 28, "Segment split matches population snapshot")
 	game._fill_metric_tip("birds")
-	check(game.metric_tip_body.text.contains("留湖") and game.metric_tip_body.text.contains("低于红线即判负"), "Compact tip explains the combined-total rule")
-	check(game.metric_bars.birds.val.tooltip_text.contains("固定红线"), "Staged forecast includes the fixed redline")
+	check(game.metric_tip_body.text.contains("留湖") and game.metric_tip_body.text.contains("低于生态红线即判负"), "Compact tip explains the combined-total rule")
+	check(game.metric_bars.birds.val.tooltip_text.contains("生态红线"), "Staged forecast includes the fixed redline")
 	game.metric_tip.visible = true
 	game._place_metric_tip(game.metric_bars.birds.row.get_global_rect().get_center())
 	await get_tree().process_frame

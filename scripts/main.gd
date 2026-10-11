@@ -6215,7 +6215,7 @@ func _update_threshold_lines() -> void:
 			var total: int = GameState.metric_failure_value("birds")
 			var health_line: int = GameState.failure_threshold_for("birds")
 			var label: Label = metric_bars[metric]["reference_label"]
-			label.text = "留湖 %d · 迁徙 %d · 红线 %d" % [birds["base"], birds["migrants"], health_line]
+			label.text = "留湖 %d · 迁徙 %d · 生态红线 %d" % [birds["base"], birds["migrants"], health_line]
 			label.add_theme_color_override("font_color", Color("ffcc66") if total <= health_line + 5 else Color("b6ebae"))
 
 
@@ -6432,10 +6432,10 @@ func _fill_bird_metric_tip(p: Dictionary) -> void:
 	var birds := GameState.bird_snapshot()
 	var rows: Array[String] = [
 		"留湖 [b]%d[/b] · 迁徙 [b]%d[/b]" % [birds["base"], birds["migrants"]],
-		"固定红线 %d · 开局留湖 %d" % [line, GameState.bird_initial_residents],
+		"生态红线 %d · 开局留湖 %d" % [line, GameState.bird_initial_residents],
 		"自然变化 %+d ~ %+d" % [int(p["nat_min"]), int(p["nat_max"])],
 		"[color=%s]回合末总量 %d ~ %d[/color]" % [color, int(p["end_min"]), int(p["end_max"])],
-		"[color=#8e9aa4]留湖＋迁徙总量低于红线即判负。[/color]",
+		"[color=#8e9aa4]留湖＋迁徙总量低于生态红线即判负。[/color]",
 	]
 	var food_loss := GameState.wetland_food_loss()
 	var returns := GameState.winter_return_loss()
@@ -6443,7 +6443,7 @@ func _fill_bird_metric_tip(p: Dictionary) -> void:
 		rows.append("候鸟食物损失 %d · 本年迁入遗留 %d" % [food_loss, returns])
 	if str(p["crisis_name"]) != "":
 		rows.append("[color=#ffb060]%s：总量约 %d[/color]" % [str(p["crisis_name"]), int(p["worst"])])
-	if bool(p["break_total"]): rows.append("[color=#ff5a5a]⚠ 候鸟总量将跌破红线[/color]")
+	if bool(p["break_total"]): rows.append("[color=#ff5a5a]⚠ 候鸟总量将跌破生态红线[/color]")
 	var text := "\n".join(rows)
 	if text != _tip_last_text:
 		_tip_last_text = text
@@ -7688,12 +7688,12 @@ func _update_metric_preview() -> void:
 		metric_bars[metric]["preview"].configure(current, predicted)
 		metric_bars[metric]["val"].tooltip_text = "结算预览：%d → %d（%+d）\n含本回合到期的遗留效果、协同、自然变化、六值联动与已预警危机；与实际结算共用本回合水位结果。" % [int(current), int(predicted), int(predicted - current)]
 		if metric == "birds":
-			metric_bars[metric]["val"].tooltip_text += "\n留湖 %d、迁徙 %d → 留湖 %d、迁徙 %d；固定红线 %d，按总量判负。" % [GameState.bird_snapshot()["base"], GameState.bird_snapshot()["migrants"], forecast["birds"]["base"], forecast["birds"]["migrants"], GameState.failure_threshold_for("birds")]
+			metric_bars[metric]["val"].tooltip_text += "\n留湖 %d、迁徙 %d → 留湖 %d、迁徙 %d；生态红线 %d，按总量判负。" % [GameState.bird_snapshot()["base"], GameState.bird_snapshot()["migrants"], forecast["birds"]["base"], forecast["birds"]["migrants"], GameState.failure_threshold_for("birds")]
 			if int(forecast["food_loss"]) > 0:
 				metric_bars[metric]["val"].tooltip_text += "\n候鸟食物损失 %d，持续至本年冬末，可用修复牌恢复。" % int(forecast["food_loss"])
 			if GameState.current_season() == "winter" and int(forecast["birds"]["loss"]) > 0:
 				metric_bars[metric]["val"].tooltip_text += "\n次年迁入遗留预计 %d（冬季口径）。" % mini(20, ceili(int(forecast["birds"]["loss"]) * 0.5))
-			metric_bars[metric]["reference_label"].tooltip_text = "⚠ 预览：候鸟总量将跌破红线" if int(forecast["birds"]["total"]) < GameState.failure_threshold_for("birds") else "左段白色为留湖候鸟，右段静态半透明白色为迁徙候鸟；闪烁白色表示预计增加，红色表示预计减少。"
+			metric_bars[metric]["reference_label"].tooltip_text = "⚠ 预览：候鸟总量将跌破生态红线" if int(forecast["birds"]["total"]) < GameState.failure_threshold_for("birds") else "左段白色为留湖候鸟，右段静态半透明白色为迁徙候鸟；闪烁白色表示预计增加，红色表示预计减少。"
 		if metric == "water_level" and int(forecast["water_legacy"]) != 0:
 			metric_bars[metric]["val"].tooltip_text += "\n秋季开局水位遗留 %+d，当季预览不重复扣除。" % int(forecast["water_legacy"])
 
