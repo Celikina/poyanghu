@@ -7441,7 +7441,7 @@ func _build_tier_lever(holder: Node) -> void:
 	title_row.alignment = BoxContainer.ALIGNMENT_CENTER
 	lvb.add_child(title_row)
 
-	var title := _make_label("出牌档位", 12, Color(0.86, 0.80, 0.68))
+	var title := _make_label("政策力度", 12, Color(0.86, 0.80, 0.68))
 	title_row.add_child(title)
 
 	lever_cd_label = _make_label("", 12, Color(1.0, 0.60, 0.40))
