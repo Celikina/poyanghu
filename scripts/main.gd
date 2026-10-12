@@ -6106,11 +6106,14 @@ func _make_metric_row(metric: String) -> VBoxContainer:
 	wrap.add_child(bar)
 	var bird_segments: Control
 	if metric == "birds":
-		bar.add_theme_stylebox_override("fill", VisualTheme.box(Color.WHITE, Color.WHITE, 0))
+		bar.add_theme_stylebox_override("fill", StyleBoxEmpty.new())
+		bar.add_theme_stylebox_override("background", StyleBoxEmpty.new())
 		bird_segments = Control.new()
 		bird_segments.set_script(preload("res://scripts/bird_metric_segments.gd"))
 		bird_segments.name = "BirdSegments"
 		bird_segments.bar = bar
+		bird_segments.effects_owner = self
+		bird_segments.tint = METRIC_COLORS[metric]
 		bird_segments.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		bird_segments.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 		wrap.add_child(bird_segments)
@@ -6128,17 +6131,19 @@ func _make_metric_row(metric: String) -> VBoxContainer:
 	if metric == "birds":
 		ripple.hide()
 		ripple.set_process(false)
-	var preview := Control.new()
-	preview.set_script(preload("res://scripts/metric_bar_preview.gd"))
-	preview.name = "MetricPreview"
-	preview.effects_owner = self
-	preview.bar = bar
-	preview.tint = METRIC_COLORS[metric]
-	preview.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	preview.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	preview.hide()
-	preview.set_process(false)
-	wrap.add_child(preview)
+	var preview: Control = bird_segments
+	if metric != "birds":
+		preview = Control.new()
+		preview.set_script(preload("res://scripts/metric_bar_preview.gd"))
+		preview.name = "MetricPreview"
+		preview.effects_owner = self
+		preview.bar = bar
+		preview.tint = METRIC_COLORS[metric]
+		preview.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		preview.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+		preview.hide()
+		preview.set_process(false)
+		wrap.add_child(preview)
 
 	var band: ColorRect
 	var high_line: ColorRect
@@ -7670,7 +7675,14 @@ func _update_metric_preview() -> void:
 		if _metric_preview_values.is_empty(): return
 		_metric_preview_values.clear()
 		for metric in metric_bars:
-			metric_bars[metric]["preview"].configure(0.0, 0.0)
+			if metric == "birds":
+				metric_bars[metric]["bird_segments"].clear_forecast()
+				var live_birds: Dictionary = GameState.bird_snapshot()
+				metric_bars[metric]["reference_label"].text = "留湖 %d · 迁徙 %d · 生态红线 %d" % [live_birds["base"], live_birds["migrants"], GameState.failure_threshold_for("birds")]
+				metric_bars[metric]["reference_label"].tooltip_text = "实白为固有鸟群，半透明为迁徙鸟群。"
+				metric_bars[metric]["val"].add_theme_color_override("font_color", METRIC_COLORS[metric])
+				if not _score_animating: metric_bars[metric]["val"].text = str(GameState.metrics[metric])
+			else: metric_bars[metric]["preview"].configure(0.0, 0.0)
 			metric_bars[metric]["val"].tooltip_text = ""
 		return
 	if not _metric_preview_dirty: return
@@ -7685,7 +7697,15 @@ func _update_metric_preview() -> void:
 	for metric in metric_bars:
 		var current := float(GameState.metrics[metric])
 		var predicted := float(_metric_preview_values.get(metric, current))
-		metric_bars[metric]["preview"].configure(current, predicted)
+		if metric == "birds":
+			metric_bars[metric]["bird_segments"].configure_forecast(int(forecast["birds"]["base"]), int(forecast["birds"]["migrants"]))
+			# Labels use logical snapshots rather than intermediate animation values.
+			var shown_birds: Dictionary = GameState.bird_snapshot() if predicted > current else forecast["birds"]
+			metric_bars[metric]["reference_label"].text = "留湖 %d · 迁徙 %d · 生态红线 %d" % [shown_birds["base"], shown_birds["migrants"], GameState.failure_threshold_for("birds")]
+			metric_bars[metric]["val"].text = "%d → %d" % [int(current), int(predicted)] if current != predicted else str(int(current))
+			metric_bars[metric]["val"].add_theme_color_override("font_color", Color("ef5350") if predicted < current else METRIC_COLORS[metric])
+		else:
+			metric_bars[metric]["preview"].configure(current, predicted)
 		metric_bars[metric]["val"].tooltip_text = "结算预览：%d → %d（%+d）\n含本回合到期的遗留效果、协同、自然变化、六值联动与已预警危机；与实际结算共用本回合水位结果。" % [int(current), int(predicted), int(predicted - current)]
 		if metric == "birds":
 			metric_bars[metric]["val"].tooltip_text += "\n留湖 %d、迁徙 %d → 留湖 %d、迁徙 %d；生态红线 %d，按总量判负。" % [GameState.bird_snapshot()["base"], GameState.bird_snapshot()["migrants"], forecast["birds"]["base"], forecast["birds"]["migrants"], GameState.failure_threshold_for("birds")]
@@ -7693,7 +7713,8 @@ func _update_metric_preview() -> void:
 				metric_bars[metric]["val"].tooltip_text += "\n候鸟食物损失 %d，持续至本年冬末，可用修复牌恢复。" % int(forecast["food_loss"])
 			if GameState.current_season() == "winter" and int(forecast["birds"]["loss"]) > 0:
 				metric_bars[metric]["val"].tooltip_text += "\n次年迁入遗留预计 %d（冬季口径）。" % mini(20, ceili(int(forecast["birds"]["loss"]) * 0.5))
-			metric_bars[metric]["reference_label"].tooltip_text = "⚠ 预览：候鸟总量将跌破生态红线" if int(forecast["birds"]["total"]) < GameState.failure_threshold_for("birds") else "左段白色为留湖候鸟，右段静态半透明白色为迁徙候鸟；闪烁白色表示预计增加，红色表示预计减少。"
+			var bird_delta_hint := "从左到右：实心固有鸟群、半透明迁徙鸟群、闪烁变化段。\n增加时：当前鸟群后接白色增加段。\n减少时：减少后的鸟群后接红色减少段。\n最右端为圆弧，总量不变时没有变化段，生态红线固定。\n固有 %+d，迁徙 %+d，总量 %+d。" % [int(forecast["birds"]["base"]) - int(GameState.bird_snapshot()["base"]), int(forecast["birds"]["migrants"]) - int(GameState.bird_snapshot()["migrants"]), int(predicted - current)]
+			metric_bars[metric]["reference_label"].tooltip_text = ("⚠ 预览：候鸟总量将跌破生态红线\n" if int(forecast["birds"]["total"]) < GameState.failure_threshold_for("birds") else "") + bird_delta_hint
 		if metric == "water_level" and int(forecast["water_legacy"]) != 0:
 			metric_bars[metric]["val"].tooltip_text += "\n秋季开局水位遗留 %+d，当季预览不重复扣除。" % int(forecast["water_legacy"])
 

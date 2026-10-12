@@ -186,6 +186,9 @@ func direct_board_preview() -> void:
 		var overlay: Control = game.metric_bars[metric].preview
 		check(overlay.tint == game.METRIC_COLORS[metric] and overlay.mouse_filter == Control.MOUSE_FILTER_IGNORE, "Preview uses metric color and cannot intercept card input")
 		check(is_equal_approx(overlay.current, float(GameState.metrics[metric])) and is_equal_approx(overlay.predicted, float(game._metric_preview_values[metric])), "Overlay covers exactly the forecast difference")
+		if metric == "birds":
+			check(overlay == game.metric_bars.birds.bird_segments, "Bird composition and its forecast have a single renderer")
+			continue
 		check(overlay.segment_rect().size.y == game.metric_bars[metric].bar.size.y and overlay.segment_rect().position.y == 0.0, "Preview has the original bar's full thickness and baseline")
 		var original_fill: StyleBoxFlat = game.metric_bars[metric].bar.get_theme_stylebox("fill")
 		var preview_fill: StyleBoxFlat = overlay._fill.get_theme_stylebox("fill")
@@ -197,6 +200,7 @@ func direct_board_preview() -> void:
 	var staggered := 0
 	for metric in game.metric_bars:
 		var overlay: Control = game.metric_bars[metric].preview
+		if metric == "birds": continue
 		overlay.configure(30.0, 60.0 if staggered % 2 == 0 else 20.0)
 		check(overlay._fill.get_theme_stylebox("fill").bg_color == (game.METRIC_COLORS[metric] if staggered % 2 == 0 else overlay.LOSS_COLOR), "Forecast direction changes immediately select the correct color")
 		game._metric_preview_clock += 0.17
@@ -208,10 +212,14 @@ func direct_board_preview() -> void:
 		var reference_alpha := -1.0
 		for metric in game.metric_bars:
 			var overlay: Control = game.metric_bars[metric].preview
+			if metric == "birds":
+				check(absf(overlay.blink_alpha() - reference_alpha) < 0.0001, "Bird forecast shares the other metric pulse phase")
+				continue
 			if reference_alpha < 0.0: reference_alpha = overlay._fill.modulate.a
 			check(absf(overlay._fill.modulate.a - reference_alpha) < 0.0001, "Staggered increases and decreases blink in exactly the same phase")
 	for metric in game.metric_bars:
 		var overlay: Control = game.metric_bars[metric].preview
+		if metric == "birds": continue
 		if overlay.predicted > overlay.current:
 			check(overlay._join_clip.visible and is_equal_approx(overlay._join_clip.position.x + overlay._join_clip.size.x, overlay.segment_rect().position.x), "Increasing preview covers the old rounded tip without a gap")
 		else:
