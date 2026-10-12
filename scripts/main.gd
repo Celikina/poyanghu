@@ -262,6 +262,8 @@ var season_tagline: Label
 var season_dial: SeasonDial
 var dispatch_btn: Button          # 紧急调度：花 40 万点名一张当季牌
 var refresh_btn: Button           # 刷新手牌：花 5 万重抽整手，每回合限一次
+var funds_icon: TextureRect       # 资金栏金币图标：与六项指标同款的悬停/点击反馈
+var research_icon: TextureRect    # 科研点图标：同上（科研点提示也挂在它和标签上）
 var dispatch_panel: Control       # 紧急调度的选牌面板（与牌库同款的全屏卡牌网格）
 var dispatch_grid: HFlowContainer
 var dispatch_hint: Label          # 面板顶部说明（含当前调度费，逐次递增所以要重写）
@@ -1976,7 +1978,9 @@ func _build_ui() -> void:
 	var funds_row := HBoxContainer.new()
 	funds_row.add_theme_constant_override("separation", 6)
 	# 34 高：可见的金币实体约 21px，和右边 24 号金色大字一样高（1:1 只有 14px，偏小）
-	funds_row.add_child(_make_art_icon(ICON_COIN, 34.0))
+	funds_icon = _make_art_icon(ICON_COIN, 34.0)
+	_attach_poke(funds_icon, 1.15)     # 指标图标 14px 才能放 1.35；这个 34px，放大要收着点
+	funds_row.add_child(funds_icon)
 	# ⚠ 必须写 24：_snap_px() 只认 12 的倍数，写 17 / 18 都会被吸附回 12px，
 	#   改完看不出一丁点变大（原来的 17 就是这么被吃掉的）。
 	funds_label = _make_label("0 / 80 万", 24, Color(1, 0.95, 0.6))
@@ -1987,8 +1991,12 @@ func _build_ui() -> void:
 
 	var research_row := HBoxContainer.new()
 	research_row.add_theme_constant_override("separation", 6)
-	research_row.add_child(_make_art_icon(ICON_RESEARCH))
+	research_icon = _make_art_icon(ICON_RESEARCH)
+	_attach_poke(research_icon, 1.25)
+	research_row.add_child(research_icon)
 	research_label = _make_label("科研点：0", 14, Color(0.82, 0.9, 1))
+	research_label.tooltip_text = _research_tooltip()
+	research_icon.tooltip_text = research_label.tooltip_text
 	research_label.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	research_row.add_child(research_label)
 	lv.add_child(research_row)
@@ -4321,6 +4329,12 @@ func _build_pause_menu() -> void:
 	pause_volume_label = _make_label("音量：%d%%" % int(bgm_volume * 100), 14, Color(1, 0.95, 0.6))
 	pause_volume_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	pvol_controls.add_child(pause_volume_label)
+
+	# 主菜单那份设置面板一直有「返回」，暂停里这份 0.1.28 起只剩音量 —— 补回来，
+	# 否则进设置之后只能靠 Esc 猜着退，玩家找不到出口。
+	var ps_back := _make_button("返回", _on_pause_settings_back, 16)
+	ps_back.custom_minimum_size = Vector2(0, 40)
+	psv.add_child(ps_back)
 
 	_update_bgm_btn()        # 同步两个切换按钮文字
 	_sync_score_speed_ui()   # 两个结算速度滑块的文字也要填上（建的时候标签是空的）
@@ -6889,7 +6903,9 @@ func _play_refresh_break_animation() -> void:
 	rng.randomize()
 	for i in 9:
 		var shard := ColorRect.new()
-		shard.color = Color(0.60, 0.42, 0.23) if i % 2 == 0 else Color(0.80, 0.61, 0.34)
+		# 配色跟新 UI 的蓝色按钮同色系（见 UiSkin.SHARD_COLORS）。原来是木板棕黄，
+		# 0.1.33 整套界面换成 16bit 蓝皮之后，这些碎片看着像别的 UI 掉下来的渣。
+		shard.color = UiSkin.SHARD_COLORS[i % UiSkin.SHARD_COLORS.size()]
 		shard.size = Vector2(rng.randf_range(9.0, 24.0), rng.randf_range(5.0, 13.0))
 		shard.position = rect.position + Vector2(
 			rng.randf() * maxf(1.0, rect.size.x - shard.size.x),
@@ -9001,6 +9017,25 @@ func _make_art_icon(tex: Texture2D, target_h: float = 0.0) -> TextureRect:
 	tr.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	tr.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	return tr
+
+
+## 资金栏的金币 / 科研点图标接上六项指标那套反馈（悬停放大 + 点击戳一下）。
+## 倍数按图标实际尺寸给：指标图标只有 14px 可以放到 1.35，这两个更大，得收着。
+func _attach_poke(icon: TextureRect, poke_hover_target: float) -> void:
+	icon.set_script(preload("res://scripts/metric_icon_effect.gd"))
+	icon.effects_owner = self
+	icon.hover_target = poke_hover_target
+
+
+## 科研点是唯一「看着是个数字、其实换能力」的累计值，悬停要说清它换到什么。
+## 阈值全部取自 GameState，改常量时提示跟着走。
+func _research_tooltip() -> String:
+	return ("科研点是累计值，用来换监测能力，不会消耗。\n"
+			+ "· 打「生态监测与科研」按档位得 1 / 2 / 3 点\n"
+			+ "· 回合末结转超出 %d 万上限的部分，每 10 万转 1 点\n"
+			+ "· 累计满 %d 点开启深预警：危机预警从提前 1 回合延长到提前 2 回合\n"
+			+ "· 累计 20 点以上，结算报告会记一条「长期数据库建立」") % [
+				GameState.MAX_CARRY, GameState.DEEP_WARN_RESEARCH]
 
 
 ## 旧的程序化图标网格（金额/科研点/指标都改用美术图后，这里只作历史备份，没人再调）

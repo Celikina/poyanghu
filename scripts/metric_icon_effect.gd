@@ -2,6 +2,9 @@ extends TextureRect
 var effects_owner: Node
 var hovered := false
 var hover_scale := 1.0
+## 悬停放大倍数：六项指标的小图标用默认 1.35；资金栏的金币 / 科研点图标更大，
+## 由 main.gd 的 _attach_poke() 调小，免得放大后压住旁边的数字。
+var hover_target := 1.35
 var poke_age := 1.0
 var poke_count := 0
 
@@ -25,7 +28,7 @@ func _process(delta: float) -> void:
 	if effects_owner._paused: return
 	var reduce: bool = effects_owner.wetland != null and effects_owner.wetland.reduced_motion
 	var active: bool = hovered and effects_owner._tip_allowed()
-	var target := 1.35 if active else 1.0
+	var target := hover_target if active else 1.0
 	hover_scale = target if reduce else lerpf(hover_scale, target, 1.0 - exp(-18.0 * delta))
 	poke_age = minf(1.0, poke_age + delta)
 	var shake := Vector2.ZERO
