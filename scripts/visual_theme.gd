@@ -18,18 +18,13 @@ const WATER_SHALLOW := Color("acc9ce")
 const SAND := Color("e0c89b")
 const SOIL := Color("baaa86")
 const ART := preload("res://assets/art/conservation-cards.png")
+const UiSkin := preload("res://scripts/ui_skin.gd")
 
 static func box(bg: Color, edge: Color, margin: int = 12) -> StyleBoxFlat:
-	var s := StyleBoxFlat.new()
-	s.bg_color = bg
-	s.border_color = edge
-	s.set_border_width_all(2)
-	s.set_corner_radius_all(5)
-	s.set_content_margin_all(margin)
-	s.shadow_color = Color(0.12, 0.16, 0.20, 0.30)
-	s.shadow_size = 5
-	s.shadow_offset = Vector2(0, 4)
-	return s
+	# 16bit：直角 + 2px 硬描边，不要圆角和柔光投影。
+	# 颜色仍由调用方决定（指标条 / 天赋树节点靠颜色传数据），
+	# 想统一配色的地方走 UiSkin.panel() / UiSkin.text_box()。
+	return UiSkin.styled(bg, edge, float(margin))
 
 static func card_style(selected: bool = false) -> StyleBoxFlat:
 	var s := box(Color.TRANSPARENT, GOLD, 0)
@@ -55,26 +50,18 @@ static func illustration(card: Dictionary) -> AtlasTexture:
 
 static func style_button(b: Button, danger: bool = false, primary: bool = false) -> void:
 	preload("res://scripts/motion_button.gd").attach(b)
-	var base := Color("895e59") if danger else PANEL
-	var accent := Color("efb7a1") if danger else MINT
-	if primary:
-		base = GOLD
-		accent = Color("fff0b7")
-	for state in ["normal", "hover", "pressed", "disabled"]:
-		var bg := base
-		if state == "hover": bg = base.lightened(0.15)
-		if state == "pressed": bg = base.darkened(0.18)
-		if state == "disabled": bg = Color("526164")
-		var s := box(bg, accent if state == "hover" else base.lightened(0.22), 7)
-		s.shadow_size = 1 if state == "pressed" else 4
-		s.shadow_offset.y = 1 if state == "pressed" else 3
-		b.add_theme_stylebox_override(state, s)
-	var focus := box(Color(0, 0, 0, 0), GOLD, 7)
-	focus.shadow_size = 0
+	# 16bit 按钮：四个状态只换填充色，描边统一奶白，按下时缩 1px。
+	for state in ["normal", "hover", "pressed", "hover_pressed", "disabled"]:
+		b.add_theme_stylebox_override(state, UiSkin.button(state, primary, danger))
+	# 键盘焦点仍然要有可见框（透明底 + 金边），别把可访问性一起换掉
+	var focus := UiSkin.styled(Color(0, 0, 0, 0), GOLD, 7.0)
 	b.add_theme_stylebox_override("focus", focus)
+	# 深蓝底上文字统一亮白 + 深色描边，和 16bit 的块状字一个调子
 	for state in ["font_color", "font_hover_color", "font_pressed_color", "font_focus_color"]:
-		b.add_theme_color_override(state, INK if primary else PAPER)
-	b.add_theme_color_override("font_disabled_color", Color("8b9b94"))
+		b.add_theme_color_override(state, UiSkin.LABEL_COLOR)
+	b.add_theme_color_override("font_disabled_color", UiSkin.LABEL_DISABLED)
+	b.add_theme_color_override("font_outline_color", Color(0.02, 0.05, 0.12, 0.9))
+	b.add_theme_constant_override("outline_size", 3)
 
 static func button_feedback(b: Button, active: bool) -> void:
 	var previous: Tween = b.get_meta("feedback_tween") if b.has_meta("feedback_tween") else null

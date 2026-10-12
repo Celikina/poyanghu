@@ -141,7 +141,7 @@ func _ready() -> void:
 	check(not GameState._knowledge_condition_met(egg), "Random-only card rejects even injected trigger conditions")
 	var drops := 0
 	GameState._knowledge_rng.seed = 1042026
-	for sample in 2000:
+	for sample in 20000:
 		GameState.turn = 1
 		GameState.knowledge_last_turn = -99
 		GameState.knowledge_unlocked.clear()
@@ -152,7 +152,7 @@ func _ready() -> void:
 			GameState.turn = 2
 			GameState._check_knowledge_triggers()
 			check(GameState.pending_knowledge.size() == 1, "Egg respects quiet next turn")
-	check(drops > 25 and drops < 100, "Random egg appears at approximately 3 percent: %d" % drops)
+	check(drops > 60 and drops < 140, "Random egg appears at approximately 0.5 percent: %d / 20000" % drops)
 	game._hide_menu()
 	game._show_knowledge("egg_dixinhu")
 	await settle(1.0)

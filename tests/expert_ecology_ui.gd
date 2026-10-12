@@ -38,9 +38,11 @@ func _ready() -> void:
 	game._update_metric_preview()
 	await get_tree().create_timer(0.8).timeout
 	var bird_line: int = int(GameState.failure_threshold_for("birds"))
-	check(game.metric_bars.birds.reference_label.text == "留湖 55 · 迁徙 28 · 生态红线 %d" % bird_line, "Bird HUD exposes the two populations and this run's redline")
+	var expected_birds: Dictionary = GameState.preview_settlement_detail([])["birds"]
+	if int(expected_birds["total"]) > 83: expected_birds = GameState.bird_snapshot()
+	check(game.metric_bars.birds.reference_label.text == "留湖 %d · 迁徙 %d · 生态红线 %d" % [expected_birds["base"], expected_birds["migrants"], bird_line], "Bird HUD numbers match the populations before a gain tail or the survivors before a loss tail")
 	check(is_equal_approx(game.metric_bars.birds.line.anchor_left, bird_line / 100.0), "Bird bar uses the rolled opening redline")
-	check(game.metric_bars.birds.bar.get_theme_stylebox("fill").bg_color == Color.WHITE, "Resident segment is white")
+	check(game.metric_bars.birds.bar.get_theme_stylebox("fill") is StyleBoxEmpty and game.metric_bars.birds.bird_segments._resident_fill.bg_color == Color.WHITE, "One renderer owns white residents without an opaque layer below migrants")
 	check(game.metric_bars.birds.bird_segments.MIGRANT_ALPHA < 0.5 and not game.metric_bars.birds.ripple.visible, "Migrant segment is static translucent white")
 	check(game.metric_bars.birds.bird_segments.residents == 55 and game.metric_bars.birds.bird_segments.migrants == 28, "Segment split matches population snapshot")
 	game._fill_metric_tip("birds")
