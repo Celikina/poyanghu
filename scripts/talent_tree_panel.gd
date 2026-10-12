@@ -1,6 +1,7 @@
 extends PanelContainer
 signal back_requested
 const VisualTheme := preload("res://scripts/visual_theme.gd")
+const UiSkin := preload("res://scripts/ui_skin.gd")
 const NODE_SIZE := Vector2(112, 52)
 const GRAPH_MARGIN := Vector2(96, 12)
 const COLUMN_STEP := 126.0
@@ -39,7 +40,7 @@ func button(text: String, action: Callable) -> Button:
 	return node
 
 func _ready() -> void:
-	add_theme_stylebox_override("panel", VisualTheme.box(VisualTheme.INK, VisualTheme.EDGE, 16))
+	add_theme_stylebox_override("panel", UiSkin.panel(false, 16.0))
 	var content := VBoxContainer.new()
 	content.add_theme_constant_override("separation", 10)
 	add_child(content)

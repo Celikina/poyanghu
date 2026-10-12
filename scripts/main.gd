@@ -5,6 +5,7 @@ const MotionWeb = preload("res://scripts/motion_web.gd")
 const MotionSpring = preload("res://scripts/motion_spring.gd")
 const MotionScroll = preload("res://scripts/motion_scroll.gd")
 const WoodenTierLever = preload("res://scripts/wooden_tier_lever.gd")
+const UiSkin := preload("res://scripts/ui_skin.gd")
 const CardFlight = preload("res://scripts/card_flight.gd")
 
 const VisualTheme = preload("res://scripts/visual_theme.gd")
@@ -128,15 +129,79 @@ const KNOWLEDGE_QUESTION_GRID := """..######....
 
 ## 季节指针：左上角的小表盘，指针随回合在四季之间转 90°（春在 12 点、顺时针转）。
 ## 全工程唯一的自绘控件（_draw）—— 它纯是指示器，不接受任何输入。
+## 美术给的三个 32px 像素图标（已裁到内容边缘）：金币 / 金币被消耗 / 科研点。
+## 按素材原像素 1:1 显示（最近邻），不拉伸、不染色。
+## 生态监测六项指标的小图标：美术按 8×8 像素重画后交付，替换掉原来代码现绘的网格。
+## 键与 GameState.METRIC_NAMES / METRIC_COLORS 一致。
+const METRIC_ICONS := {
+	"water_level": preload("res://assets/ui/ui-metric-water_level.png"),
+	"vegetation": preload("res://assets/ui/ui-metric-vegetation.png"),
+	"water_quality": preload("res://assets/ui/ui-metric-water_quality.png"),
+	"fish": preload("res://assets/ui/ui-metric-fish.png"),
+	"birds": preload("res://assets/ui/ui-metric-birds.png"),
+	"community": preload("res://assets/ui/ui-metric-community.png"),
+}
+const ICON_COIN := preload("res://assets/ui/ui-icon-coin.png")
+const ICON_COIN_SPENT := preload("res://assets/ui/ui-icon-coin-spent.png")
+const ICON_RESEARCH := preload("res://assets/ui/ui-icon-research.png")
+
+
 class SeasonDial extends Control:
 	const RAD := 20.0
+	## 16bit 像素表盘配色：奶白盘面 + 棕黄外框 + 黄色指针（面板是深蓝底，对比正好）
+	const FACE := Color("fffde7")        # 盘面：奶白
+	const INNER := Color("e2cb95")       # 盘面与外框之间的过渡圈
+	const FRAME := Color("8a6a2e")       # 外框：棕黄
+	const FRAME_LIT := Color("b18b3f")   # 外框左上受光面（16bit 立体感）
+	const FRAME_DARK := Color("5e4620")  # 外框右下暗面
+	const TICK := Color("6b4e1f")        # 四季刻度
+	const HAND := Color("e8b026")        # 指针：黄
 	var _angle: float = -PI * 0.5    # 指针角度（弧度）：-90° = 12 点钟方向 = 春
+	var _face: Texture2D = null      # 盘面烘焙贴图（只做一次）
 	## 盘内不写字 —— 面板只有 204px 宽，季节名放在盘右边的 Label 里（见 _build_ui）。
 	## 四个刻度点就是春/夏/秋/冬：12 点、3 点、6 点、9 点。
 
 	func _init() -> void:
 		custom_minimum_size = Vector2(RAD * 2.0 + 6.0, RAD * 2.0 + 6.0)
 		mouse_filter = Control.MOUSE_FILTER_IGNORE
+		_face = _bake_face()
+		# 像素图要按最近邻采样，缩放时才不会被抹成糊的
+		texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+
+	## 盘面一次性烘焙成贴图：逐像素画圆（奶白盘面 / 棕黄外框 / 四季刻度），
+	## 之后每帧只重画指针 —— 开销和原来的 draw_circle 版本一样小，
+	## 但边缘是真正的方块像素，不会被引擎的圆弧平滑成圆的。
+	func _bake_face() -> Texture2D:
+		var span := int(RAD * 2.0) + 4
+		var img := Image.create(span, span, false, Image.FORMAT_RGBA8)
+		img.fill(Color(0, 0, 0, 0))
+		var o := Vector2(span * 0.5, span * 0.5)
+		for y in span:
+			for x in span:
+				var d := Vector2(float(x) + 0.5, float(y) + 0.5).distance_to(o)
+				var c := Color(0, 0, 0, 0)
+				if d <= 13.0:
+					c = FACE
+				elif d <= 15.0:
+					c = INNER
+				elif d <= 20.0:
+					c = FRAME
+					var lit := (float(x) - o.x) + (float(y) - o.y)
+					if lit < -6.0:
+						c = FRAME_LIT
+					elif lit > 6.0:
+						c = FRAME_DARK
+				if c.a > 0.0:
+					img.set_pixel(x, y, c)
+		# 四季刻度：12 / 3 / 6 / 9 点方向各一块 2×2 像素
+		for i in 4:
+			var a: float = -PI * 0.5 + float(i) * PI * 0.5
+			# r=11 落在奶白盘面上，刻度才看得清（16 会掉进棕黄框里，暗色贴暗色就糊了）
+			var t := o + Vector2(cos(a), sin(a)) * 11.0
+			for dy in 2:
+				for dx in 2:
+					img.set_pixel(int(t.x) - 1 + dx, int(t.y) - 1 + dy, TICK)
+		return ImageTexture.create_from_image(img)
 
 	## 转到第 index 季（0 春 / 1 夏 / 2 秋 / 3 冬）。animate=false 直接落位（读档/重开用）。
 	func turn_to(index: int, animate: bool = true) -> void:
@@ -154,24 +219,22 @@ class SeasonDial extends Control:
 
 	func _draw() -> void:
 		var c: Vector2 = size * 0.5
-		draw_circle(c, RAD, Color(0.09, 0.13, 0.11, 0.88))
-		draw_arc(c, RAD, 0.0, TAU, 48, Color(0.42, 0.50, 0.45), 1.5, true)
-		for i in 4:
-			var a: float = -PI * 0.5 + float(i) * PI * 0.5
-			draw_circle(c + Vector2(cos(a), sin(a)) * (RAD - 4.0), 1.5, Color(0.55, 0.63, 0.57))
+		if _face != null:
+			draw_texture(_face, c - Vector2(_face.get_width(), _face.get_height()) * 0.5)
 		# string-clock: the flexible stroke yields, its data endpoint stays exact.
+		# 指针仍是同一条贝塞尔曲线（弹簧速度决定弯曲），只是改用像素方块来画。
 		var direction := Vector2.from_angle(_angle)
 		var tip := c + direction * (RAD - 2.0)
 		var driver := get_node_or_null("MotionSpring__angle")
 		var velocity := float(driver.velocity) if driver else 0.0
 		var middle := c.lerp(tip, 0.5) + direction.orthogonal() * clampf(velocity * 0.18, -2.0, 2.0)
-		var stroke := PackedVector2Array()
-		for i in 9:
+		for i in range(1, 9):
 			var t := float(i) / 8.0
-			stroke.append(c * (1.0 - t) * (1.0 - t) + middle * 2.0 * t * (1.0 - t) + tip * t * t)
-		draw_polyline(stroke, Color(1.0, 0.86, 0.42), 2.0, true)
-		draw_circle(tip, 1.5, Color(1.0, 0.86, 0.42))
-		draw_circle(c, 2.5, Color(1.0, 0.86, 0.42))
+			var p: Vector2 = c * (1.0 - t) * (1.0 - t) + middle * 2.0 * t * (1.0 - t) + tip * t * t
+			draw_rect(Rect2((p - Vector2(1.0, 1.0)).round(), Vector2(2, 2)), HAND)
+		draw_rect(Rect2((tip - Vector2(1.5, 1.5)).round(), Vector2(3, 3)), HAND)
+		draw_rect(Rect2((c - Vector2(2.0, 2.0)).round(), Vector2(4, 4)), HAND)
+		draw_rect(Rect2((c - Vector2(1.0, 1.0)).round(), Vector2(2, 2)), FRAME)
 
 ## Permanent study and seeded random talents coexist; allocations start next run.
 const TALENT_TREE_ENABLED := true
@@ -1904,7 +1967,7 @@ func _build_ui() -> void:
 
 	var spent_row := HBoxContainer.new()
 	spent_row.add_theme_constant_override("separation", 6)
-	spent_row.add_child(_make_icon(_icon_grid_for("coin"), Color(0.72, 0.62, 0.50), 14))
+	spent_row.add_child(_make_art_icon(ICON_COIN_SPENT))
 	spent_label = _make_label("已消耗：0 万", 12, Color(0.82, 0.86, 0.9))
 	spent_label.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	spent_row.add_child(spent_label)
@@ -1912,7 +1975,8 @@ func _build_ui() -> void:
 
 	var funds_row := HBoxContainer.new()
 	funds_row.add_theme_constant_override("separation", 6)
-	funds_row.add_child(_make_icon(_icon_grid_for("coin"), Color(0.95, 0.78, 0.25), 18))
+	# 34 高：可见的金币实体约 21px，和右边 24 号金色大字一样高（1:1 只有 14px，偏小）
+	funds_row.add_child(_make_art_icon(ICON_COIN, 34.0))
 	# ⚠ 必须写 24：_snap_px() 只认 12 的倍数，写 17 / 18 都会被吸附回 12px，
 	#   改完看不出一丁点变大（原来的 17 就是这么被吃掉的）。
 	funds_label = _make_label("0 / 80 万", 24, Color(1, 0.95, 0.6))
@@ -1923,7 +1987,7 @@ func _build_ui() -> void:
 
 	var research_row := HBoxContainer.new()
 	research_row.add_theme_constant_override("separation", 6)
-	research_row.add_child(_make_icon(_icon_grid_for("research"), Color(0.82, 0.9, 1), 14))
+	research_row.add_child(_make_art_icon(ICON_RESEARCH))
 	research_label = _make_label("科研点：0", 14, Color(0.82, 0.9, 1))
 	research_label.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	research_row.add_child(research_label)
@@ -2227,8 +2291,18 @@ func _build_menu() -> void:
 	title.offset_right = 620.0
 	title.offset_top = 64.0
 	title.offset_bottom = 140.0
+	# 大标题风格化成「Minecraft 大标题」那种块状点阵字：用项目自带的缝合像素字体，
+	# 字号仍是 _snap_px(32)=36px（12px 设计格的整数 3 倍，笔画不缺角），
+	# 位置与占位尺寸一行都没动；颜色仍是原来的 GOLD。
+	var title_font := _big_title_font()
+	if title_font != null:
+		title.add_theme_font_override("font", title_font)
+	# 硬投影往右下偏 + 深色描边 = 方块字的厚度感（不做模糊阴影）
 	title.add_theme_color_override("font_shadow_color", VisualTheme.INK)
-	title.add_theme_constant_override("shadow_offset_y", 5)
+	title.add_theme_constant_override("shadow_offset_x", 4)
+	title.add_theme_constant_override("shadow_offset_y", 4)
+	title.add_theme_color_override("font_outline_color", Color("1a1206"))
+	title.add_theme_constant_override("outline_size", 4)
 	menu_root.add_child(title)
 	preload("res://scripts/motion_parallax.gd").attach(title, 2.0)
 	var eyebrow := _make_label("P O Y A N G   /   W E T L A N D S", 12, VisualTheme.MINT)
@@ -6079,7 +6153,8 @@ func _make_metric_row(metric: String) -> VBoxContainer:
 	head.add_theme_constant_override("separation", 4)
 	vb.add_child(head)
 	# 图标留引用：算分动画要让它放大 + 抖动（原来这里是匿名创建的，拿不到节点）
-	var icon := _make_icon(_icon_grid_for(metric), METRIC_COLORS[metric], 14)
+	# 图标用美术交付的 8×8 像素图，塞进和以前一样的 14×14 框（尺寸没变，面板不会溢出）
+	var icon := _make_art_icon(METRIC_ICONS[metric], 14.0)
 	icon.set_script(preload("res://scripts/metric_icon_effect.gd"))
 	icon.effects_owner = self
 	head.add_child(icon)
@@ -6099,8 +6174,8 @@ func _make_metric_row(metric: String) -> VBoxContainer:
 	bar.max_value = 100
 	bar.value = 0
 	bar.show_percentage = false
-	bar.add_theme_stylebox_override("background", VisualTheme.box(Color("0b252e"), Color("42615b"), 0))
-	bar.add_theme_stylebox_override("fill", VisualTheme.box(METRIC_COLORS[metric], METRIC_COLORS[metric].lightened(0.2), 0))
+	bar.add_theme_stylebox_override("background", UiSkin.progress_track())
+	bar.add_theme_stylebox_override("fill", UiSkin.progress_fill(METRIC_COLORS[metric]))
 	bar.set_anchors_preset(Control.PRESET_FULL_RECT)
 	bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	wrap.add_child(bar)
@@ -8763,6 +8838,21 @@ func _on_popup_button() -> void:
 
 
 # ==================== 控件工厂 ====================
+## 大标题用的点阵字体（Minecraft 大标题那种块状字）。缺字回落到界面字体，不会出豆腐块。
+func _big_title_font() -> FontFile:
+	var f: FontFile = load("res://fonts/fusion-pixel-12px-monospaced-zh_hans.ttf")
+	if f == null:
+		return null
+	# 关抗锯齿 + 关次像素定位，点阵字才锐利
+	f.antialiasing = TextServer.FONT_ANTIALIASING_NONE
+	f.subpixel_positioning = TextServer.SUBPIXEL_POSITIONING_DISABLED
+	# ⚠ 不能把界面字体挂进来：它的 fallbacks 里已经有这个像素字体，互相指就是环
+	# （Godot 报 "Cyclic font fallback."）。标题需要的字它自己都有，这里只兜一层宋体。
+	var extra: FontFile = load("res://fonts/RenOuFangSong-16.ttf")
+	f.fallbacks = [extra] if extra != null else []
+	return f
+
+
 func _make_label(text: String, size: int, color: Color) -> Label:
 	var l := Label.new()
 	l.text = text
@@ -8791,10 +8881,10 @@ func _wood_button(bg: Color, border: Color) -> StyleBoxFlat:
 
 
 func _panel_style(p: PanelContainer, color: Color) -> void:
-	# Slate surfaces and warm paper keep small text legible over the meadow.
-	var bg := Color("765653") if color.r > color.g * 1.8 else VisualTheme.PANEL
-	bg.a = 0.97 if color.a < 0.9 else 0.99
-	p.add_theme_stylebox_override("panel", VisualTheme.box(bg, VisualTheme.EDGE))
+	# 16bit 面板：统一 #0B2B4A 底 + 奶白 2px 描边 + 直角（配色取自美术参考图「框.png」）。
+	# 传进来偏红的面板（危机 / 清空存档）继续走暖红，危险操作要一眼分得出来。
+	var danger := color.r > color.g * 1.8
+	p.add_theme_stylebox_override("panel", UiSkin.panel(danger))
 
 
 ## 左侧/右侧信息面板滑出屏幕（结算后）或滑回（下一回合开始）
@@ -8873,6 +8963,30 @@ func _make_icon(grid: String, main: Color, px: int) -> TextureRect:
 	return tr
 
 
+## 美术交付的像素图标控件：按素材原始像素大小 1:1 显示。
+## ⚠ 不要用 _make_icon 那套（它是把 8×8 网格整数放大 + 染色），
+##   美术图有自己的配色，染色会把它染花；拉伸也会糊掉像素。
+## target_h > 0 时按目标高度等比放大（美术图外面有一圈很淡的半透明边，
+## 包围盒比看得见的实体大，所以「原尺寸 1:1」实际会显示得很小 ——
+## 需要跟旁边的文字对齐高度时，用这个参数按可见尺寸给高度）。
+func _make_art_icon(tex: Texture2D, target_h: float = 0.0) -> TextureRect:
+	var w := float(tex.get_width())
+	var h := float(tex.get_height())
+	if target_h > 0.0:
+		w = roundf(w * target_h / h)
+		h = target_h
+	var tr := TextureRect.new()
+	tr.texture = tex
+	tr.custom_minimum_size = Vector2(w, h)
+	tr.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	# ⚠ 必须用 SCALE：KEEP_CENTERED 只是把原尺寸的图居中摆放，不会真的放大
+	tr.stretch_mode = TextureRect.STRETCH_SCALE
+	tr.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	tr.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	return tr
+
+
+## 旧的程序化图标网格（金额/科研点/指标都改用美术图后，这里只作历史备份，没人再调）
 ## 各数值/指标对应的像素图标网格
 func _icon_grid_for(kind: String) -> String:
 	match kind:
@@ -8952,27 +9066,33 @@ func _icon_grid_for(kind: String) -> String:
 
 
 # ==================== 像素字体 ====================
-## 加载中文像素字体（缝合像素/融合像素，OFL 授权）并设为全局默认字体
+## 加载界面字体（长坂点宋 16 / ChangBanDianSong-16-SC）并设为全局默认字体。
+## 缺字（例如 ▶）按顺序回落到项目里原有的像素字体，保证不会出现豆腐块。
 func _setup_pixel_font() -> void:
 	# 用 load() 读导入后的 FontFile，导出包（.pck）里也能正确加载
-	var zh: FontFile = load("res://fonts/fusion-pixel-12px-monospaced-zh_hans.ttf")
-	if zh == null:
+	var ui_font: FontFile = load("res://fonts/ChangBanDianSong-16-SC.ttf")
+	if ui_font == null:
 		return
-	var latin: FontFile = load("res://fonts/fusion-pixel-12px-monospaced-latin.ttf")
-	if latin != null:
-		zh.fallbacks = [latin]
-	# 关抗锯齿 + 整数像素对齐，保证像素字体锐利
-	zh.antialiasing = TextServer.FONT_ANTIALIASING_NONE
-	zh.subpixel_positioning = TextServer.SUBPIXEL_POSITIONING_DISABLED
-	ThemeDB.fallback_font = zh
+	var fallbacks: Array[Font] = []
+	for path in ["res://fonts/fusion-pixel-12px-monospaced-zh_hans.ttf",
+			"res://fonts/fusion-pixel-12px-monospaced-latin.ttf",
+			"res://fonts/RenOuFangSong-16.ttf"]:
+		var f: FontFile = load(path)
+		if f != null:
+			fallbacks.append(f)
+	ui_font.fallbacks = fallbacks
+	# 关抗锯齿 + 关次像素定位，点阵字才不发虚
+	ui_font.antialiasing = TextServer.FONT_ANTIALIASING_NONE
+	ui_font.subpixel_positioning = TextServer.SUBPIXEL_POSITIONING_DISABLED
+	ThemeDB.fallback_font = ui_font
 	var theme := Theme.new()
-	theme.default_font = zh
+	theme.default_font = ui_font
 	theme.default_font_size = 12
-	theme.set_stylebox("panel", "TooltipPanel", VisualTheme.box(VisualTheme.INK, VisualTheme.GOLD))
+	theme.set_stylebox("panel", "TooltipPanel", UiSkin.panel())
 	theme.set_color("font_color", "TooltipLabel", VisualTheme.PAPER)
 	theme.set_font_size("font_size", "TooltipLabel", 12)
 	for state in ["normal", "focus", "read_only"]:
-		theme.set_stylebox(state, "LineEdit", VisualTheme.box(VisualTheme.INK, VisualTheme.EDGE, 8))
+		theme.set_stylebox(state, "LineEdit", UiSkin.text_box(8.0))
 	theme.set_color("font_color", "LineEdit", VisualTheme.PAPER)
 	get_tree().root.theme = theme
 
