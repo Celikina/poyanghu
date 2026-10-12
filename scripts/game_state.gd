@@ -3729,8 +3729,8 @@ const KNOWLEDGE_TAG_BOOST := 3.0
 ## 0.0 = 关掉随机赠送（只剩条件触发）。
 const KNOWLEDGE_RANDOM_CHANCE := 0.25
 
-## 独立随机彩蛋：每个允许掉卡的回合 3%，不受季节、行动、标签或收藏补齐影响。
-const DIXINHU_RANDOM_CHANCE := 0.03
+## 独立随机彩蛋：每个允许掉卡的回合 0.5%，不受季节、行动、标签或收藏补齐影响。
+const DIXINHU_RANDOM_CHANCE := 0.005
 
 
 ## 回合末的知识卡检查 —— **每回合最多挑一张**，压入待弹出队列。

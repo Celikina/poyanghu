@@ -69,7 +69,7 @@ func _ready() -> void:
 		renderer.queue_redraw()
 		await RenderingServer.frame_post_draw
 		var last_style: StyleBoxFlat = renderer._change_fill if rect.has_area() else (renderer._migrant_fill if visiting.has_area() else renderer._resident_fill)
-		check(last_style.corner_radius_top_right == 3 and last_style.corner_radius_bottom_right == 3, "The last nonempty segment always has a rounded right endpoint")
+		check(last_style.corner_radius_top_right == 0 and last_style.corner_radius_bottom_right == 0, "The last nonempty segment matches the square pixel style")
 		if rect.has_area():
 			check(renderer._migrant_fill.corner_radius_top_right == 0 and renderer._resident_fill.corner_radius_top_right == 0, "Population joins before a change segment are straight and continuous")
 		var before: Rect2 = renderer.migrant_rect()
@@ -118,5 +118,119 @@ func _ready() -> void:
 	await settle(0.3)
 	check(is_equal_approx(renderer.size.y, bar.size.y) and renderer.size.x > 80, "Small window uses one bar with no extra forecast tracks")
 	await shot("bird-small")
+	await check_skin_layout()
 	print("BIRD_METRIC_UI checks=%d failures=%d" % [checks, failures])
 	get_tree().quit(1 if failures else 0)
+
+func check_skin_layout() -> void:
+	var water: Dictionary = game.metric_bars.water_level
+	var bird: Dictionary = game.metric_bars.birds
+	for dimensions in [Vector2i(1280, 720), Vector2i(960, 540)]:
+		get_window().size = dimensions
+		await settle(0.2)
+		for metric in game.metric_bars:
+			var bar: ProgressBar = game.metric_bars[metric].bar
+			check(bar.size == bird.bar.size, "All six bars have the same width and thickness")
+			var track: StyleBoxTexture = bar.get_theme_stylebox("background")
+			check(track.texture == bird.bar.get_theme_stylebox("background").texture, "Birds share the other five pixel track frames")
+			bar.value = 100
+			if metric != "birds": game.metric_bars[metric].preview.hide()
+			game.metric_bars[metric].ripple.hide()
+		water.preview.hide()
+		water.ripple.hide()
+		water.bar.value = 100
+		bird.bar.value = 100
+		bird.bird_segments.configure(60, 40)
+		bird.bird_segments.clear_forecast()
+		bird.bird_segments._swap_progress = 1.0
+		for marker in [water.line, water.high_line, water.band]:
+			check(marker.get_global_rect().end.y <= water.bar.get_global_rect().position.y + 2.0, "Water references leave the full blue interior unobstructed")
+		await RenderingServer.frame_post_draw
+		if DisplayServer.get_name() != "headless":
+			var image := get_viewport().get_texture().get_image()
+			var rect: Rect2 = water.bar.get_global_rect()
+			var scale := Vector2(image.get_size()) / get_viewport().get_visible_rect().size
+			var expected: Color = game.METRIC_COLORS.water_level
+			for x in range(int((rect.position.x + 3) * scale.x), int((rect.end.x - 3) * scale.x)):
+				var pixel := image.get_pixel(x, int(rect.get_center().y * scale.y))
+				check(absf(pixel.r - expected.r) < 0.005 and absf(pixel.g - expected.g) < 0.005 and absf(pixel.b - expected.b) < 0.005, "Blue water fill stays continuous through both green references")
+		await shot("pixel-monitor-" + str(dimensions.x))
+		await check_threshold_widths()
+		await check_water_previews(str(dimensions.x))
+		game._pause_game()
+		game._on_pause_settings()
+		await check_volume_layout(game.pause_volume_slider, game.pause_volume_label, "pause-" + str(dimensions.x))
+		game._resume_game()
+		game.menu_root.show()
+		game._show_settings_panel()
+		await check_volume_layout(game.audio_volume_slider, game.audio_volume_label, "menu-" + str(dimensions.x))
+		game.menu_root.hide()
+
+func check_threshold_widths() -> void:
+	await RenderingServer.frame_post_draw
+	var image := get_viewport().get_texture().get_image()
+	var scale := Vector2(image.get_size()) / get_viewport().get_visible_rect().size
+	var widths: Array[int] = []
+	for metric in game.metric_bars:
+		if metric == "water_level": continue
+		var bar: ProgressBar = game.metric_bars[metric].bar
+		var y := int(bar.get_global_rect().get_center().y * scale.y)
+		var line: ColorRect = game.metric_bars[metric].line
+		var x := int(line.get_global_rect().get_center().x * scale.x)
+		var pixels := 0
+		for dx in range(-4, 5):
+			var color := image.get_pixel(x + dx, y)
+			if color.r > 0.9 and color.g < 0.3 and color.b < 0.4: pixels += 1
+		widths.append(pixels)
+	check(widths.all(func(width): return width > 0 and width == widths[0]), "All five ecological redlines have identical rendered pixel widths: " + str(widths))
+
+func check_water_previews(suffix: String) -> void:
+	var water: Dictionary = game.metric_bars.water_level
+	var overlay: Control = water.preview
+	var bar: ProgressBar = water.bar
+	bar.value = 0
+	overlay.hide()
+	await RenderingServer.frame_post_draw
+	var baseline := get_viewport().get_texture().get_image()
+	for values in [[18, 30], [48, 62], [62, 74], [75, 90], [50, 51], [70, 55], [62, 48], [50, 49], [0, 100], [100, 0]]:
+		bar.value = values[0]
+		overlay.configure(values[0], values[1])
+		for phase in [0.1, 0.4, 0.8]:
+			game._metric_preview_clock = phase
+			await settle(0.04)
+			await RenderingServer.frame_post_draw
+			var image := get_viewport().get_texture().get_image()
+			var rect := bar.get_global_rect()
+			var scale := Vector2(image.get_size()) / get_viewport().get_visible_rect().size
+			var segment: Rect2 = overlay.segment_rect()
+			var split := roundi((rect.position.x + segment.position.x) * scale.x)
+			var end := int((rect.position.x + segment.end.x) * scale.x)
+			var y := int(rect.get_center().y * scale.y)
+			var tint: Color = game.METRIC_COLORS.water_level if values[1] > values[0] else overlay.LOSS_COLOR
+			var continuous := true
+			for x in range(int((rect.position.x + 3) * scale.x), end):
+				var tail := baseline.get_pixel(x, y).lerp(tint, overlay.blink_alpha())
+				var expected: Color = game.METRIC_COLORS.water_level if x < split else tail
+				var pixel := image.get_pixel(x, y)
+				# Screen clipping can sample the adjacent grain texel at 75% scale.
+				# At the split, either adjoining segment may own the boundary pixel.
+				var matches := absf(pixel.r - expected.r) <= 0.10 and absf(pixel.g - expected.g) <= 0.10 and absf(pixel.b - expected.b) <= 0.10
+				if not matches and absi(x - split) <= 1:
+					var blue: Color = game.METRIC_COLORS.water_level
+					matches = (absf(pixel.r - blue.r) <= 0.01 and absf(pixel.g - blue.g) <= 0.01 and absf(pixel.b - blue.b) <= 0.01) or (absf(pixel.r - tail.r) <= 0.10 and absf(pixel.g - tail.g) <= 0.10 and absf(pixel.b - tail.b) <= 0.10)
+				if not matches: continuous = false
+			check(continuous, "Water gain/loss preview remains seamless for %s at phase %.1f and width %s" % [str(values), phase, suffix])
+		if values in [[18, 30], [48, 62], [70, 55]]: await shot("water-preview-" + suffix + "-" + str(values[0]) + "-" + str(values[1]))
+
+func check_volume_layout(slider: HSlider, label: Label, suffix: String) -> void:
+	await settle(0.2)
+	var initial := slider.get_global_rect()
+	for value in [0, 9, 10, 99, 100]:
+		slider.value = value
+		await settle(0.04)
+		check(slider.get_global_rect() == initial, "Volume text length never changes the slider's bounds")
+		check(label.get_global_rect().position.y >= initial.end.y, "Volume percentage is below the slider")
+		check(label.text == "音量：%d%%" % value, "Volume percentage updates through one, two and three digits")
+		check(is_equal_approx(game.bgm_volume, value / 100.0), "Volume still changes the audio setting")
+		check(game.audio_volume_label.text == game.pause_volume_label.text, "Both settings panels stay synchronized")
+		if value in [9, 100]: await shot("volume-" + suffix + "-" + str(value))

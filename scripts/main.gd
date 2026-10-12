@@ -2510,6 +2510,10 @@ func _build_menu() -> void:
 	svb.add_child(vol_row)
 	var vol_lbl := _make_label("音量", 16, Color(0.82, 0.86, 0.9))
 	vol_row.add_child(vol_lbl)
+	var vol_controls := VBoxContainer.new()
+	vol_controls.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	vol_controls.add_theme_constant_override("separation", 2)
+	vol_row.add_child(vol_controls)
 	audio_volume_slider = HSlider.new()
 	audio_volume_slider.min_value = 0
 	audio_volume_slider.max_value = 100
@@ -2517,9 +2521,10 @@ func _build_menu() -> void:
 	audio_volume_slider.value = bgm_volume * 100
 	audio_volume_slider.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	audio_volume_slider.value_changed.connect(_on_volume_changed)
-	vol_row.add_child(audio_volume_slider)
+	vol_controls.add_child(audio_volume_slider)
 	audio_volume_label = _make_label("音量：%d%%" % int(bgm_volume * 100), 14, Color(1, 0.95, 0.6))
-	vol_row.add_child(audio_volume_label)
+	audio_volume_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	vol_controls.add_child(audio_volume_label)
 
 	# 结算动画速度：手感因人而异，做成滑块而不是写死在代码里
 	var spd_row := HBoxContainer.new()
@@ -4301,6 +4306,10 @@ func _build_pause_menu() -> void:
 	psv.add_child(pvol_row)
 	var pvol_lbl := _make_label("音量", 16, Color(0.82, 0.86, 0.9))
 	pvol_row.add_child(pvol_lbl)
+	var pvol_controls := VBoxContainer.new()
+	pvol_controls.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	pvol_controls.add_theme_constant_override("separation", 2)
+	pvol_row.add_child(pvol_controls)
 	pause_volume_slider = HSlider.new()
 	pause_volume_slider.min_value = 0
 	pause_volume_slider.max_value = 100
@@ -4308,9 +4317,10 @@ func _build_pause_menu() -> void:
 	pause_volume_slider.value = bgm_volume * 100
 	pause_volume_slider.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	pause_volume_slider.value_changed.connect(_on_volume_changed)
-	pvol_row.add_child(pause_volume_slider)
+	pvol_controls.add_child(pause_volume_slider)
 	pause_volume_label = _make_label("音量：%d%%" % int(bgm_volume * 100), 14, Color(1, 0.95, 0.6))
-	pvol_row.add_child(pause_volume_label)
+	pause_volume_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	pvol_controls.add_child(pause_volume_label)
 
 	_update_bgm_btn()        # 同步两个切换按钮文字
 	_sync_score_speed_ui()   # 两个结算速度滑块的文字也要填上（建的时候标签是空的）
@@ -6182,7 +6192,6 @@ func _make_metric_row(metric: String) -> VBoxContainer:
 	var bird_segments: Control
 	if metric == "birds":
 		bar.add_theme_stylebox_override("fill", StyleBoxEmpty.new())
-		bar.add_theme_stylebox_override("background", StyleBoxEmpty.new())
 		bird_segments = Control.new()
 		bird_segments.set_script(preload("res://scripts/bird_metric_segments.gd"))
 		bird_segments.name = "BirdSegments"
@@ -6226,12 +6235,15 @@ func _make_metric_row(metric: String) -> VBoxContainer:
 	if metric == "water_level":
 		band = ColorRect.new()
 		band.color = Color(0.55, 0.95, 0.70, 0.24)
-		band.anchor_bottom = 1.0
+		# Reference marks occupy only the top edge, leaving the blue fill continuous.
+		band.offset_bottom = 1.0
 		band.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		wrap.add_child(band)
 
 	# 阈值红线（像素竖线）：指标低于此线即判负；锚定在阈值比例处，随难度更新
 	var line := ColorRect.new()
+	if metric != "water_level":
+		line.set_script(preload("res://scripts/metric_threshold_line.gd"))
 	line.color = Color(1.0, 0.2, 0.2, 0.95)
 	line.anchor_left = 0.2
 	line.anchor_right = 0.2
@@ -6243,9 +6255,13 @@ func _make_metric_row(metric: String) -> VBoxContainer:
 	wrap.add_child(line)
 	if metric == "water_level":
 		line.color = Color("b6ebae")
+		line.anchor_bottom = 0.0
+		line.offset_top = -2.0
+		line.offset_bottom = 2.0
 		high_line = ColorRect.new()
 		high_line.color = line.color
-		high_line.anchor_bottom = 1.0
+		high_line.offset_top = line.offset_top
+		high_line.offset_bottom = line.offset_bottom
 		high_line.offset_left = -1
 		high_line.offset_right = 1
 		high_line.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -6289,6 +6305,7 @@ func _update_threshold_lines() -> void:
 			var ratio: float = GameState.metric_display_line(metric) / 100.0
 			line.anchor_left = ratio
 			line.anchor_right = ratio
+			line.snap_to_pixels()
 		if metric == "birds":
 			var birds: Dictionary = GameState.bird_snapshot()
 			metric_bars[metric]["bird_segments"].configure(int(birds["base"]), int(birds["migrants"]))

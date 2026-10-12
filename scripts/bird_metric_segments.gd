@@ -15,7 +15,6 @@ var forecast_available := false
 var _from_population := Vector2.ZERO
 var _configured := false
 var _swap_progress := 1.0
-var _track: StyleBoxFlat
 var _resident_fill: StyleBoxFlat
 var _migrant_fill: StyleBoxFlat
 var _change_fill: StyleBoxFlat
@@ -58,7 +57,8 @@ func display_population() -> Vector2:
 	return Vector2(base, displayed - base)
 
 func fill_end(value: float) -> float:
-	return 2.0 + maxf(0.0, size.x - 4.0) * clampf(value / 100.0, 0.0, 1.0)
+	# UiSkin's ProgressBar rounds its width before applying the 2px inset.
+	return maxf(2.0, roundf(size.x * clampf(value / 100.0, 0.0, 1.0)) - 2.0)
 
 func resident_rect() -> Rect2:
 	var population := shown_population()
@@ -87,36 +87,23 @@ func forecast_rect() -> Rect2:
 func forecast_color() -> Color:
 	return Color.WHITE if forecast_delta() > 0 else LOSS_COLOR
 
-func _segment_corners(style: StyleBoxFlat, first: bool, last: bool) -> void:
-	# Internal joins are straight; only the outside ends are rounded.
-	style.corner_radius_top_left = 3 if first else 0
-	style.corner_radius_bottom_left = style.corner_radius_top_left
-	style.corner_radius_top_right = 3 if last else 0
-	style.corner_radius_bottom_right = style.corner_radius_top_right
-
 func blink_alpha() -> float:
 	if effects_owner == null: return 0.75
 	var reduce: bool = effects_owner.wetland != null and effects_owner.wetland.reduced_motion
 	return 0.75 if reduce else 0.28 + 0.72 * (0.5 + 0.5 * sin(effects_owner._metric_preview_clock * TAU * 1.1))
 
-func _style(color: Color, edge: Color) -> StyleBoxFlat:
+func _style(color: Color) -> StyleBoxFlat:
 	var style := StyleBoxFlat.new()
 	style.bg_color = color
-	style.border_color = edge
-	style.set_border_width_all(1)
-	style.set_corner_radius_all(3)
+	style.anti_aliasing = false
 	return style
 
 func _ready() -> void:
-	_track = _style(Color("0b252e"), Color("607975"))
-	_track.set_corner_radius_all(5)
-	_resident_fill = _style(Color.WHITE, Color(1.0, 1.0, 1.0, 0.85))
-	_migrant_fill = _style(Color(1.0, 1.0, 1.0, MIGRANT_ALPHA), Color(1.0, 1.0, 1.0, 0.60))
-	_change_fill = _style(Color.WHITE, Color.WHITE)
+	_resident_fill = _style(Color.WHITE)
+	_migrant_fill = _style(Color(1.0, 1.0, 1.0, MIGRANT_ALPHA))
+	_change_fill = _style(Color.WHITE)
 	# Segments touch directly. Their color / opacity alone distinguishes them;
 	# individual outlines would introduce bright or dark seams at every join.
-	for style in [_resident_fill, _migrant_fill, _change_fill]:
-		style.set_border_width_all(0)
 	resized.connect(queue_redraw)
 	bar.value_changed.connect(_on_value_changed)
 
@@ -124,15 +111,11 @@ func _on_value_changed(_value: float) -> void:
 	queue_redraw()
 
 func _draw() -> void:
-	if bar == null or _track == null or size.x <= 4.0: return
-	draw_style_box(_track, Rect2(Vector2.ZERO, Vector2(size.x, bar.size.y)))
+	if bar == null or _resident_fill == null or size.x <= 4.0: return
 	var base := resident_rect()
 	var visiting := migrant_rect()
 	var change := forecast_rect() if forecast_available else Rect2()
 	var has_change := change.has_area()
-	_segment_corners(_resident_fill, true, not visiting.has_area() and not has_change)
-	_segment_corners(_migrant_fill, not base.has_area(), not has_change)
-	_segment_corners(_change_fill, not base.has_area() and not visiting.has_area(), true)
 	if base.size.x > 0.0:
 		draw_style_box(_resident_fill, base)
 	if visiting.size.x > 0.0:

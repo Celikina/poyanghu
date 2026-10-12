@@ -189,7 +189,7 @@ func direct_board_preview() -> void:
 		if metric == "birds":
 			check(overlay == game.metric_bars.birds.bird_segments, "Bird composition and its forecast have a single renderer")
 			continue
-		check(overlay.segment_rect().size.y == game.metric_bars[metric].bar.size.y and overlay.segment_rect().position.y == 0.0, "Preview has the original bar's full thickness and baseline")
+		check(overlay.segment_rect().size.y == game.metric_bars[metric].bar.size.y - 4.0 and overlay.segment_rect().position.y == 2.0, "Preview shares the pixel skin's inset thickness and baseline")
 		var original_fill: StyleBoxFlat = game.metric_bars[metric].bar.get_theme_stylebox("fill")
 		var preview_fill: StyleBoxFlat = overlay._fill.get_theme_stylebox("fill")
 		check(original_fill.bg_color == game.METRIC_COLORS[metric], "Preview cannot recolor the live metric bar")

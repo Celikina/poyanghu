@@ -46,15 +46,20 @@ func _ready() -> void:
 	resized.connect(_layout_segment)
 
 func fill_end(value: float) -> float:
-	# Match ProgressBar's rounded pixel width and fill style minimum size.
-	var minimum := bar.get_theme_stylebox("fill").get_minimum_size().x
+	# Match ProgressBar's pixel rounding AND the skin's inset fill endpoint.
+	var style := bar.get_theme_stylebox("fill") as StyleBoxFlat
+	var minimum := style.get_minimum_size().x
 	var pixels := roundf(clampf(value / 100.0, 0.0, 1.0) * (bar.size.x - minimum))
-	return pixels + minimum if pixels > 0.0 else 0.0
+	var inset := maxf(0.0, -style.expand_margin_left)
+	return maxf(inset, pixels + minimum + style.expand_margin_right)
 
 func segment_rect() -> Rect2:
 	var left := fill_end(minf(current, predicted))
 	var right := fill_end(maxf(current, predicted))
-	return Rect2(Vector2(left, 0.0), Vector2(maxf(0.0, right - left), bar.size.y))
+	var style := bar.get_theme_stylebox("fill") as StyleBoxFlat
+	var top := maxf(0.0, -style.expand_margin_top)
+	var bottom := maxf(0.0, -style.expand_margin_bottom)
+	return Rect2(Vector2(left, top), Vector2(maxf(0.0, right - left), maxf(0.0, bar.size.y - top - bottom)))
 
 func _layout_segment() -> void:
 	if not is_instance_valid(_clip) or bar == null: return
@@ -72,9 +77,9 @@ func _layout_segment() -> void:
 	var radius := float(maxi(style.corner_radius_top_right, style.corner_radius_bottom_right)) if style else 5.0
 	var boundary := fill_end(current)
 	var start := maxf(0.0, boundary - radius - 1.0)
-	_join_clip.position = Vector2(start, 0.0)
-	_join_clip.size = Vector2(boundary - start, bar.size.y)
-	_join_fill.position = Vector2(-start, 0.0)
+	_join_clip.position = Vector2(start, segment.position.y)
+	_join_clip.size = Vector2(boundary - start, segment.size.y)
+	_join_fill.position = -_join_clip.position
 	_join_fill.size = bar.size
 	_join_fill.value = predicted
 
