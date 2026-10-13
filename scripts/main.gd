@@ -279,6 +279,7 @@ var funds_icon: TextureRect       # 资金栏金币图标：与六项指标同�
 var research_icon: TextureRect    # 科研点图标：同上（科研点提示也挂在它和标签上）
 var dispatch_panel: Control       # 紧急调度的选牌面板（与牌库同款的全屏卡牌网格）
 var dispatch_grid: HFlowContainer
+var dispatch_scroll: ScrollContainer
 var dispatch_hint: Label          # 面板顶部说明（含当前调度费，逐次递增所以要重写）
 var _refresh_used_turn: int = -1  # 本回合是否已刷过手牌（-1 = 没刷过）
 var _season_dial_index: int = -1  # 指针当前停在第几季，避免 _update_hud 每帧重触发动画
@@ -479,6 +480,7 @@ var _deck_hovered: bool = false
 var card_back_tex: Texture2D
 var deck_viewer: Control          # 牌库查看器（全屏弹层）
 var deck_viewer_grid: HFlowContainer
+var deck_viewer_scroll: ScrollContainer
 var _deck_open: bool = false
 var card_detail: Control          # 卡牌详情弹层（点击查看：左大牌 + 右介绍）
 var card_detail_card: CenterContainer  # 左侧大牌容器
@@ -513,6 +515,7 @@ var _deck_gyro_view: Control = null   # 当前鼠标悬停的牌库卡牌（只�
 # 但它是**独立一层**（MenuLayer 之上，因为入口在开始页而不是对局里）。
 var knowledge_viewer: Control          # 知识卡图鉴（全屏弹层）
 var knowledge_grid: HFlowContainer     # 知识卡网格
+var knowledge_scroll: ScrollContainer
 var knowledge_count_label: Label       # 「已收集 x / 总数」
 var knowledge_detail: Control          # 知识卡详情弹层（覆盖在查看器之上）
 var knowledge_detail_card: CenterContainer  # 左侧大牌容器
@@ -4979,6 +4982,7 @@ func _build_deck_viewer() -> void:
 	_update_sort_btn()
 
 	var scroll := ScrollContainer.new()
+	deck_viewer_scroll = scroll
 	MotionScroll.attach(scroll)
 	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
@@ -5054,6 +5058,7 @@ func _open_deck_viewer() -> void:
 		return
 	_deck_open = true
 	deck_viewer.visible = true
+	MotionScroll.reset_to_top(deck_viewer_scroll)
 	# 收起牌堆的悬停状态（避免残留黄框/孔雀开屏），并把其余 HUD 收出屏幕
 	_deck_hovered = false
 	deck_border.visible = false
@@ -5081,6 +5086,7 @@ func _open_deck_viewer() -> void:
 		cards.append(view)
 	# 等一帧布局完成后逐张发牌
 	await get_tree().process_frame
+	MotionScroll.reset_to_top(deck_viewer_scroll)
 	for i in cards.size():
 		var p: Control = cards[i]
 		var tw := Motion.tween(p, "enter", "arrival")
@@ -5262,12 +5268,25 @@ func _update_sort_btn() -> void:
 
 
 ## 排序冷却：锁死期间按钮禁用并显示倒计时，禁止交互/无按下反馈
+func _allocation_controls_locked() -> bool:
+	return _score_animating or _current_phase != "allocate" or GameState.game_over
+
+func _refresh_allocation_controls() -> void:
+	_update_sort_cooldown()
+	_update_lever_cooldown()
+	_refresh_action_buttons()
+
 func _update_sort_cooldown() -> void:
 	var remaining := SORT_COOLDOWN_MS - (Time.get_ticks_msec() - _sort_cooldown_ms)
-	_apply_sort_cooldown(deck_sort_btn, remaining)
-	_apply_sort_cooldown(hand_sort_btn, remaining)
-	if sandpan_view and sandpan_view.collapsed and hand_sort_btn:
+	if _score_animating:
+		if deck_sort_btn: deck_sort_btn.disabled = true
+	else:
+		_apply_sort_cooldown(deck_sort_btn, remaining)
+	if hand_sort_btn and (_allocation_controls_locked() or (sandpan_view and sandpan_view.collapsed)):
 		hand_sort_btn.disabled = true
+		hand_sort_btn.text = "按类别排序" if _deck_sort_by_category else "按费用排序"
+	else:
+		_apply_sort_cooldown(hand_sort_btn, remaining)
 
 
 ## 冷却期间按钮禁用并显示倒计时。冷却也是两边共用的。
@@ -5285,6 +5304,7 @@ func _apply_sort_cooldown(btn: Button, remaining: int) -> void:
 
 
 func _toggle_deck_sort() -> void:
+	if _score_animating: return
 	# 锁死两次切换之间的最低时间间隔（见 SORT_COOLDOWN_MS），杜绝连点造成排列错乱
 	var now := Time.get_ticks_msec()
 	if now - _sort_cooldown_ms < SORT_COOLDOWN_MS:
@@ -5365,6 +5385,7 @@ func _sort_deck_cards(by_category: bool) -> void:
 
 ## 出牌阶段的排序：与牌库共用一个模式、一套冷却，只是作用对象换成在场手牌。
 func _toggle_hand_sort() -> void:
+	if _allocation_controls_locked(): return
 	if sandpan_view and sandpan_view.collapsed: return
 	for info in card_infos:
 		if info.get("dealing", false): return
@@ -5835,6 +5856,7 @@ func _build_knowledge_viewer() -> void:
 	title_bar.add_child(knowledge_count_label)
 
 	var scroll := ScrollContainer.new()
+	knowledge_scroll = scroll
 	MotionScroll.attach(scroll)
 	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
@@ -5872,6 +5894,7 @@ func _open_knowledge_viewer() -> void:
 	if knowledge_viewer.visible:
 		return
 	knowledge_viewer.visible = true
+	MotionScroll.reset_to_top(knowledge_scroll)
 	# 开始页的标题与选项列先让位（图鉴是一整屏）
 	menu_col.visible = false
 	_deck_gyro_view = null
@@ -5905,6 +5928,7 @@ func _open_knowledge_viewer() -> void:
 
 	# 等一帧布局完成后逐张发牌（与牌库同节奏）
 	await get_tree().process_frame
+	MotionScroll.reset_to_top(knowledge_scroll)
 	for i in views.size():
 		var p: Control = views[i]
 		var tw := Motion.tween(p, "enter", "arrival")
@@ -6880,6 +6904,7 @@ func _enter_allocate() -> void:
 		refresh_btn.modulate.a = 1.0
 	_close_dispatch_panel()
 	_update_hud()
+	_refresh_allocation_controls()
 
 
 # ==================== 紧急调度 / 刷新手牌 ====================
@@ -6887,6 +6912,10 @@ func _enter_allocate() -> void:
 ## 刷新两个「花钱换牌」按钮的可用态与文案。
 ## 由 _update_hud() 频繁调用 —— 只改文本与 disabled，**绝不重建节点**。
 func _refresh_action_buttons() -> void:
+	if _allocation_controls_locked():
+		if refresh_btn: refresh_btn.disabled = true
+		if dispatch_btn: dispatch_btn.disabled = true
+		return
 	if dispatch_btn != null:
 		var cd: int = GameState.dispatch_cooldown_left()
 		if not GameState.dispatched_cards.is_empty():
@@ -7053,6 +7082,7 @@ func _open_dispatch_panel() -> void:
 	if dispatch_panel == null:
 		_build_dispatch_panel()
 	dispatch_panel.visible = true
+	MotionScroll.reset_to_top(dispatch_scroll)
 	_deck_gyro_view = null          # 悬停态是从牌库那边借来的，开面板前先清干净
 	# 与牌库同一个做法：把其余 HUD 面板整体收出屏幕，让选牌这一屏是全屏的。
 	# _slide_main_ui 的控件清单里本来就有 left/right_panel / event_label / hand_panel /
@@ -7120,6 +7150,7 @@ func _build_dispatch_panel() -> void:
 	box.add_child(dispatch_hint)
 
 	var scroll := ScrollContainer.new()
+	dispatch_scroll = scroll
 	MotionScroll.attach(scroll)
 	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
@@ -7169,6 +7200,7 @@ func _fill_dispatch_grid() -> void:
 		views.append(view)
 	# 等一帧布局完成后逐张发牌（与牌库同一节奏，只是牌少、间隔收紧）
 	await get_tree().process_frame
+	MotionScroll.reset_to_top(dispatch_scroll)
 	for i in views.size():
 		var p: Control = views[i]
 		var tw := Motion.tween(p, "enter", "arrival")
@@ -7596,14 +7628,14 @@ func _build_tier_lever(holder: Node) -> void:
 	_refresh_lever_visuals(false)
 
 func _on_policy_stamp_requested(tier: String) -> void:
-	if _current_phase != "allocate" or _paused or GameState.game_over: return
+	if _allocation_controls_locked() or _paused: return
 	var old_tier := play_tier
 	var animate: bool = not (wetland and wetland.reduced_motion)
 	_set_play_tier(tier, animate)
 	if not animate and old_tier != play_tier: _on_policy_stamp_landed()
 
 func _on_policy_stamp_landed() -> void:
-	if _current_phase != "allocate" or _paused or GameState.game_over: return
+	if _allocation_controls_locked() or _paused: return
 	play_sfx("stamp", 1.0, -3.0)
 
 func _place_lever_handle(animate: bool) -> void:
@@ -7613,6 +7645,7 @@ func _place_lever_handle(animate: bool) -> void:
 ## 切档：更新手柄姿态、刻度/标签高亮、状态文字，并刷新手牌上还没被选中的牌。
 ## 冷却期间**拉杆锁死**、直接吞掉输入；点当前档不算切档，也不会重置冷却。
 func _set_play_tier(tier: String, animate: bool = true) -> void:
+	if _score_animating: return
 	if not GameState.TIER_COST_MULT.has(tier):
 		return
 	if Time.get_ticks_msec() - _lever_cooldown_ms < LEVER_COOLDOWN_MS:
@@ -7632,8 +7665,9 @@ func _update_lever_cooldown() -> void:
 	if lever_cd_label == null:
 		return
 	var remaining := LEVER_COOLDOWN_MS - (Time.get_ticks_msec() - _lever_cooldown_ms)
-	var locked: bool = remaining > 0
-	if locked:
+	var phase_locked := _allocation_controls_locked()
+	var locked: bool = phase_locked or remaining > 0
+	if remaining > 0 and not phase_locked:
 		lever_cd_label.text = "冷却 %.1f 秒" % (float(remaining) / 1000.0)
 	elif lever_cd_label.text != "":
 		lever_cd_label.text = ""
@@ -8165,6 +8199,7 @@ func _finish_turn() -> void:
 	# ★ 必须在 execute_action 之前置位：否则每张牌 emit 的 metrics_changed
 	#   会把指标条先刷到中途值，动画还没开始就已经跳过了。
 	_score_animating = true
+	_refresh_allocation_controls()
 	for i in staged_indices:
 		var info: Dictionary = card_infos[i]
 		var is_dispatched: bool = info.get("dispatched", false)
@@ -8270,6 +8305,7 @@ func _finish_turn() -> void:
 	tier_lever.visible = false
 	_slide_side_panels(true)  # 结算后侧边栏收回屏幕外，让出沙盘
 	_current_phase = "popup_settlement"
+	_refresh_allocation_controls()
 	_update_turn_budget_label()
 	_show_popup("结算反馈", "\n".join(lines), "继续", _on_resolve_continue)
 	# 结算弹窗铺好之后再放攒下的危机预警/爆发。

@@ -69,4 +69,5 @@ func snap_to_tier(index: int, animate: bool) -> void:
 func set_locked(locked: bool) -> void:
 	if _locked == locked: return
 	_locked = locked
+	modulate.a = 0.55 if locked else 1.0
 	for button in buttons: button.disabled = locked
