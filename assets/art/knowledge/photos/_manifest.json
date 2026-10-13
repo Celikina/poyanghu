@@ -8,8 +8,10 @@
   "credit_url": "",
   "source": "ppt/media/image2.jpeg",
   "source_size": "800x800",
-  "out_size": "256x256",
-  "bytes": 62961
+  "out_size": "512x512",
+  "bytes": 199050,
+  "declared_license": "CC BY-SA 3.0",
+  "license_evidence": "图集图片注释及第 42–43 页声明，尚缺原图来源页核对"
  },
  {
   "number": "02",
@@ -20,8 +22,10 @@
   "credit_url": "",
   "source": "ppt/media/image3.jpeg",
   "source_size": "800x800",
-  "out_size": "256x256",
-  "bytes": 97075
+  "out_size": "512x512",
+  "bytes": 356701,
+  "declared_license": "CC BY 4.0",
+  "license_evidence": "图集图片注释及第 42–43 页声明，尚缺原图来源页核对"
  },
  {
   "number": "03",
@@ -32,8 +36,10 @@
   "credit_url": "",
   "source": "ppt/media/image4.jpeg",
   "source_size": "800x800",
-  "out_size": "256x256",
-  "bytes": 89320
+  "out_size": "512x512",
+  "bytes": 302673,
+  "declared_license": "未注明具体许可",
+  "license_evidence": "图集图片注释及第 42–43 页声明，尚缺原图来源页核对"
  },
  {
   "number": "04",
@@ -44,8 +50,10 @@
   "credit_url": "",
   "source": "ppt/media/image5.jpeg",
   "source_size": "800x800",
-  "out_size": "256x256",
-  "bytes": 135158
+  "out_size": "512x512",
+  "bytes": 511980,
+  "declared_license": "未注明具体许可",
+  "license_evidence": "图集图片注释及第 42–43 页声明，尚缺原图来源页核对"
  },
  {
   "number": "05",
@@ -56,8 +64,10 @@
   "credit_url": "",
   "source": "ppt/media/image6.jpeg",
   "source_size": "800x800",
-  "out_size": "256x256",
-  "bytes": 91427
+  "out_size": "512x512",
+  "bytes": 376807,
+  "declared_license": "未注明具体许可",
+  "license_evidence": "图集图片注释及第 42–43 页声明，尚缺原图来源页核对"
  },
  {
   "number": "06",
@@ -68,8 +78,10 @@
   "credit_url": "",
   "source": "ppt/media/image7.jpeg",
   "source_size": "800x800",
-  "out_size": "256x256",
-  "bytes": 128648
+  "out_size": "512x512",
+  "bytes": 444380,
+  "declared_license": "CC BY-SA 4.0",
+  "license_evidence": "图集图片注释及第 42–43 页声明，尚缺原图来源页核对"
  },
  {
   "number": "07",
@@ -80,8 +92,10 @@
   "credit_url": "",
   "source": "ppt/media/image8.jpeg",
   "source_size": "800x800",
-  "out_size": "256x256",
-  "bytes": 129762
+  "out_size": "512x512",
+  "bytes": 484368,
+  "declared_license": "未注明具体许可",
+  "license_evidence": "图集图片注释及第 42–43 页声明，尚缺原图来源页核对"
  },
  {
   "number": "08",
@@ -92,8 +106,10 @@
   "credit_url": "",
   "source": "ppt/media/image9.jpeg",
   "source_size": "800x800",
-  "out_size": "256x256",
-  "bytes": 132423
+  "out_size": "512x512",
+  "bytes": 461801,
+  "declared_license": "未注明具体许可",
+  "license_evidence": "图集图片注释及第 42–43 页声明，尚缺原图来源页核对"
  },
  {
   "number": "09",
@@ -104,8 +120,10 @@
   "credit_url": "",
   "source": "ppt/media/image10.webp",
   "source_size": "474x711",
-  "out_size": "256x256",
-  "bytes": 119674
+  "out_size": "512x512",
+  "bytes": 419466,
+  "declared_license": "未注明具体许可",
+  "license_evidence": "图集图片注释及第 42–43 页声明，尚缺原图来源页核对"
  },
  {
   "number": "10",
@@ -116,8 +134,10 @@
   "credit_url": "",
   "source": "ppt/media/image11.jpeg",
   "source_size": "800x800",
-  "out_size": "256x256",
-  "bytes": 118618
+  "out_size": "512x512",
+  "bytes": 396315,
+  "declared_license": "公有领域",
+  "license_evidence": "图集图片注释及第 42–43 页声明，尚缺原图来源页核对"
  },
  {
   "number": "11",
@@ -128,8 +148,10 @@
   "credit_url": "",
   "source": "ppt/media/image12.jpeg",
   "source_size": "800x800",
-  "out_size": "256x256",
-  "bytes": 41440
+  "out_size": "512x512",
+  "bytes": 129317,
+  "declared_license": "CC BY 4.0",
+  "license_evidence": "图集图片注释及第 42–43 页声明，尚缺原图来源页核对"
  },
  {
   "number": "12",
@@ -140,8 +162,10 @@
   "credit_url": "",
   "source": "ppt/media/image13.png",
   "source_size": "1707x1280",
-  "out_size": "256x256",
-  "bytes": 58880
+  "out_size": "512x512",
+  "bytes": 174513,
+  "declared_license": "未注明具体许可",
+  "license_evidence": "图集图片注释及第 42–43 页声明，尚缺原图来源页核对"
  },
  {
   "number": "13",
@@ -152,8 +176,10 @@
   "credit_url": "",
   "source": "ppt/media/image14.jpeg",
   "source_size": "800x800",
-  "out_size": "256x256",
-  "bytes": 121140
+  "out_size": "512x512",
+  "bytes": 492273,
+  "declared_license": "公有领域",
+  "license_evidence": "图集图片注释及第 42–43 页声明，尚缺原图来源页核对"
  },
  {
   "number": "14",
@@ -164,8 +190,10 @@
   "credit_url": "",
   "source": "ppt/media/image15.jpeg",
   "source_size": "800x800",
-  "out_size": "256x256",
-  "bytes": 140767
+  "out_size": "512x512",
+  "bytes": 550032,
+  "declared_license": "公有领域",
+  "license_evidence": "图集图片注释及第 42–43 页声明，尚缺原图来源页核对"
  },
  {
   "number": "15",
@@ -176,8 +204,10 @@
   "credit_url": "",
   "source": "ppt/media/image16.jpeg",
   "source_size": "800x800",
-  "out_size": "256x256",
-  "bytes": 63549
+  "out_size": "512x512",
+  "bytes": 199166,
+  "declared_license": "CC BY 3.0",
+  "license_evidence": "图集图片注释及第 42–43 页声明，尚缺原图来源页核对"
  },
  {
   "number": "16",
@@ -188,8 +218,10 @@
   "credit_url": "",
   "source": "ppt/media/image17.jpeg",
   "source_size": "557x749",
-  "out_size": "256x256",
-  "bytes": 100778
+  "out_size": "512x512",
+  "bytes": 343729,
+  "declared_license": "未注明具体许可",
+  "license_evidence": "图集图片注释及第 42–43 页声明，尚缺原图来源页核对"
  },
  {
   "number": "17",
@@ -200,8 +232,10 @@
   "credit_url": "",
   "source": "ppt/media/image18.jpeg",
   "source_size": "800x800",
-  "out_size": "256x256",
-  "bytes": 94710
+  "out_size": "512x512",
+  "bytes": 329935,
+  "declared_license": "CC BY-SA 2.0",
+  "license_evidence": "图集图片注释及第 42–43 页声明，尚缺原图来源页核对"
  },
  {
   "number": "18",
@@ -212,8 +246,10 @@
   "credit_url": "",
   "source": "ppt/media/image19.jpeg",
   "source_size": "800x800",
-  "out_size": "256x256",
-  "bytes": 164194
+  "out_size": "512x512",
+  "bytes": 711956,
+  "declared_license": "CC BY-SA 4.0",
+  "license_evidence": "图集图片注释及第 42–43 页声明，尚缺原图来源页核对"
  },
  {
   "number": "19",
@@ -224,8 +260,10 @@
   "credit_url": "",
   "source": "ppt/media/image20.jpeg",
   "source_size": "800x800",
-  "out_size": "256x256",
-  "bytes": 154553
+  "out_size": "512x512",
+  "bytes": 626539,
+  "declared_license": "未注明具体许可",
+  "license_evidence": "图集图片注释及第 42–43 页声明，尚缺原图来源页核对"
  },
  {
   "number": "20",
@@ -236,8 +274,10 @@
   "credit_url": "",
   "source": "ppt/media/image21.jpeg",
   "source_size": "800x800",
-  "out_size": "256x256",
-  "bytes": 122218
+  "out_size": "512x512",
+  "bytes": 405014,
+  "declared_license": "未注明具体许可",
+  "license_evidence": "图集图片注释及第 42–43 页声明，尚缺原图来源页核对"
  },
  {
   "number": "21",
@@ -248,8 +288,10 @@
   "credit_url": "",
   "source": "ppt/media/image22.jpeg",
   "source_size": "800x800",
-  "out_size": "256x256",
-  "bytes": 144484
+  "out_size": "512x512",
+  "bytes": 523104,
+  "declared_license": "CC BY-SA 4.0",
+  "license_evidence": "图集图片注释及第 42–43 页声明，尚缺原图来源页核对"
  },
  {
   "number": "22",
@@ -260,8 +302,10 @@
   "credit_url": "",
   "source": "ppt/media/image23.jpeg",
   "source_size": "800x800",
-  "out_size": "256x256",
-  "bytes": 142162
+  "out_size": "512x512",
+  "bytes": 560999,
+  "declared_license": "CC0",
+  "license_evidence": "图集图片注释及第 42–43 页声明，尚缺原图来源页核对"
  },
  {
   "number": "23",
@@ -272,8 +316,10 @@
   "credit_url": "",
   "source": "ppt/media/image24.jpeg",
   "source_size": "800x800",
-  "out_size": "256x256",
-  "bytes": 120670
+  "out_size": "512x512",
+  "bytes": 446609,
+  "declared_license": "CC BY-SA 4.0",
+  "license_evidence": "图集图片注释及第 42–43 页声明，尚缺原图来源页核对"
  },
  {
   "number": "24",
@@ -284,8 +330,10 @@
   "credit_url": "",
   "source": "ppt/media/image25.jpeg",
   "source_size": "800x800",
-  "out_size": "256x256",
-  "bytes": 78912
+  "out_size": "512x512",
+  "bytes": 282764,
+  "declared_license": "未注明具体许可",
+  "license_evidence": "图集图片注释及第 42–43 页声明，尚缺原图来源页核对"
  },
  {
   "number": "25",
@@ -296,8 +344,10 @@
   "credit_url": "",
   "source": "ppt/media/image26.jpeg",
   "source_size": "700x525",
-  "out_size": "256x256",
-  "bytes": 88792
+  "out_size": "512x512",
+  "bytes": 330129,
+  "declared_license": "未注明具体许可",
+  "license_evidence": "图集图片注释及第 42–43 页声明，尚缺原图来源页核对"
  },
  {
   "number": "26",
@@ -308,8 +358,10 @@
   "credit_url": "",
   "source": "ppt/media/image27.jpeg",
   "source_size": "800x800",
-  "out_size": "256x256",
-  "bytes": 36371
+  "out_size": "512x512",
+  "bytes": 105621,
+  "declared_license": "未注明具体许可",
+  "license_evidence": "图集图片注释及第 42–43 页声明，尚缺原图来源页核对"
  },
  {
   "number": "27",
@@ -320,8 +372,10 @@
   "credit_url": "",
   "source": "ppt/media/image28.jpeg",
   "source_size": "800x800",
-  "out_size": "256x256",
-  "bytes": 104278
+  "out_size": "512x512",
+  "bytes": 392081,
+  "declared_license": "CC BY-SA 2.0",
+  "license_evidence": "图集图片注释及第 42–43 页声明，尚缺原图来源页核对"
  },
  {
   "number": "28",
@@ -332,8 +386,10 @@
   "credit_url": "",
   "source": "ppt/media/image29.jpeg",
   "source_size": "800x800",
-  "out_size": "256x256",
-  "bytes": 143324
+  "out_size": "512x512",
+  "bytes": 563960,
+  "declared_license": "公有领域",
+  "license_evidence": "图集图片注释及第 42–43 页声明，尚缺原图来源页核对"
  },
  {
   "number": "29",
@@ -344,8 +400,10 @@
   "credit_url": "",
   "source": "ppt/media/image30.jpeg",
   "source_size": "800x800",
-  "out_size": "256x256",
-  "bytes": 110905
+  "out_size": "512x512",
+  "bytes": 405302,
+  "declared_license": "未注明具体许可",
+  "license_evidence": "图集图片注释及第 42–43 页声明，尚缺原图来源页核对"
  },
  {
   "number": "30",
@@ -356,8 +414,10 @@
   "credit_url": "",
   "source": "ppt/media/image31.jpeg",
   "source_size": "800x800",
-  "out_size": "256x256",
-  "bytes": 117797
+  "out_size": "512x512",
+  "bytes": 421762,
+  "declared_license": "未注明具体许可",
+  "license_evidence": "图集图片注释及第 42–43 页声明，尚缺原图来源页核对"
  },
  {
   "number": "31",
@@ -368,8 +428,10 @@
   "credit_url": "",
   "source": "ppt/media/image32.jpeg",
   "source_size": "800x800",
-  "out_size": "256x256",
-  "bytes": 160204
+  "out_size": "512x512",
+  "bytes": 642603,
+  "declared_license": "公有领域",
+  "license_evidence": "图集图片注释及第 42–43 页声明，尚缺原图来源页核对"
  },
  {
   "number": "32",
@@ -380,8 +442,10 @@
   "credit_url": "",
   "source": "ppt/media/image33.jpeg",
   "source_size": "800x800",
-  "out_size": "256x256",
-  "bytes": 101394
+  "out_size": "512x512",
+  "bytes": 312496,
+  "declared_license": "未注明具体许可",
+  "license_evidence": "图集图片注释及第 42–43 页声明，尚缺原图来源页核对"
  },
  {
   "number": "33",
@@ -392,8 +456,10 @@
   "credit_url": "",
   "source": "ppt/media/image34.jpeg",
   "source_size": "1080x810",
-  "out_size": "256x256",
-  "bytes": 105513
+  "out_size": "512x512",
+  "bytes": 354546,
+  "declared_license": "未注明具体许可",
+  "license_evidence": "图集图片注释及第 42–43 页声明，尚缺原图来源页核对"
  },
  {
   "number": "34",
@@ -404,8 +470,10 @@
   "credit_url": "",
   "source": "ppt/media/image35.jpeg",
   "source_size": "800x800",
-  "out_size": "256x256",
-  "bytes": 153241
+  "out_size": "512x512",
+  "bytes": 571247,
+  "declared_license": "公有领域",
+  "license_evidence": "图集图片注释及第 42–43 页声明，尚缺原图来源页核对"
  },
  {
   "number": "35",
@@ -416,8 +484,10 @@
   "credit_url": "",
   "source": "ppt/media/image36.jpeg",
   "source_size": "800x800",
-  "out_size": "256x256",
-  "bytes": 154554
+  "out_size": "512x512",
+  "bytes": 583324,
+  "declared_license": "公有领域",
+  "license_evidence": "图集图片注释及第 42–43 页声明，尚缺原图来源页核对"
  },
  {
   "number": "36",
@@ -428,20 +498,24 @@
   "credit_url": "",
   "source": "ppt/media/image37.jpeg",
   "source_size": "800x800",
-  "out_size": "256x256",
-  "bytes": 87937
+  "out_size": "512x512",
+  "bytes": 279995,
+  "declared_license": "公有领域",
+  "license_evidence": "图集图片注释及第 42–43 页声明，尚缺原图来源页核对"
  },
  {
   "number": "37",
   "card_id": "protect_wetland_tracks",
   "name": "草洲不是越野场",
   "category": "保护行动",
-  "credit": "图片：易车 · 吉普穆马人论坛（草洲上的越野车）",
+  "credit": "图片：易车 · 吉普牧马人论坛（作者授权，用户于 2026-10-13 确认）",
   "credit_url": "https://baa.m.yiche.com/jipumumaren/thread-50427945.html",
-  "source": "Cache_-60402dd135362f28.jpg",
+  "source": "998293124c89c2425809c46943c31266.jpg",
   "source_size": "1328x1246",
-  "out_size": "256x256",
-  "bytes": 116902
+  "out_size": "512x512",
+  "bytes": 396223,
+  "declared_license": "作者授权",
+  "license_evidence": "用户确认作者授权"
  },
  {
   "number": "38",
@@ -452,8 +526,10 @@
   "credit_url": "",
   "source": "ppt/media/image39.jpeg",
   "source_size": "800x800",
-  "out_size": "256x256",
-  "bytes": 110228
+  "out_size": "512x512",
+  "bytes": 397828,
+  "declared_license": "公有领域",
+  "license_evidence": "图集图片注释及第 42–43 页声明，尚缺原图来源页核对"
  },
  {
   "number": "39",
@@ -464,8 +540,10 @@
   "credit_url": "",
   "source": "ppt/media/image40.jpeg",
   "source_size": "800x800",
-  "out_size": "256x256",
-  "bytes": 105264
+  "out_size": "512x512",
+  "bytes": 370146,
+  "declared_license": "公有领域",
+  "license_evidence": "图集图片注释及第 42–43 页声明，尚缺原图来源页核对"
  },
  {
   "number": "40",
@@ -476,7 +554,9 @@
   "credit_url": "",
   "source": "ppt/media/image41.jpeg",
   "source_size": "800x800",
-  "out_size": "256x256",
-  "bytes": 55249
+  "out_size": "512x512",
+  "bytes": 171522,
+  "declared_license": "公有领域",
+  "license_evidence": "图集图片注释及第 42–43 页声明，尚缺原图来源页核对"
  }
 ]

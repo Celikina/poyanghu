@@ -1,0 +1,260 @@
+知识卡照片来源与许可记录（2026-10-13）
+
+原图按用户提供的《鄱阳湖 · 知识卡图集》编号逐一匹配卡名。
+处理：中心正方形裁切、缩放为 512×512；牌面显示为 246×246。
+以下许可除汽车照片外均是供应图集的声明，不能替代原图来源页和授权证据。
+仅写自由许可或未注明出处的图片，需补具体原图链接、作者和许可证后再确认公开分发。
+CC BY：保留作者与许可证并说明裁切缩放。CC BY-SA：照片的改作按相同许可证提供。
+许可证文本：
+https://creativecommons.org/licenses/by/3.0/
+https://creativecommons.org/licenses/by/4.0/
+https://creativecommons.org/licenses/by-sa/2.0/
+https://creativecommons.org/licenses/by-sa/3.0/
+https://creativecommons.org/licenses/by-sa/4.0/
+https://creativecommons.org/publicdomain/zero/1.0/
+
+01 苦草 (plant_kucao)
+图片：Wikimedia Commons · CC BY-SA 3.0 · Show_ryu
+声明许可：CC BY-SA 3.0
+证据：图集图片注释及第 42–43 页声明，尚缺原图来源页核对
+原图标识：ppt/media/image2.jpeg
+
+02 白鹤 (bird_baihe)
+图片：Wikimedia Commons · CC BY 4.0 · A Dim Light Chaser（2023，摄于鄱阳湖）
+声明许可：CC BY 4.0
+证据：图集图片注释及第 42–43 页声明，尚缺原图来源页核对
+原图标识：ppt/media/image3.jpeg
+
+03 小天鹅 (bird_xiaotiane)
+图片：Wikimedia Commons · 自由许可
+声明许可：未注明具体许可
+证据：图集图片注释及第 42–43 页声明，尚缺原图来源页核对
+原图标识：ppt/media/image4.jpeg
+
+04 东方白鹳 (bird_dongfang)
+图片：Wikimedia Commons · 自由许可
+声明许可：未注明具体许可
+证据：图集图片注释及第 42–43 页声明，尚缺原图来源页核对
+原图标识：ppt/media/image5.jpeg
+
+05 水质与苦草 (mech_water_quality)
+图片：Wikimedia Commons · 自由许可
+声明许可：未注明具体许可
+证据：图集图片注释及第 42–43 页声明，尚缺原图来源页核对
+原图标识：ppt/media/image6.jpeg
+
+06 福寿螺综合防控 (mech_fushouluo)
+图片：Wikimedia Commons · CC BY-SA 4.0 · Shouyong / Linda Wong（2023，湖南）
+声明许可：CC BY-SA 4.0
+证据：图集图片注释及第 42–43 页声明，尚缺原图来源页核对
+原图标识：ppt/media/image7.jpeg
+
+07 苦草病害的因果 (cons_disease)
+图片：Wikimedia Commons · 自由许可
+声明许可：未注明具体许可
+证据：图集图片注释及第 42–43 页声明，尚缺原图来源页核对
+原图标识：ppt/media/image8.jpeg
+
+08 野生动物致害补偿 (cons_compensate)
+图片：Wikimedia Commons · 自由许可
+声明许可：未注明具体许可
+证据：图集图片注释及第 42–43 页声明，尚缺原图来源页核对
+原图标识：ppt/media/image9.jpeg
+
+09 认识鄱阳湖 (geo_poyang)
+图集未提供这张照片的出处。
+声明许可：未注明具体许可
+证据：图集图片注释及第 42–43 页声明，尚缺原图来源页核对
+原图标识：ppt/media/image10.webp
+
+10 五河汇入一湖 (geo_five_rivers)
+图片：NASA · 公有领域（2012）
+声明许可：公有领域
+证据：图集图片注释及第 42–43 页声明，尚缺原图来源页核对
+原图标识：ppt/media/image11.jpeg
+
+11 湖口：江湖相连的通道 (geo_hukou)
+图片：MDPI Remote Sensing 期刊 · CC BY 4.0（2024）
+声明许可：CC BY 4.0
+证据：图集图片注释及第 42–43 页声明，尚缺原图来源页核对
+原图标识：ppt/media/image12.jpeg
+
+12 会变大小的湖 (geo_seasonal_lake)
+图集未提供这张照片的出处。
+声明许可：未注明具体许可
+证据：图集图片注释及第 42–43 页声明，尚缺原图来源页核对
+原图标识：ppt/media/image13.png
+
+13 碟形湖：大湖里的小湖 (geo_saucer_lakes)
+图片：USFWS（美国鱼类及野生动物管理局）· 公有领域
+声明许可：公有领域
+证据：图集图片注释及第 42–43 页声明，尚缺原图来源页核对
+原图标识：ppt/media/image14.jpeg
+
+14 湖泊如何调蓄洪水 (geo_flood_storage)
+图片：NASA · 公有领域
+声明许可：公有领域
+证据：图集图片注释及第 42–43 页声明，尚缺原图来源页核对
+原图标识：ppt/media/image15.jpeg
+
+15 长江江豚 (animal_finless_porpoise)
+图片：Wikimedia Commons · CC BY 3.0 · Huangdan2060（中科院武汉水生所）
+声明许可：CC BY 3.0
+证据：图集图片注释及第 42–43 页声明，尚缺原图来源页核对
+原图标识：ppt/media/image16.jpeg
+
+16 白枕鹤 (bird_white_naped_crane)
+图集未提供这张照片的出处。
+声明许可：未注明具体许可
+证据：图集图片注释及第 42–43 页声明，尚缺原图来源页核对
+原图标识：ppt/media/image17.jpeg
+
+17 鄱阳湖的雁类 (bird_wintering_geese)
+图片：Wikimedia Commons · CC BY-SA 2.0 · Alastair Rae（2014，摄于鄱阳湖）
+声明许可：CC BY-SA 2.0
+证据：图集图片注释及第 42–43 页声明，尚缺原图来源页核对
+原图标识：ppt/media/image18.jpeg
+
+18 苔草：草洲上的绿色食堂 (plant_sedge)
+图片：Wikimedia Commons · CC BY-SA 4.0
+声明许可：CC BY-SA 4.0
+证据：图集图片注释及第 42–43 页声明，尚缺原图来源页核对
+原图标识：ppt/media/image19.jpeg
+
+19 芦苇与南荻 (plant_reeds)
+图片：Wikimedia Commons · 自由许可
+声明许可：未注明具体许可
+证据：图集图片注释及第 42–43 页声明，尚缺原图来源页核对
+原图标识：ppt/media/image20.jpeg
+
+20 莲与藕的秘密 (plant_lotus)
+图片：Wikimedia Commons · 自由许可
+声明许可：未注明具体许可
+证据：图集图片注释及第 42–43 页声明，尚缺原图来源页核对
+原图标识：ppt/media/image21.jpeg
+
+21 鱼儿的江湖旅行 (mech_fish_migration)
+图片：Wikimedia Commons · CC BY-SA 4.0
+声明许可：CC BY-SA 4.0
+证据：图集图片注释及第 42–43 页声明，尚缺原图来源页核对
+原图标识：ppt/media/image22.jpeg
+
+22 湿地植物的分布带 (mech_vegetation_zones)
+图片：publicdomainpictures.net · CC0 公有领域
+声明许可：CC0
+证据：图集图片注释及第 42–43 页声明，尚缺原图来源页核对
+原图标识：ppt/media/image23.jpeg
+
+23 湿地里的食物联系 (mech_food_web)
+图片：Wikimedia Commons · CC BY-SA 4.0 · Basile Morin（2019）
+声明许可：CC BY-SA 4.0
+证据：图集图片注释及第 42–43 页声明，尚缺原图来源页核对
+原图标识：ppt/media/image24.jpeg
+
+24 水鸟需要适宜的水深 (mech_feeding_depth)
+图片：Wikimedia Commons · 自由许可
+声明许可：未注明具体许可
+证据：图集图片注释及第 42–43 页声明，尚缺原图来源页核对
+原图标识：ppt/media/image25.jpeg
+
+25 极端干旱的连锁影响 (case_extreme_drought)
+图集未提供这张照片的出处。
+声明许可：未注明具体许可
+证据：图集图片注释及第 42–43 页声明，尚缺原图来源页核对
+原图标识：ppt/media/image26.jpeg
+
+26 小微湿地帮助净水 (mech_micro_wetlands)
+图片：Wikimedia Commons · 自由许可
+声明许可：未注明具体许可
+证据：图集图片注释及第 42–43 页声明，尚缺原图来源页核对
+原图标识：ppt/media/image27.jpeg
+
+27 湿地也能储存碳 (mech_wetland_carbon)
+图片：Wikimedia Commons · CC BY-SA 2.0
+声明许可：CC BY-SA 2.0
+证据：图集图片注释及第 42–43 页声明，尚缺原图来源页核对
+原图标识：ppt/media/image28.jpeg
+
+28 雨水带来的面源污染 (mech_runoff_pollution)
+图片：USDA NRCS（美国农业部）· 公有领域
+声明许可：公有领域
+证据：图集图片注释及第 42–43 页声明，尚缺原图来源页核对
+原图标识：ppt/media/image29.jpeg
+
+29 候鸟迁飞通道 (manage_flyway)
+图片：Wikimedia Commons · 自由许可
+声明许可：未注明具体许可
+证据：图集图片注释及第 42–43 页声明，尚缺原图来源页核对
+原图标识：ppt/media/image30.jpeg
+
+30 鸟脚上的“身份证” (mech_bird_rings)
+图片：Wikimedia Commons · 自由许可
+声明许可：未注明具体许可
+证据：图集图片注释及第 42–43 页声明，尚缺原图来源页核对
+原图标识：ppt/media/image31.jpeg
+
+31 怎样调查候鸟 (manage_bird_surveys)
+图片：USGS（美国地质调查局）· 公有领域
+声明许可：公有领域
+证据：图集图片注释及第 42–43 页声明，尚缺原图来源页核对
+原图标识：ppt/media/image32.jpeg
+
+32 十年禁渔保护了什么 (manage_fishing_ban)
+图片：Wikimedia Commons · 自由许可
+声明许可：未注明具体许可
+证据：图集图片注释及第 42–43 页声明，尚缺原图来源页核对
+原图标识：ppt/media/image33.jpeg
+
+33 科学放流，拒绝随意放生 (protect_scientific_release)
+图集未提供这张照片的出处。
+声明许可：未注明具体许可
+证据：图集图片注释及第 42–43 页声明，尚缺原图来源页核对
+原图标识：ppt/media/image34.jpeg
+
+34 候鸟食堂怎样建 (manage_bird_canteens)
+图片：USFWS · 公有领域
+声明许可：公有领域
+证据：图集图片注释及第 42–43 页声明，尚缺原图来源页核对
+原图标识：ppt/media/image35.jpeg
+
+35 文明观鸟 (protect_birdwatching)
+图片：USFWS · 公有领域
+声明许可：公有领域
+证据：图集图片注释及第 42–43 页声明，尚缺原图来源页核对
+原图标识：ppt/media/image36.jpeg
+
+36 发现伤病鸟怎么办 (protect_bird_rescue)
+图片：USCG（美国海岸警卫队）· 公有领域
+声明许可：公有领域
+证据：图集图片注释及第 42–43 页声明，尚缺原图来源页核对
+原图标识：ppt/media/image37.jpeg
+
+37 草洲不是越野场 (protect_wetland_tracks)
+图片：易车 · 吉普牧马人论坛（作者授权，用户于 2026-10-13 确认）
+声明许可：作者授权
+证据：用户确认作者授权
+原图标识：998293124c89c2425809c46943c31266.jpg
+https://baa.m.yiche.com/jipumumaren/thread-50427945.html
+
+38 渔网和鱼线的隐患 (case_entanglement)
+图片：NOAA · 公有领域
+声明许可：公有领域
+证据：图集图片注释及第 42–43 页声明，尚缺原图来源页核对
+原图标识：ppt/media/image39.jpeg
+
+39 从捕鱼人到护鱼员 (manage_fisher_transition)
+图片：USCG / DVIDS · 公有领域
+声明许可：公有领域
+证据：图集图片注释及第 42–43 页声明，尚缺原图来源页核对
+原图标识：ppt/media/image40.jpeg
+
+40 水下也有噪声 (mech_underwater_noise)
+图片：US Navy · 公有领域
+声明许可：公有领域
+证据：图集图片注释及第 42–43 页声明，尚缺原图来源页核对
+原图标识：ppt/media/image41.jpeg
+
+发牌音效：ZapSplat，playing cards dealing table 002 (20484)。
+用户于 2026-10-13 确认：付费账号下载或已有免署名许可。
+游戏中整段加速，并限制在发牌动画期间使用；不作为独立素材对外分发。
+https://www.zapsplat.com/license-type/standard-license/

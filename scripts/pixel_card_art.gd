@@ -37,11 +37,12 @@ const FACE_BAND_CENTER := 338 # 中间空白带的垂直中心（实测卡面 14
 ## 文字自动调整大小做避让，同时要求能放得下」。
 const FACE_PHOTO_TOP := 175
 const FACE_PHOTO_MAX := 246
-const FACE_PHOTO_MIN := 140
+const FACE_PHOTO_X := 79
 const FACE_PHOTO_GAP := 6      # 方图与卡名之间的空隙
 const FACE_NAME_BOTTOM := 510  # 卡名块下限（再往下 y≈540 是印好的「点击查看」，留 30px 喘气）
 const FACE_NAME_SCALES: Array[int] = [4, 3, 2]  # 卡名候选字形倍数，从大到小退
-const FACE_NAME_INDENT := 20   # 行距 = 20 × 字形倍数（scale 4 时正是 FACE_SPACING=80）
+const FACE_NAME_INDENT := 18
+const FACE_NAME_WIDTH := 284
 const GLYPHS := preload("res://assets/art/card-font-glyphs.png")
 const SHADOW := Color8(150, 150, 150)
 const INK := Color.BLACK
@@ -136,7 +137,7 @@ static func knowledge_texture(title: String, category: String, photo: Texture2D 
 	else:
 		_paste_photo(image, photo, plan)
 		var scale := int(plan["scale"])
-		var lines := _lines(title)
+		var lines: Array = plan["name_lines"]
 		for i in lines.size():
 			_write(image, lines[i], int(plan["name_top"]) + i * FACE_NAME_INDENT * scale, INK, -1, scale)
 	var result := ImageTexture.create_from_image(image)
@@ -144,26 +145,25 @@ static func knowledge_texture(title: String, category: String, photo: Texture2D 
 	return result
 
 
-## 「方图 + 卡名」的排布方案；这张卡放不下任何一张方图时给 {}（退回只有卡名的老排版）。
-##
-## 规则（用户定的优先级）：
-##   ① 方图永远是正方形（1:1），边长先按狄鑫斛那块方图的 246 摆；
-##   ② 卡名自动往下退字号（4 → 3 → 2 倍）给它让位，退到 2 倍就到底；
-##   ③ 退到底还装不下，才反过来缩方图（最低 140px，再小在图鉴里就看不清了）。
-## 一行的卡名因此能拿到和狄鑫斛一模一样的 246×246。
+## 所有照片固定使用狄鑫斛的同一块区域；只按各自卡名调整字号与换行。
 static func face_photo_plan(title: String) -> Dictionary:
 	_load_pixels()
-	var count := _lines(title).size()
 	for scale in FACE_NAME_SCALES:
+		var name_lines := _lines(title, int(FACE_NAME_WIDTH / scale))
+		var count := name_lines.size()
+		# 长卡名收尾只有一两个字时平均分行，避免单字悬在下一行。
+		if count > 1 and _width(name_lines.back()) < FACE_NAME_WIDTH / scale * 0.4:
+			var balanced := _lines(title, int(ceil(float(_width(title)) / count)))
+			if balanced.size() == count:
+				name_lines = balanced
 		var name_h := 16 * scale + maxi(count - 1, 0) * FACE_NAME_INDENT * scale
-		var side := mini(FACE_PHOTO_MAX, FACE_NAME_BOTTOM - FACE_PHOTO_TOP - FACE_PHOTO_GAP - name_h)
-		if side < FACE_PHOTO_MIN:
+		var name_top := FACE_PHOTO_TOP + FACE_PHOTO_MAX + FACE_PHOTO_GAP
+		# 阴影也占一个字形倍数，计入可用高度。
+		if name_top + name_h + scale > FACE_NAME_BOTTOM:
 			continue
-		var name_top := FACE_PHOTO_TOP + side + FACE_PHOTO_GAP
-		# 图与名之间剩的那点空档对半分，卡名落在中间比贴着图好看
-		name_top += (FACE_NAME_BOTTOM - name_top - name_h) / 2
-		return {"side": side, "scale": scale, "lines": count, "name_top": name_top,
-			"photo_x": int((source_width() - side) / 2.0)}
+		name_top += int((FACE_NAME_BOTTOM - name_top - name_h - scale) / 2.0)
+		return {"side": FACE_PHOTO_MAX, "scale": scale, "lines": count,
+			"name_lines": name_lines, "name_top": name_top, "photo_x": FACE_PHOTO_X}
 	return {}
 
 
@@ -205,11 +205,11 @@ static func _width(text: String) -> int:
 		width += int(mapping.get(character, mapping["？"])[2])
 	return width
 
-static func _lines(text: String) -> Array[String]:
+static func _lines(text: String, max_width: int = 64) -> Array[String]:
 	var lines: Array[String] = []
 	var line := ""
 	for character in text:
-		if not line.is_empty() and _width(line + character) > 64:
+		if not line.is_empty() and _width(line + character) > max_width:
 			lines.append(line)
 			line = ""
 		line += character

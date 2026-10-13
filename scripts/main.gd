@@ -410,18 +410,20 @@ const BGM_RECOVERY_SPEED := 0.75
 const BGM_RECOVERY_SECONDS := 3.0
 const AUDIO_SETTINGS_PATH := "user://settings.json"
 
-# 音效（程序化合成，生成器见 tools/make_ding.py —— 要改音色请改脚本重跑，别手改 wav）
+# 结算音效由 tools/make_ding.py 生成；发牌录音与许可记录见 licenses。
 const SFX_PATHS := {
 	"ding": "res://assets/audio/ding.wav",   # 逐张弹分 / 指标结算的「叮」
 	"land": "res://assets/audio/land.wav",   # 甩牌落桌的闷响
-	"deal": "res://assets/audio/deal.wav",   # 发牌：牌角离堆那一声「唰」（每张一声，见 _play_deal_animation）
+	"deal": "res://assets/audio/card-dealing-zapsplat.mp3",
 }
 const SFX_POOL_SIZE := 6        # 复音池：支撑每 0.045s 一个叮而互不打断
-# 发牌音的响度与错音：一局发 8~10 张，60ms 一张，压到 -5dB 才不会盖住 BGM；
-# 每张按 deal_index 换一点点音高（不用 randf —— 那会动到别人测试用的随机数序列）。
 const DEAL_SFX_DB := -5.0
-const DEAL_SFX_PITCH_STEPS: Array[float] = [1.0, 1.06, 0.95, 1.03]
-const LAND_SFX_DB := -15.0      # 牌落桌那一下：比发牌音低 10dB，只是「垫一下」
+const DEAL_SFX_DURATION_RATIO := 0.75
+const DEAL_SFX_FULL_HAND := 7 # 普通满手牌；额外抽牌不再延长音效。
+const INITIAL_DEAL_DURATION := 0.36
+const INITIAL_DEAL_STAGGER := 0.06
+var _deal_sfx_player: AudioStreamPlayer
+var _deal_sfx_turn := -1
 var _sfx_players: Array = []
 var _sfx_streams: Dictionary = {}
 var _sfx_cursor: int = 0        # 轮转下标（比"找空闲播放器"简单，且一定不会切掉正在响的那个）
@@ -2210,7 +2212,6 @@ func _build_ui() -> void:
 	pv.add_child(popup_title)
 	popup_body = RichTextLabel.new()
 	popup_body.bbcode_enabled = true
-	popup_body.meta_clicked.connect(_on_knowledge_source_clicked)
 	popup_body.fit_content = true
 	popup_body.custom_minimum_size = Vector2(540, 0)
 	popup_body.add_theme_font_size_override("normal_font_size", _snap_px(16))
@@ -3210,6 +3211,8 @@ DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD""",
 
 
 func _show_menu() -> void:
+	_stop_deal_sfx()
+	_deal_sfx_turn = -1
 	if impact_feedback != null: impact_feedback.clear()
 	# 作废可能还在跑的算分动画：代次 +1，它每个 await 回来都会发现 ID 变了而立即退出。
 	# 不这样做的话，回到主菜单后那段协程会继续改已经不该动的节点。
@@ -3526,6 +3529,9 @@ func _update_bgm_state() -> void:
 ## 建立音效播放池。同一个 AudioStream 可以被多个 player 同时播，
 ## 所以轮转复用就能支撑「连击音阶」那种密集触发而互不打断。
 func _setup_sfx() -> void:
+	# 整段发牌录音独占一路，不会被结算音效池轮转截断。
+	_deal_sfx_player = AudioStreamPlayer.new()
+	add_child(_deal_sfx_player)
 	for i in SFX_POOL_SIZE:
 		var p := AudioStreamPlayer.new()
 		add_child(p)
@@ -5396,6 +5402,7 @@ func _sort_hand_cards(by_category: bool) -> void:
 	_layout_fan()   # 重写每张牌的 position / rotation / base_pos / theta / radial
 
 	# ③ 发牌：从牌堆位置按新顺序逐张飞回自己的扇形位置
+	_play_deal_sfx(n, DEAL_DUR + float(DEAL_SFX_FULL_HAND - 1) * DEAL_LAG)
 	for i in n:
 		var info: Dictionary = hand_infos[i]
 		var p: PanelContainer = info["panel"]
@@ -5416,8 +5423,6 @@ func _sort_hand_cards(by_category: bool) -> void:
 		var tw := Motion.tween(p, "linear")
 		tw.set_parallel(true)
 		Motion.curve(tw, str(Motion.profiles.deal.ease))
-		# 排序后重发也是「发牌」，同样一张一声（与 _play_deal_animation 同一条音轨）
-		tw.tween_callback(_play_deal_sfx.bind(i)).set_delay(d)
 		tw.tween_property(p, "position", target, DEAL_DUR).set_delay(d)
 		tw.tween_property(p, "rotation", float(info["theta"]), DEAL_DUR).set_delay(d)
 		tw.tween_property(p, "scale", Vector2.ONE, DEAL_DUR).set_delay(d)
@@ -5986,7 +5991,7 @@ func _show_knowledge_detail(view: Control, kid: String) -> void:
 		fly.parallel().tween_property(big, "rotation", 0.0, Motion.seconds("carry"))
 	knowledge_detail_title.text = str(GameState.KNOWLEDGE_CARDS[kid]["name"]) if collected else "？？？"
 	knowledge_detail_body.text = _knowledge_detail_text(kid, collected)
-	knowledge_detail_source.text = _knowledge_source_lines(kid, collected)
+	knowledge_detail_source.text = ""
 	Motion.cancel(knowledge_detail_body, "text_reveal")
 	if wetland and wetland.reduced_motion:
 		knowledge_detail_body.visible_characters = -1
@@ -5998,7 +6003,7 @@ func _show_knowledge_detail(view: Control, kid: String) -> void:
 	tw.tween_property(knowledge_detail_body, "visible_characters", total, clampf(total * 0.03, 0.4, 2.5))
 
 
-func _knowledge_detail_text(kid: String, collected: bool, with_sources: bool = false) -> String:
+func _knowledge_detail_text(kid: String, collected: bool) -> String:
 	if not collected:
 		return "[color=#8a8a8a]未收集[/color]\n\n这张知识卡还没有收集到。"
 	var k: Dictionary = GameState.KNOWLEDGE_CARDS[kid]
@@ -6015,47 +6020,7 @@ func _knowledge_detail_text(kid: String, collected: bool, with_sources: bool = f
 	body += "生态角色：%s\n\n" % str(k["ecology"])
 	body += "当前威胁：%s\n\n" % str(k["threat"])
 	body += "管理建议：%s" % str(k["management"])
-	# 弹窗没有固定底栏，出处直接跟正文一起滚；详情页有常驻出处栏，这里就不要再写一遍
-	if with_sources:
-		body += "\n\n" + _knowledge_source_lines(kid, true)
 	return body
-
-
-## 详情页底部那条常驻的出处栏：卡照来源 + 文字资料来源，各一行，按需做成可点链接。
-## 之所以钉在正文框外面：写在正文里会被滚动条推到看不见的地方，而参赛作品的版权口径
-## 要求出处一眼可见。
-func _knowledge_source_lines(kid: String, collected: bool) -> String:
-	if not collected or kid == "egg_dixinhu":
-		return ""
-	var k: Dictionary = GameState.KNOWLEDGE_CARDS[kid]
-	var rows: Array[String] = []
-	var credit := str(k.get("photo_credit", ""))
-	if credit != "":
-		rows.append("[color=#8a8a8a]图片来源：[/color]%s"
-			% _source_link(credit, str(k.get("photo_url", ""))))
-	if k.has("source_url"):
-		rows.append("[color=#8a8a8a]资料来源：[/color]%s"
-			% _source_link(str(k.get("source_title", "")), str(k["source_url"])))
-	return "\n".join(rows)
-
-
-## 有 https 地址就把这段文字本身做成可点链接（点了走 _on_knowledge_source_clicked，
-## 那里只放行知识卡自己登记过的地址）。
-func _source_link(label: String, url: String) -> String:
-	if url.begins_with("https://"):
-		return "[url=%s]%s[/url]" % [url, label]
-	return label
-
-
-func _on_knowledge_source_clicked(meta: Variant) -> void:
-	# 只放行「某张知识卡自己登记的出处链接」——正文里的 url 不可能被点去开别的东西。
-	var url := str(meta)
-	if not url.begins_with("https://"):
-		return
-	for card in GameState.KNOWLEDGE_CARDS.values():
-		if url == str(card.get("source_url", "")) or url == str(card.get("photo_url", "")):
-			OS.shell_open(url)
-			return
 
 
 func _close_knowledge_detail() -> void:
@@ -6118,7 +6083,6 @@ func _build_knowledge_detail() -> void:
 	knowledge_detail_body.bbcode_enabled = true
 	knowledge_detail_body.fit_content = false
 	knowledge_detail_body.scroll_active = true
-	knowledge_detail_body.meta_clicked.connect(_on_knowledge_source_clicked)
 	knowledge_detail_body.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	knowledge_detail_body.add_theme_font_size_override("normal_font_size", _snap_px(16))
 	knowledge_detail_body.add_theme_color_override("default_color", Color(0.96, 0.94, 0.9))
@@ -6129,7 +6093,7 @@ func _build_knowledge_detail() -> void:
 	knowledge_detail_source.bbcode_enabled = true
 	knowledge_detail_source.fit_content = true
 	knowledge_detail_source.scroll_active = false
-	knowledge_detail_source.meta_clicked.connect(_on_knowledge_source_clicked)
+	knowledge_detail_source.hide() # 版权与资料来源随作品放在 licenses 文档，不进入游戏界面。
 	knowledge_detail_source.add_theme_font_size_override("normal_font_size", _snap_px(16))
 	knowledge_detail_source.add_theme_color_override("default_color", Color(0.72, 0.78, 0.82))
 	iv.add_child(knowledge_detail_source)
@@ -7457,27 +7421,41 @@ func _play_deal_animation() -> void:
 		panel.rotation = -0.10
 		panel.modulate.a = 0.0
 		var tw := Motion.tween(panel, "linear", "deal")
-		tw.tween_interval(float(deal_index) * 0.06)
-		# 牌离开牌堆的那一瞬出声（不是落桌时）：逐张错开 60ms → 一串「劈里啪啦」
-		tw.tween_callback(_play_deal_sfx.bind(deal_index))
+		tw.tween_interval(float(deal_index) * INITIAL_DEAL_STAGGER)
 		Motion.curve(tw, "power2.inOut")
-		tw.tween_property(panel, "position", target, 0.36)
-		tw.parallel().tween_property(panel, "rotation", float(info["theta"]), 0.36)
-		tw.parallel().tween_property(panel, "scale", Vector2.ONE, 0.36)
+		tw.tween_property(panel, "position", target, INITIAL_DEAL_DURATION)
+		tw.parallel().tween_property(panel, "rotation", float(info["theta"]), INITIAL_DEAL_DURATION)
+		tw.parallel().tween_property(panel, "scale", Vector2.ONE, INITIAL_DEAL_DURATION)
 		tw.parallel().tween_property(panel, "modulate:a", 1.0, 0.045)
 		tw.tween_callback(_finish_card_deal.bind(info, panel))
 		deal_index += 1
+	if deal_index > 0 and _deal_sfx_turn != GameState.turn:
+		_deal_sfx_turn = GameState.turn
+		_play_deal_sfx(deal_index, INITIAL_DEAL_DURATION + float(DEAL_SFX_FULL_HAND - 1) * INITIAL_DEAL_STAGGER)
 
-## 发牌音：按「第几张」换音高，免得十声一模一样听着像机器。
-func _play_deal_sfx(deal_index: int) -> void:
-	play_sfx("deal", DEAL_SFX_PITCH_STEPS[deal_index % DEAL_SFX_PITCH_STEPS.size()], DEAL_SFX_DB)
+## 当前 7 张牌的试听长度作为上限，按实际飞回手里的牌数 / 7 缩短。
+func _play_deal_sfx(card_count: int, full_hand_duration: float) -> void:
+	_stop_deal_sfx()
+	if card_count <= 0 or full_hand_duration <= 0.0 or not _sfx_streams.has("deal"):
+		return
+	var card_ratio := clampf(float(card_count) / DEAL_SFX_FULL_HAND, 0.0, 1.0)
+	var audio_duration := full_hand_duration * DEAL_SFX_DURATION_RATIO * card_ratio
+	_deal_sfx_player.stream = _sfx_streams["deal"]
+	_deal_sfx_player.pitch_scale = _deal_sfx_player.stream.get_length() / audio_duration
+	_deal_sfx_player.volume_db = linear_to_db(maxf(bgm_volume, 0.001)) + DEAL_SFX_DB
+	_deal_sfx_player.play()
+	var tw := Motion.tween(self, "linear", "deal_audio")
+	tw.tween_interval(audio_duration)
+	tw.tween_callback(_deal_sfx_player.stop)
+
+func _stop_deal_sfx() -> void:
+	Motion.cancel(self, "deal_audio")
+	if is_instance_valid(_deal_sfx_player):
+		_deal_sfx_player.stop()
 
 
 func _finish_card_deal(info: Dictionary, panel: PanelContainer) -> void:
 	if not is_instance_valid(panel) or not info.get("dealing", false): return
-	# 牌到手的落桌声：同一段动画的收尾，与开头的「唰」凑成一整套
-	play_sfx("land", DEAL_SFX_PITCH_STEPS[int(panel.get_meta("deal_index", 0)) % DEAL_SFX_PITCH_STEPS.size()],
-		LAND_SFX_DB)
 	info["dealing"] = false
 	info["flying"] = false
 	panel.position = info["base_pos"]
@@ -8169,6 +8147,7 @@ func _remove_gold_frame(panel: PanelContainer) -> void:
 func _finish_turn() -> void:
 	if _score_animating or _sort_animating or _cards_waiting_for_board():
 		return      # 算分动画 / 手牌排序进行中，忽略连点
+	_stop_deal_sfx()
 	_card_press_panel = null
 	_card_dragging = false
 	_card_drag_index = -1
@@ -8772,7 +8751,7 @@ func _show_knowledge(card_id: String) -> void:
 	Knowledge.unlock(card_id)
 	_current_phase = "popup_knowledge"
 	var k: Dictionary = GameState.KNOWLEDGE_CARDS[card_id]
-	var body := _knowledge_detail_text(card_id, true, true)   # 弹窗没有固定底栏，出处跟着正文走
+	var body := _knowledge_detail_text(card_id, true)
 	_show_popup("知识卡 · %s" % k["name"], body, "收下（继续）", _on_resolve_continue)
 	if card_id == "egg_dixinhu":
 		var reveal := CenterContainer.new()
@@ -8807,6 +8786,7 @@ func _advance_to_next() -> void:
 
 
 func _on_game_end(report: Dictionary) -> void:
+	_stop_deal_sfx()
 	# 中途判负（出牌 / 危机爆发）→ 立刻把失败报告推到玩家面前，
 	# 不让他继续出牌、产生「还能救」的错觉。
 	if _defer_game_over:

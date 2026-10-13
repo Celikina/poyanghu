@@ -77,7 +77,7 @@ func _ready() -> void:
 	game._close_knowledge_viewer()
 	game._show_knowledge("geo_poyang")
 	check(Knowledge.is_collected("geo_poyang"), "Gameplay popup collects the new card")
-	check("资料来源" in game.popup_body.text, "Gameplay popup includes source")
+	check(not "[url" in game.popup_body.text and not "https://" in game.popup_body.text, "Gameplay popup has no external links")
 	game.popup_root.visible = false
 	for kid in Knowledge.all_ids():
 		Knowledge.unlock(kid)
@@ -111,8 +111,8 @@ func _ready() -> void:
 		if kid in ["plant_kucao", "bird_baihe", "plant_sedge"]:
 			await settle(1.2)
 			await capture("knowledge-face-%s" % kid)
-		if GameState.KNOWLEDGE_CARDS[kid].has("source_url"):
-			check(GameState.KNOWLEDGE_CARDS[kid]["source_url"] in game.knowledge_detail_source.text, "%s opens its source link" % kid)
+		check(game.knowledge_detail_source.text.is_empty() and not game.knowledge_detail_source.visible,
+			"%s keeps source links in the accompanying license document" % kid)
 	game._close_knowledge_detail()
 	await capture("knowledge-all-desktop")
 	for window_size in [Vector2i(1280, 720), Vector2i(960, 540)]:
@@ -143,15 +143,13 @@ func _ready() -> void:
 		var view: Control = game.knowledge_grid.get_child(Knowledge.all_ids().find(kid))
 		game._show_knowledge_detail(view, kid)
 		await settle(0.5)
-		var credit := str(card.get("photo_credit", ""))
-		if credit != "":
-			check(credit in game.knowledge_detail_source.text, "%s writes its photo credit in the source footer" % kid)
-			check("图片来源" in game.knowledge_detail_source.text, "%s labels the photo credit" % kid)
-			check(get_viewport().get_visible_rect().encloses(game.knowledge_detail_source.get_global_rect()),
-				"%s source footer is visible without scrolling" % kid)
+		check(not "[url" in game.knowledge_detail_body.text and game.knowledge_detail_source.text.is_empty(),
+			"%s detail does not contain a source link" % kid)
 		var panel: Control = game._knowledge_big_card
 		var face: TextureRect = panel.get_meta("pixel_face")
 		var img: Image = face.texture.get_image()
+		if not output_dir.is_empty():
+			img.save_png(output_dir.path_join("face-" + kid + ".png"))
 		var plan: Dictionary = PixelArt.face_photo_plan(str(card["name"]))
 		if kid == "egg_dixinhu":
 			check(face.texture == PixelArt.KNOWLEDGE_FACE_EGG and game._knowledge_photo(kid) == null,
@@ -164,6 +162,13 @@ func _ready() -> void:
 		check(tex.get_width() == tex.get_height(),
 			"%s imported photo is square: %dx%d" % [kid, tex.get_width(), tex.get_height()])
 		var side := int(plan["side"])
+		check(side == 246 and int(plan["photo_x"]) == 79 and PixelArt.FACE_PHOTO_TOP == 175,
+			"%s matches the Dixinhu photo rectangle exactly" % kid)
+		var fitted_lines: Array = plan["name_lines"]
+		check("".join(fitted_lines) == str(card["name"]), "%s full name survives wrapping" % kid)
+		for line in fitted_lines:
+			check(PixelArt._width(str(line)) * int(plan["scale"]) + int(plan["scale"]) <= 288,
+				"%s name fits horizontally including its shadow" % kid)
 		var src: Image = tex.get_image().duplicate()
 		if src.get_width() != side:
 			src.resize(side, side, Image.INTERPOLATE_LANCZOS)
@@ -182,14 +187,13 @@ func _ready() -> void:
 			"%s name sits below the photo" % kid)
 		var name_bottom := int(plan["name_top"]) + 16 * int(plan["scale"]) \
 			+ maxi(int(plan["lines"]) - 1, 0) * PixelArt.FACE_NAME_INDENT * int(plan["scale"])
-		check(name_bottom <= 540, "%s name clears the printed footer: %d" % [kid, name_bottom])
+		check(name_bottom + int(plan["scale"]) <= 510, "%s name and shadow clear the printed footer: %d" % [kid, name_bottom])
 		check(int(plan["scale"]) >= 2, "%s name never shrinks below 2x" % kid)
 		game._close_knowledge_detail()
 	# 换过照片的那张（草洲不是越野场）单独截一张正脸：牌面 + 详情里的出处链接
 	game._show_knowledge_detail(game.knowledge_grid.get_child(Knowledge.all_ids().find("protect_wetland_tracks")), "protect_wetland_tracks")
 	await settle(1.4)
-	check(str(GameState.KNOWLEDGE_CARDS["protect_wetland_tracks"]["photo_url"]) in game.knowledge_detail_source.text,
-		"Replacement photo's source link is written in the source footer")
+	check(game.knowledge_detail_source.text.is_empty(), "Authorized replacement photo adds no game link")
 	await capture("knowledge-photo-protect_wetland_tracks")
 	game._close_knowledge_detail()
 	game._show_knowledge_detail(game.knowledge_grid.get_child(Knowledge.all_ids().find("plant_sedge")), "plant_sedge")
