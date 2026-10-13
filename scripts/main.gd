@@ -243,6 +243,12 @@ const TalentTreePanel := preload("res://scripts/talent_tree_panel.gd")
 # 成就图标配色：解锁 = 金牌，未解锁 = 灰牌（同一个网格，只换颜色）
 const ACH_GOLD := Color(0.98, 0.80, 0.30)
 const ACH_LOCKED := Color(0.42, 0.42, 0.47)
+# 美术交付的成就图标（Achievements.LIST 里带 tex 的那几条）有自己的一整套配色，
+# 不能像像素网格那样换主色重染。未解锁的版本是运行时算出来的灰牌（见
+# _achievement_art_locked）：去色 + 压暗，保住「已解锁=金、未解锁=灰」这个原设计。
+# 两个缓存都以原纹理为 key，第一次算完就不再重算。
+var _ach_art_trimmed: Dictionary = {}
+var _ach_art_grey: Dictionary = {}
 # 苦力怕彩蛋（左上角草地，lake_view 局部坐标）
 const CREEPER_X := -45.0
 const CREEPER_Z := 4.0
@@ -2814,7 +2820,7 @@ func _build_achievement_rows() -> void:
 		row.set_meta("achievement_id", str(a["id"]))
 		row.add_theme_constant_override("separation", 14)
 
-		var icon := _make_icon(str(a["icon"]), ACH_GOLD if got else ACH_LOCKED, 44)
+		var icon := _make_achievement_icon(a, got, 44)
 		icon.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 		row.add_child(icon)
 
@@ -2894,7 +2900,13 @@ func _show_achievement_popup(achievement_id: String) -> void:
 	const SLIDE := 0.35
 	const HOLD := 4.30        # 0.35 + 4.30 + 0.35 ≈ 5 秒
 
-	ach_popup_icon.texture = _pixel_icon_sized(str(a["icon"]), ACH_GOLD, 44)
+	var popup_tex: Texture2D = _achievement_art(a)
+	if popup_tex != null:
+		ach_popup_icon.texture = popup_tex
+		ach_popup_icon.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
+	else:
+		ach_popup_icon.texture = _pixel_icon_sized(str(a["icon"]), ACH_GOLD, 44)
+		ach_popup_icon.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 	ach_popup_name.text = str(a["name"])
 	ach_popup_desc.text = str(a["desc"])
 
@@ -9090,6 +9102,101 @@ func _research_tooltip() -> String:
 			+ "· 累计满 %d 点开启深预警：危机预警从提前 1 回合延长到提前 2 回合\n"
 			+ "· 累计 20 点以上，结算报告会记一条「长期数据库建立」") % [
 				GameState.MAX_CARRY, GameState.DEEP_WARN_RESEARCH]
+
+
+## 成就图标控件：优先用美术交付的 PNG（LIST 里带 "tex" 的那几条），
+## 没有交付图的（隐藏成就「被做局了」）回退到像素网格现画。
+## ⚠ 两条路的缩放规则不一样：美术图是平滑插画，必须线性过滤 + 未解锁整体压暗；
+##   网格是像素画，必须最近邻 + 换主色。混用会把其中一种弄花。
+func _make_achievement_icon(a: Dictionary, got: bool, px: int) -> TextureRect:
+	var tex: Texture2D = null
+	if a.has("tex"):
+		tex = _achievement_art(a) if got else _achievement_art_locked(a)
+	if tex != null:
+		var tr := _make_art_icon(tex, float(px))
+		tr.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
+		return tr
+	return _make_icon(str(a["icon"]), ACH_GOLD if got else ACH_LOCKED, px)
+
+
+## 未解锁的美术图标 = 灰牌：裁掉留白 → 去色 → 压暗。
+## ⚠ 不能只乘一层灰色 modulate：彩色图和金色的解锁图放一起，一眼分不出解锁与否。
+func _achievement_art_locked(a: Dictionary) -> Texture2D:
+	var tex: Texture2D = _achievement_art(a)
+	if tex == null:
+		return null
+	if _ach_art_grey.has(tex):
+		return _ach_art_grey[tex]
+	var result: Texture2D = tex
+	var src := tex.get_image()
+	if src != null:
+		var region := _alpha_region(tex, 0.05)
+		var sub: Image = src
+		if region.size.x >= 1.0 and region.size.y >= 1.0:
+			sub = src.get_region(Rect2i(region))
+		var grey := Image.create(sub.get_width(), sub.get_height(), false, Image.FORMAT_RGBA8)
+		for y in sub.get_height():
+			for x in sub.get_width():
+				var c := sub.get_pixel(x, y)
+				var lum := c.r * 0.299 + c.g * 0.587 + c.b * 0.114
+				# 0.34 起底、上限约 0.80：暗到一眼看出没解锁，又还认得出图案
+				var v := clampf(0.34 + lum * 0.46, 0.0, 1.0)
+				grey.set_pixel(x, y, Color(v, v, v, c.a))
+		result = ImageTexture.create_from_image(grey)
+	_ach_art_grey[tex] = result
+	return result
+
+
+## 取某条成就的美术图标纹理；没有交付图（或资源缺失）时返回 null。
+## 返回前先裁掉四周的透明留白（见 _trim_alpha_margin），否则同一排里
+## 它看着会比旁边像素网格画的图标小一圈。
+func _achievement_art(a: Dictionary) -> Texture2D:
+	if not a.has("tex"):
+		return null
+	return _trim_alpha_margin(a["tex"] as Texture2D)
+
+
+## 裁掉素材四周的透明留白：返回 AtlasTexture（不改磁盘上的原图），
+## 实体铺满整个图标盒，视觉大小才和像素网格图标对得上。结果按纹理缓存。
+func _trim_alpha_margin(tex: Texture2D) -> Texture2D:
+	if tex == null:
+		return null
+	if _ach_art_trimmed.has(tex):
+		return _ach_art_trimmed[tex]
+	var full := Vector2(tex.get_width(), tex.get_height())
+	var region := _alpha_region(tex, 0.05)
+	var result: Texture2D = tex
+	if region.size.x > 0.0 and region.size.y > 0.0 and region.size != full:
+		var at := AtlasTexture.new()
+		at.atlas = tex
+		at.region = region
+		result = at
+	_ach_art_trimmed[tex] = result
+	return result
+
+
+## 不透明像素的包围盒。阈值 0.05 是为了吃掉美术图外圈那层几乎看不见的抗锯齿边。
+## 图读不出来或整张全透明时返回空矩形，调用方退回用原图。
+func _alpha_region(tex: Texture2D, threshold: float) -> Rect2:
+	var img := tex.get_image()
+	if img == null:
+		return Rect2()
+	var w := img.get_width()
+	var h := img.get_height()
+	var min_x := w
+	var min_y := h
+	var max_x := -1
+	var max_y := -1
+	for y in h:
+		for x in w:
+			if img.get_pixel(x, y).a > threshold:
+				min_x = mini(min_x, x)
+				max_x = maxi(max_x, x)
+				min_y = mini(min_y, y)
+				max_y = maxi(max_y, y)
+	if max_x < 0:
+		return Rect2()
+	return Rect2(min_x, min_y, max_x - min_x + 1, max_y - min_y + 1)
 
 
 ## 旧的程序化图标网格（金额/科研点/指标都改用美术图后，这里只作历史备份，没人再调）

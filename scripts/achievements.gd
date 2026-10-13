@@ -82,6 +82,11 @@ const COIN_GRID := """
 	..########..
 """
 
+## 美术交付的成就图标（res://assets/art/achievements/，100×100 RGBA 透明底）。
+## 下面 LIST 里带 "tex" 的成就用这张图；没带的（目前只有隐藏成就「被做局了」）
+## 回退到上面的像素网格现画，所以两条路必须都留着。
+## ⚠ 美术图是平滑绘制的插画，不是像素画：缩放要线性过滤、未解锁要整体压暗
+##   而不是像网格那样重新染色 —— 具体在 main.gd 的 _make_achievement_icon。
 ## 「廉政先锋」的花费门槛（万/回合）。
 ## ⚠ 改这个数字时**必须同步改下面 LIST 里那条 desc 的文字** ——
 ##   desc 是 const 字符串，常量表达式里没法做格式化，只能靠这条注释互相提醒。
@@ -94,12 +99,14 @@ const LIST := [
 		"name": "？！同花！？",
 		"desc": "在同一回合打出三张同一类别的牌（都是生态 / 社会 / 管理）",
 		"icon": MEDAL_GRID,
+		"tex": preload("res://assets/art/achievements/flush.png"),
 	},
 	{
 		"id": "hard_clear",
 		"name": "最强管理员",
 		"desc": "在困难难度下打满 16 回合通关（不是中途被撤换）",
 		"icon": SHIELD_GRID,
+		"tex": preload("res://assets/art/achievements/hard_clear.png"),
 	},
 	{
 		"id": "rigged",
@@ -113,12 +120,14 @@ const LIST := [
 		"name": "廉政先锋",
 		"desc": "打满 16 回合通关，且全程平均每回合花费不超过 40 万",
 		"icon": COIN_GRID,
+		"tex": preload("res://assets/art/achievements/thrifty.png"),
 	},
 	{
 		"id": "ecology_expert",
 		"name": "生态专家",
 		"desc": "收集全部知识卡，掌握鄱阳湖的生态与保护知识",
 		"icon": MEDAL_GRID,
+		"tex": preload("res://assets/art/achievements/ecology_expert.png"),
 	},
 ]
 
