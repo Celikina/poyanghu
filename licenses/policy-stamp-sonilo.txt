@@ -1,0 +1,15 @@
+政策盖章音效：Rapid Rubber Stamp Presses / Sonilo Sound Effects Library
+核对及下载日期：2026-10-13
+素材来源：https://sonilo.com/royalty-free-sound-effects/paper/rapid-rubber-stamp-presses
+原始 WAV：https://cdn.sonilo.com/library/sfx/rapid-rubber-stamp-presses-137905c2.wav
+许可条款：https://sonilo.com/terms-of-service （6.4 Sound Effects Library）
+
+音效库页面明确允许免费用于个人及商业项目，包括 apps and games；不需要账号、署名或付费，音效须作为完整作品的一部分使用，不得独立分发、售卖或组成素材包。
+6.4 明确音效库的使用范围以素材页面许可说明为准。这是已公开的音效库素材，不是免费账号新生成的音频；免费生成账号的非商用限制不适用于本库文件。
+页面注明此素材由 Sonilo 生成（AI-generated）。
+
+处理：截取首次盖章的前 0.23 秒，转单声道，增益 1.8 倍（无削波），加 1 毫秒起音和 25 毫秒尾音淡化。用 tools/prepare_stamp_audio.py 从原始文件复现。
+游戏文件：assets/audio/policy-stamp-sonilo.wav
+SHA-256：827d3678161a2ecb4658571b72c17e62c97b20070aadf1c3f0bf418a31ea174c
+仅嵌入游戏盖章动作；链接和来源记录保留在随作品提供的许可文件，不在游戏中显示。
+核对页面快照：outputs/stamp-refresh-0140/sonilo-source-and-license.html

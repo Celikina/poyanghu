@@ -83,10 +83,12 @@ func _ready() -> void:
 	var shadow := Node2D.new()
 	shadow.set_script(preload("res://scripts/card_projected_shadow.gd"))
 	panel.add_child(shadow)
+	await get_tree().process_frame
+	await get_tree().process_frame # The silhouette follows the face's completed container layout.
 	shadow.update_projection(panel, Vector2(0.21, -0.26))
 	var card_reference := func(c: Control):
 		var center := Vector2.ZERO
-		for point in shadow.points: center += point * 0.25
+		for point in shadow.points: center += point / shadow.points.size()
 		for layer in range(8, -1, -1):
 			var ring := PackedVector2Array()
 			for point in shadow.points: ring.append(point + (point - center).normalized() * shadow.softness * layer / 8.0)

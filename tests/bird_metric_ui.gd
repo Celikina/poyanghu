@@ -143,8 +143,11 @@ func check_skin_layout() -> void:
 		bird.bird_segments.configure(60, 40)
 		bird.bird_segments.clear_forecast()
 		bird.bird_segments._swap_progress = 1.0
-		for marker in [water.line, water.high_line, water.band]:
-			check(marker.get_global_rect().end.y <= water.bar.get_global_rect().position.y + 2.0, "Water references leave the full blue interior unobstructed")
+		for marker in [water.line, water.high_line]:
+			var bar_rect: Rect2 = water.bar.get_global_rect()
+			var mark_rect: Rect2 = marker.get_global_rect()
+			check(is_equal_approx(bar_rect.position.y - mark_rect.position.y, 1.0) and is_equal_approx(mark_rect.end.y - bar_rect.end.y, 1.0), "Water reference protrudes equally above and below")
+			check(marker.z_index > water.preview.z_index and marker.color.a < 0.6, "Water references overlay the bar translucently")
 		await RenderingServer.frame_post_draw
 		if DisplayServer.get_name() != "headless":
 			var image := get_viewport().get_texture().get_image()
@@ -153,7 +156,11 @@ func check_skin_layout() -> void:
 			var expected: Color = game.METRIC_COLORS.water_level
 			for x in range(int((rect.position.x + 3) * scale.x), int((rect.end.x - 3) * scale.x)):
 				var pixel := image.get_pixel(x, int(rect.get_center().y * scale.y))
-				check(absf(pixel.r - expected.r) < 0.005 and absf(pixel.g - expected.g) < 0.005 and absf(pixel.b - expected.b) < 0.005, "Blue water fill stays continuous through both green references")
+				var target := expected
+				for marker in [water.line, water.high_line]:
+					if marker.get_global_rect().has_point(Vector2((float(x) + 0.5) / scale.x, rect.get_center().y)):
+						target = expected.lerp(Color(marker.color.r, marker.color.g, marker.color.b, 1.0), marker.color.a)
+				check(absf(pixel.r - target.r) < 0.015 and absf(pixel.g - target.g) < 0.015 and absf(pixel.b - target.b) < 0.015, "Blue water fill stays continuous through both green references")
 		await shot("pixel-monitor-" + str(dimensions.x))
 		await check_threshold_widths()
 		await check_water_previews(str(dimensions.x))
@@ -186,6 +193,7 @@ func check_threshold_widths() -> void:
 
 func check_water_previews(suffix: String) -> void:
 	var water: Dictionary = game.metric_bars.water_level
+	for marker in [water.line, water.high_line]: marker.hide()
 	var overlay: Control = water.preview
 	var bar: ProgressBar = water.bar
 	bar.value = 0
@@ -222,9 +230,17 @@ func check_water_previews(suffix: String) -> void:
 			check(continuous, "Water gain/loss preview remains seamless for %s at phase %.1f and width %s" % [str(values), phase, suffix])
 		if values in [[18, 30], [48, 62], [70, 55]]: await shot("water-preview-" + suffix + "-" + str(values[0]) + "-" + str(values[1]))
 
+	for marker in [water.line, water.high_line]: marker.show()
+
 func check_volume_layout(slider: HSlider, label: Label, suffix: String) -> void:
 	await settle(0.2)
 	var initial := slider.get_global_rect()
+	var settings: Control = game.pause_settings_panel if slider == game.pause_volume_slider else game.menu_settings_panel
+	check(absf(initial.get_center().x - settings.get_global_rect().get_center().x) < 1.0, "Volume slider is centered in its settings panel")
+	var duplicated := false
+	for node in settings.find_children("*", "Label", true, false):
+		if node.text == "音量": duplicated = true
+	check(not duplicated, "Settings remove the redundant white volume label")
 	for value in [0, 9, 10, 99, 100]:
 		slider.value = value
 		await settle(0.04)

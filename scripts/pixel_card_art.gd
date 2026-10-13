@@ -281,6 +281,15 @@ static func add_face(panel: PanelContainer, title: String, footer: String = "", 
 	elif knowledge_face(knowledge_category) != null:
 		art = knowledge_texture(title, knowledge_category, photo)
 	face.texture = art if art != null else texture(title, footer, category)
+	# Text and photos change only the opaque interior; retain one exact alpha
+	# silhouette per supplied template instead of reading every color variant.
+	var resolved_category := category
+	if resolved_category.is_empty(): resolved_category = "knowledge" if footer in ["知识卡", "未收集"] else category_for(title)
+	var silhouette := "action/" + resolved_category
+	if dixinhu: silhouette = "knowledge/egg"
+	elif locked and art != null: silhouette = "knowledge/locked"
+	elif art != null: silhouette = "knowledge/" + knowledge_category
+	face.set_meta("shadow_silhouette", silhouette + "/" + str(face.texture.get_size()))
 	face.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	face.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	face.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
