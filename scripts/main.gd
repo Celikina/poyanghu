@@ -243,6 +243,9 @@ const TalentTreePanel := preload("res://scripts/talent_tree_panel.gd")
 # 成就图标配色：解锁 = 金牌，未解锁 = 灰牌（同一个网格，只换颜色）
 const ACH_GOLD := Color(0.98, 0.80, 0.30)
 const ACH_LOCKED := Color(0.42, 0.42, 0.47)
+# 成就图标的外框宽度（高度取调用处的 px）。四张美术图裁掉透明留白后宽高比各不相同
+# （42~53px 宽），不统一列宽的话，右边的成就名字会一行一个起点 —— 看着就是「错位」。
+const ACH_ICON_BOX_WIDTH := 56.0
 # 美术交付的成就图标（Achievements.LIST 里带 tex 的那几条）有自己的一整套配色，
 # 不能像像素网格那样换主色重染。未解锁的版本是运行时算出来的灰牌（见
 # _achievement_art_locked）：去色 + 压暗，保住「已解锁=金、未解锁=灰」这个原设计。
@@ -2904,9 +2907,12 @@ func _show_achievement_popup(achievement_id: String) -> void:
 	if popup_tex != null:
 		ach_popup_icon.texture = popup_tex
 		ach_popup_icon.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
+		# 弹窗图标框是 44×44 的方框，非正方形美术图直接铺进去会被横向压扁
+		ach_popup_icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	else:
 		ach_popup_icon.texture = _pixel_icon_sized(str(a["icon"]), ACH_GOLD, 44)
 		ach_popup_icon.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+		ach_popup_icon.stretch_mode = TextureRect.STRETCH_SCALE
 	ach_popup_name.text = str(a["name"])
 	ach_popup_desc.text = str(a["desc"])
 
@@ -9112,11 +9118,22 @@ func _make_achievement_icon(a: Dictionary, got: bool, px: int) -> TextureRect:
 	var tex: Texture2D = null
 	if a.has("tex"):
 		tex = _achievement_art(a) if got else _achievement_art_locked(a)
-	if tex != null:
-		var tr := _make_art_icon(tex, float(px))
-		tr.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
-		return tr
-	return _make_icon(str(a["icon"]), ACH_GOLD if got else ACH_LOCKED, px)
+	var art := tex != null
+	if not art:
+		# 没有交付图的那几条（隐藏成就「被做局了」）：继续用像素网格现画
+		var tint := ACH_GOLD if got else ACH_LOCKED
+		tex = _pixel_icon(str(a["icon"]), tint, tint.darkened(0.38), tint.lightened(0.32))
+	var tr := TextureRect.new()
+	tr.texture = tex
+	# ⚠ 统一外框 + 等比居中，**不要**用 _make_art_icon 那套「按高度缩放、宽度自适应」：
+	#   四张美术图的宽高比不一样（裁完 42~53px 宽），宽度一行一个样，右边的名字就会
+	#   一行一个起点（错位）。同一列宽之后，图标在盒子里等比居中，高度也一眼齐平。
+	tr.custom_minimum_size = Vector2(ACH_ICON_BOX_WIDTH, float(px))
+	tr.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR if art else CanvasItem.TEXTURE_FILTER_NEAREST
+	tr.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	tr.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	tr.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	return tr
 
 
 ## 未解锁的美术图标 = 灰牌：裁掉留白 → 去色 → 压暗。
