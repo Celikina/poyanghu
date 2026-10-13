@@ -246,6 +246,10 @@ const ACH_LOCKED := Color(0.42, 0.42, 0.47)
 # 成就图标的外框宽度（高度取调用处的 px）。四张美术图裁掉透明留白后宽高比各不相同
 # （42~53px 宽），不统一列宽的话，右边的成就名字会一行一个起点 —— 看着就是「错位」。
 const ACH_ICON_BOX_WIDTH := 56.0
+# 主菜单「成就」「知识卡」入口的小图标（美术交付，100×100 带透明留白）。
+# 与成就页那四张同一套处理：裁掉透明留白 + 等比缩放，不再用像素网格现画。
+const MENU_ACHIEVEMENTS_ICON := preload("res://assets/ui/menu-achievements.png")
+const MENU_KNOWLEDGE_ICON := preload("res://assets/ui/menu-knowledge.png")
 # 美术交付的成就图标（Achievements.LIST 里带 tex 的那几条）有自己的一整套配色，
 # 不能像像素网格那样换主色重染。未解锁的版本是运行时算出来的灰牌（见
 # _achievement_art_locked）：去色 + 压暗，保住「已解锁=金、未解锁=灰」这个原设计。
@@ -2472,16 +2476,19 @@ func _build_menu() -> void:
 	# 「图标+文字」整体居中，结果「成就」两个字相对「技能树/设置/退出」右移约 14px
 	# （2026-09-28 截图实测）。改成在按钮内部左侧贴一个独立图标（不吃布局），
 	# 文字就与其它按钮完全同心。
-	var ach_icon := _make_icon(Achievements.MEDAL_GRID, ACH_GOLD, 22)
+	# 图标换成美术交付的金色勋章（裁掉透明留白 + 等比缩放，见 _make_menu_entry_icon）。
+	# 外框 26×26、贴左边 8px：按钮文字是靠中线居中排的，「成就」两字从 x≈72 起，
+	# 离图标右边缘还有 38px，压不到字上。
+	var ach_icon := _make_menu_entry_icon(MENU_ACHIEVEMENTS_ICON, 26)
 	ach_icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	ach_icon.anchor_left = 0.0
 	ach_icon.anchor_top = 0.5
 	ach_icon.anchor_right = 0.0
 	ach_icon.anchor_bottom = 0.5
 	ach_icon.offset_left = 8
-	ach_icon.offset_right = 30
-	ach_icon.offset_top = -11
-	ach_icon.offset_bottom = 11
+	ach_icon.offset_right = 34
+	ach_icon.offset_top = -13
+	ach_icon.offset_bottom = 13
 	menu_achievements_btn.add_child(ach_icon)
 	menu_utilities.add_child(menu_achievements_btn)
 
@@ -2489,16 +2496,17 @@ func _build_menu() -> void:
 	# 避免图标宽度被算进「图标+文字」的整体居中而让文字偏移）。
 	menu_knowledge_btn = _make_button("知识卡", _show_knowledge_panel, 18)
 	menu_knowledge_btn.custom_minimum_size = Vector2(0, 44)
-	var kn_icon := _make_icon(KNOWLEDGE_ICON_GRID, Color(0.55, 0.82, 0.95), 22)
+	# 同上：知识卡换成美术交付的木框卡片，外框尺寸与成就入口一致。
+	var kn_icon := _make_menu_entry_icon(MENU_KNOWLEDGE_ICON, 26)
 	kn_icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	kn_icon.anchor_left = 0.0
 	kn_icon.anchor_top = 0.5
 	kn_icon.anchor_right = 0.0
 	kn_icon.anchor_bottom = 0.5
 	kn_icon.offset_left = 8
-	kn_icon.offset_right = 30
-	kn_icon.offset_top = -11
-	kn_icon.offset_bottom = 11
+	kn_icon.offset_right = 34
+	kn_icon.offset_top = -13
+	kn_icon.offset_bottom = 13
 	menu_knowledge_btn.add_child(kn_icon)
 	menu_utilities.add_child(menu_knowledge_btn)
 	menu_utilities.move_child(menu_knowledge_btn, 0)
@@ -9162,6 +9170,19 @@ func _achievement_art_locked(a: Dictionary) -> Texture2D:
 		result = ImageTexture.create_from_image(grey)
 	_ach_art_grey[tex] = result
 	return result
+
+
+## 主菜单入口的小图标：美术图裁掉透明留白后，等比放进 box×box 的外框里。
+## ⚠ 必须等比居中 —— 勋章是 0.66、卡片是 0.86 的宽高比，按框拉伸会压扁；
+##   也必须线性过滤：这两张是平滑绘制的插画，不是像素网格。
+func _make_menu_entry_icon(tex: Texture2D, box: float) -> TextureRect:
+	var tr := TextureRect.new()
+	tr.texture = _trim_alpha_margin(tex)
+	tr.custom_minimum_size = Vector2(box, box)
+	tr.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
+	tr.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	tr.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	return tr
 
 
 ## 取某条成就的美术图标纹理；没有交付图（或资源缺失）时返回 null。

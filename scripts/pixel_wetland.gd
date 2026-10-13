@@ -58,6 +58,8 @@ const HOUSE_ART := [
 const COMMUNITY_CAR := preload("res://assets/houses/community-car.png")
 const CAR_COMMUNITY_THRESHOLD := 75
 const CAR_HOUSE_INDEX := 11
+## 素材已裁到不透明包围盒（79×56，宽高比 1.41），与这个尺寸的 1.42 几乎一致 ——
+## 换图时若改了素材比例，这里要跟着改，否则车会被拉伸变形。
 const CAR_EXTENT := Vector2(44, 31)
 const HOUSE_BOX := 76.0
 const HOUSE_ANCHOR_Y := 0.86
