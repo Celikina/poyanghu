@@ -344,6 +344,10 @@ var dim: ColorRect
 var popup_center: CenterContainer
 var popup_panel: PanelContainer
 var _knowledge_egg_reveal: Control
+var _knowledge_popup_card_id := ""
+var popup_content: BoxContainer
+var popup_photo_frame: PanelContainer
+var popup_photo: TextureRect
 var popup_title: Label
 var popup_body: RichTextLabel
 var popup_button: Button
@@ -518,7 +522,7 @@ var knowledge_detail_source: RichTextLabel   # 详情页底部的常驻出处栏
 var _knowledge_big_card: Control = null     # 当前详情大牌（重开时清理）
 var _knowledge_photo_cache: Dictionary = {} # kid -> Texture2D（null 也算缓存，避免反复探测文件）
 
-# 知识卡卡照：pptx 图集（《鄱阳湖 · 知识卡图集》）导入的 40 张，统一方裁成 1:1 的 256×256
+# 知识卡卡照：pptx 图集（《鄱阳湖 · 知识卡图集》）导入的 40 张，统一方裁成 1:1 的 512×512
 # （生成器 tools/import_knowledge_photos.py）。画进卡面本身，见 PixelCardArt.knowledge_texture()。
 const KNOWLEDGE_PHOTO_DIR := "res://assets/art/knowledge/photos/"
 
@@ -2221,16 +2225,39 @@ func _build_ui() -> void:
 	popup_panel.add_child(pv)
 	popup_title = _make_label("", 22, Color(1, 0.9, 0.55))
 	pv.add_child(popup_title)
+	popup_content = BoxContainer.new()
+	popup_content.vertical = true
+	popup_content.add_theme_constant_override("separation", 20)
+	pv.add_child(popup_content)
+	popup_photo_frame = PanelContainer.new()
+	popup_photo_frame.name = "KnowledgeDropPhoto"
+	var photo_style := StyleBoxFlat.new()
+	photo_style.bg_color = Color("e9e5d3")
+	photo_style.border_color = Color("c9d7be")
+	photo_style.set_border_width_all(1)
+	photo_style.set_corner_radius_all(4)
+	photo_style.set_content_margin_all(6)
+	popup_photo_frame.add_theme_stylebox_override("panel", photo_style)
+	popup_photo_frame.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	popup_photo_frame.hide()
+	popup_content.add_child(popup_photo_frame)
+	popup_photo = TextureRect.new()
+	popup_photo.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	popup_photo.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	popup_photo.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
+	popup_photo.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	popup_photo_frame.add_child(popup_photo)
 	popup_body = RichTextLabel.new()
 	popup_body.bbcode_enabled = true
 	popup_body.fit_content = true
 	popup_body.custom_minimum_size = Vector2(540, 0)
 	popup_body.add_theme_font_size_override("normal_font_size", _snap_px(16))
 	popup_body.add_theme_color_override("default_color", Color(0.95, 0.95, 0.95))
-	pv.add_child(popup_body)
+	popup_content.add_child(popup_body)
 	popup_button = _make_button("继续", _on_popup_button, 18)
 	popup_button.custom_minimum_size = Vector2(0, 44)
 	pv.add_child(popup_button)
+	get_viewport().size_changed.connect(_layout_knowledge_popup)
 
 	# 主菜单（独立 CanvasLayer，盖在 HUD 与沙盘之上）
 	_build_menu()
@@ -4174,6 +4201,8 @@ func save_game() -> void:
 			"body": popup_body.text,
 			"button": popup_button.text,
 		}
+		if _current_phase == "popup_knowledge" and not _knowledge_popup_card_id.is_empty():
+			data["popup"]["knowledge_id"] = _knowledge_popup_card_id
 	var f := FileAccess.open(SAVE_PATH, FileAccess.WRITE)
 	if f != null:
 		f.store_string(JSON.stringify(data))
@@ -4214,7 +4243,15 @@ func load_game() -> bool:
 		"popup_event":
 			_show_popup("第 %d 回合 · 事件" % GameState.turn, str(popup.get("body", "")), "开始分配资金", _enter_allocate)
 		"popup_knowledge":
-			_show_popup(str(popup.get("title", "")), str(popup.get("body", "")), "收下（继续）", _on_resolve_continue)
+			var kid := str(popup.get("knowledge_id", ""))
+			if not GameState.KNOWLEDGE_CARDS.has(kid):
+				# Older saves kept only the title; recover its photograph by name.
+				for old_id in GameState.KNOWLEDGE_CARDS:
+					if str(popup.get("title", "")) == "知识卡 · %s" % GameState.KNOWLEDGE_CARDS[old_id]["name"]:
+						kid = str(old_id)
+						break
+			if GameState.KNOWLEDGE_CARDS.has(kid): _show_knowledge(kid)
+			else: _show_popup(str(popup.get("title", "")), str(popup.get("body", "")), "收下（继续）", _on_resolve_continue)
 		"popup_settlement":
 			_show_popup("结算反馈", str(popup.get("body", "")), "继续", _on_resolve_continue)
 		_:
@@ -8715,7 +8752,7 @@ func _show_knowledge(card_id: String) -> void:
 	_current_phase = "popup_knowledge"
 	var k: Dictionary = GameState.KNOWLEDGE_CARDS[card_id]
 	var body := _knowledge_detail_text(card_id, true)
-	_show_popup("知识卡 · %s" % k["name"], body, "收下（继续）", _on_resolve_continue)
+	_show_popup("知识卡 · %s" % k["name"], body, "收下（继续）", _on_resolve_continue, card_id)
 	if card_id == "egg_dixinhu":
 		var reveal := CenterContainer.new()
 		reveal.custom_minimum_size.y = 176
@@ -8834,7 +8871,57 @@ func _restart() -> void:
 
 
 # ==================== 通用弹窗 ====================
-func _show_popup(title: String, body: String, button_text: String, on_continue: Callable) -> void:
+func _layout_knowledge_popup() -> void:
+	if popup_photo_frame == null or not popup_photo_frame.visible: return
+	var viewport := get_viewport().get_visible_rect().size
+	var width := floorf(minf(800.0, viewport.x - 48.0))
+	var inner_width := width - UiSkin.PANEL_CONTENT * 2.0
+	var stacked := inner_width < 620.0 or get_window().size.x < 1000
+	var photo_size := 224.0 if stacked else 256.0
+	photo_size = minf(photo_size, inner_width)
+	popup_panel.custom_minimum_size = Vector2(width, 0)
+	popup_content.vertical = stacked
+	popup_photo_frame.custom_minimum_size = Vector2.ONE * photo_size
+	popup_photo_frame.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	popup_photo_frame.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
+	var text_width := inner_width if stacked else inner_width - photo_size - 20.0
+	# Leave space for wrapped headings and the always-visible collection button.
+	var available := viewport.y - 190.0 - (photo_size + 20.0 if stacked else 0.0)
+	# Shape at the final column width, then use only the space the text needs.
+	popup_body.size.x = text_width
+	var natural_height := float(popup_body.get_content_height())
+	var desired_height := maxf(128.0 if stacked else photo_size, natural_height)
+	var text_height := minf(desired_height, maxf(120.0, available))
+	popup_body.custom_minimum_size = Vector2(text_width, text_height)
+	popup_body.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	popup_body.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	# Container minimums can shrink between a wide and a stacked popup.
+	popup_panel.reset_size()
+	popup_panel.pivot_offset = popup_panel.size * 0.5
+
+
+func _configure_knowledge_popup(card_id: String) -> void:
+	_knowledge_popup_card_id = card_id
+	popup_photo.texture = _knowledge_photo(card_id) if not card_id.is_empty() else null
+	popup_photo_frame.visible = popup_photo.texture != null
+	popup_body.scroll_to_line(0)
+	if popup_photo_frame.visible:
+		popup_title.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		popup_body.fit_content = false
+		popup_body.scroll_active = true
+		_layout_knowledge_popup()
+	else:
+		popup_content.vertical = true
+		popup_panel.custom_minimum_size = Vector2(600, 0)
+		popup_title.autowrap_mode = TextServer.AUTOWRAP_OFF
+		popup_body.fit_content = true
+		popup_body.custom_minimum_size = Vector2(540, 0)
+		popup_body.size_flags_horizontal = Control.SIZE_FILL
+		popup_body.size_flags_vertical = Control.SIZE_FILL
+		popup_panel.reset_size()
+
+
+func _show_popup(title: String, body: String, button_text: String, on_continue: Callable, knowledge_id: String = "") -> void:
 	if is_instance_valid(_knowledge_egg_reveal):
 		_knowledge_egg_reveal.get_parent().remove_child(_knowledge_egg_reveal)
 		_knowledge_egg_reveal.queue_free()
@@ -8842,6 +8929,7 @@ func _show_popup(title: String, body: String, button_text: String, on_continue: 
 	if _popup_reveal and _popup_reveal.is_valid(): _popup_reveal.kill()
 	popup_title.text = title
 	popup_body.text = body
+	_configure_knowledge_popup(knowledge_id)
 	popup_button.text = button_text
 	_popup_continue = on_continue
 	popup_root.visible = true
