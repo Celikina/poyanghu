@@ -20,7 +20,7 @@ func capture(label: String) -> void:
 	RenderingServer.force_draw()
 	get_viewport().get_texture().get_image().save_png(output_dir.path_join(label + ".png"))
 
-func verify_face(panel: PanelContainer, title: String, footer: String, dixinhu: bool = false, knowledge_category: String = "") -> void:
+func verify_face(panel: PanelContainer, title: String, footer: String, dixinhu: bool = false, knowledge_category: String = "", kid: String = "") -> void:
 	check(panel.has_meta("pixel_face"), title + " uses the shared bitmap face")
 	var face: TextureRect = panel.get_meta("pixel_face")
 	check(face.texture_filter == CanvasItem.TEXTURE_FILTER_NEAREST, "No smoothing")
@@ -33,13 +33,14 @@ func verify_face(panel: PanelContainer, title: String, footer: String, dixinhu: 
 	if footer == "未收集":
 		check(face.texture == PixelArt.KNOWLEDGE_FACE_LOCKED, "Locked cards use the supplied unknown face")
 		return
-	# 有画好卡面的知识卡类别：整张卡面 + 只把卡名写在中间空白带里
+	# 有画好卡面的知识卡类别：整张卡面 + 方图贴中间 + 卡名写在方图下面
 	if PixelArt.knowledge_face(knowledge_category) != null:
-		check(face.texture == PixelArt.knowledge_texture(title, knowledge_category),
-			"Knowledge face carries only the name")
+		var photo: Texture2D = game._knowledge_photo(kid) if kid != "" else null
+		check(face.texture == PixelArt.knowledge_texture(title, knowledge_category, photo),
+			"Knowledge face carries the photo and the name")
 		var base_image: Image = PixelArt.knowledge_face(knowledge_category).get_image()
 		var out_image := face.texture.get_image()
-		var band := PixelArt.knowledge_text_band(title).grow(PixelArt.FACE_SCALE)
+		var band := PixelArt.knowledge_text_band(title, photo != null).grow(PixelArt.FACE_SCALE)
 		var outside := 0
 		var shadows := 0
 		for y in out_image.get_height():
@@ -51,7 +52,7 @@ func verify_face(panel: PanelContainer, title: String, footer: String, dixinhu: 
 					outside += 1
 				if pixel == Color8(150, 150, 150):
 					shadows += 1
-		check(outside == 0, "Knowledge face only writes inside the text band: %d stray pixels" % outside)
+		check(outside == 0, "Knowledge face only writes inside the photo/name band: %d stray pixels" % outside)
 		check(shadows > 0, "Knowledge face name keeps the shared drop shadow")
 		check(PixelArt._lines(title).size() <= 4, "Full name fits without truncation")
 		return
@@ -103,7 +104,7 @@ func _ready() -> void:
 			var panel: PanelContainer = game._make_knowledge_card(kid, collected)
 			var kcat: String = str(GameState.KNOWLEDGE_CARDS[kid].get("category", "")) if collected else ""
 			verify_face(panel, GameState.KNOWLEDGE_CARDS[kid].name if collected else "？",
-				"知识卡" if collected else "未收集", collected and kid == "egg_dixinhu", kcat)
+				"知识卡" if collected else "未收集", collected and kid == "egg_dixinhu", kcat, kid)
 			panel.free()
 	game._on_title_start()
 	game._on_difficulty_pick(GameState.Difficulty.EASY)

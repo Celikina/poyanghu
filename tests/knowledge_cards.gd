@@ -71,7 +71,8 @@ func _ready() -> void:
 	await capture("knowledge-locked-grid")
 	game._show_knowledge_detail(game.knowledge_grid.get_child(Knowledge.all_ids().find("geo_poyang")), "geo_poyang")
 	check(game.knowledge_detail_title.text == "？？？", "Locked card title stays hidden")
-	check(not "source_url" in game.knowledge_detail_body.text and not "https://" in game.knowledge_detail_body.text, "Locked card sources stay hidden")
+	check(not "https://" in game.knowledge_detail_body.text and not "https://" in game.knowledge_detail_source.text, "Locked card sources stay hidden")
+	check(game.knowledge_detail_source.text.is_empty(), "Locked card source footer stays empty")
 	game._close_knowledge_detail()
 	game._close_knowledge_viewer()
 	game._show_knowledge("geo_poyang")
@@ -111,7 +112,7 @@ func _ready() -> void:
 			await settle(1.2)
 			await capture("knowledge-face-%s" % kid)
 		if GameState.KNOWLEDGE_CARDS[kid].has("source_url"):
-			check(GameState.KNOWLEDGE_CARDS[kid]["source_url"] in game.knowledge_detail_body.text, "%s opens its source link" % kid)
+			check(GameState.KNOWLEDGE_CARDS[kid]["source_url"] in game.knowledge_detail_source.text, "%s opens its source link" % kid)
 	game._close_knowledge_detail()
 	await capture("knowledge-all-desktop")
 	for window_size in [Vector2i(1280, 720), Vector2i(960, 540)]:
@@ -132,6 +133,93 @@ func _ready() -> void:
 	await capture("knowledge-carbon-small")
 	game._close_knowledge_detail()
 	game._close_knowledge_viewer()
+
+	# ---- 0.1.35：卡照贴在**牌面上**（1:1 方图）+ 卡名自动退让 + 出处写进详情 ----
+	var PixelArt := preload("res://scripts/pixel_card_art.gd")
+	game._open_knowledge_viewer()
+	await settle(1.8)
+	for kid in Knowledge.all_ids():
+		var card: Dictionary = GameState.KNOWLEDGE_CARDS[kid]
+		var view: Control = game.knowledge_grid.get_child(Knowledge.all_ids().find(kid))
+		game._show_knowledge_detail(view, kid)
+		await settle(0.5)
+		var credit := str(card.get("photo_credit", ""))
+		if credit != "":
+			check(credit in game.knowledge_detail_source.text, "%s writes its photo credit in the source footer" % kid)
+			check("图片来源" in game.knowledge_detail_source.text, "%s labels the photo credit" % kid)
+			check(get_viewport().get_visible_rect().encloses(game.knowledge_detail_source.get_global_rect()),
+				"%s source footer is visible without scrolling" % kid)
+		var panel: Control = game._knowledge_big_card
+		var face: TextureRect = panel.get_meta("pixel_face")
+		var img: Image = face.texture.get_image()
+		var plan: Dictionary = PixelArt.face_photo_plan(str(card["name"]))
+		if kid == "egg_dixinhu":
+			check(face.texture == PixelArt.KNOWLEDGE_FACE_EGG and game._knowledge_photo(kid) == null,
+				"Egg card keeps its own drawn face and has no imported photo")
+			game._close_knowledge_detail()
+			continue
+		check(not plan.is_empty(), "%s gets a photo layout" % kid)
+		var tex: Texture2D = game._knowledge_photo(kid)
+		check(tex != null, "%s has an imported photo" % kid)
+		check(tex.get_width() == tex.get_height(),
+			"%s imported photo is square: %dx%d" % [kid, tex.get_width(), tex.get_height()])
+		var side := int(plan["side"])
+		var src: Image = tex.get_image().duplicate()
+		if src.get_width() != side:
+			src.resize(side, side, Image.INTERPOLATE_LANCZOS)
+		# 贴上去的必须是**这张卡自己的**照片：抽 5 个点（四角 + 中心）逐点比色
+		var worst := 0.0
+		for frac in [Vector2(0.1, 0.1), Vector2(0.9, 0.1), Vector2(0.5, 0.5),
+				Vector2(0.1, 0.9), Vector2(0.9, 0.9)]:
+			var fx := int(frac.x * side)
+			var fy := int(frac.y * side)
+			var got := img.get_pixel(int(plan["photo_x"]) + fx, PixelArt.FACE_PHOTO_TOP + fy)
+			var want := src.get_pixel(fx, fy)
+			worst = maxf(worst, absf(got.r - want.r) + absf(got.g - want.g) + absf(got.b - want.b))
+		check(worst < 0.06, "%s face carries that card's own photo (worst delta %.3f)" % [kid, worst])
+		# 卡名：在方图下方、不压到 y≈540 的「点击查看」、字号不低于 2 倍
+		check(int(plan["name_top"]) >= PixelArt.FACE_PHOTO_TOP + side,
+			"%s name sits below the photo" % kid)
+		var name_bottom := int(plan["name_top"]) + 16 * int(plan["scale"]) \
+			+ maxi(int(plan["lines"]) - 1, 0) * PixelArt.FACE_NAME_INDENT * int(plan["scale"])
+		check(name_bottom <= 540, "%s name clears the printed footer: %d" % [kid, name_bottom])
+		check(int(plan["scale"]) >= 2, "%s name never shrinks below 2x" % kid)
+		game._close_knowledge_detail()
+	# 换过照片的那张（草洲不是越野场）单独截一张正脸：牌面 + 详情里的出处链接
+	game._show_knowledge_detail(game.knowledge_grid.get_child(Knowledge.all_ids().find("protect_wetland_tracks")), "protect_wetland_tracks")
+	await settle(1.4)
+	check(str(GameState.KNOWLEDGE_CARDS["protect_wetland_tracks"]["photo_url"]) in game.knowledge_detail_source.text,
+		"Replacement photo's source link is written in the source footer")
+	await capture("knowledge-photo-protect_wetland_tracks")
+	game._close_knowledge_detail()
+	game._show_knowledge_detail(game.knowledge_grid.get_child(Knowledge.all_ids().find("plant_sedge")), "plant_sedge")
+	await settle(1.4)
+	await capture("knowledge-photo-plant_sedge")
+	game._close_knowledge_detail()
+	await capture("knowledge-photo-gallery")
+	get_window().size = Vector2i(960, 540)
+	await settle(0.5)
+	await capture("knowledge-photo-960")
+	get_window().size = Vector2i(1280, 720)
+	await settle(0.4)
+	game._close_knowledge_viewer()
+
+	# ---- 0.1.35：粗体不再让文字糊成一团 ----
+	# [b] 必须落在项目主题自己钉住的正文字体上，不能掉回引擎默认主题那份
+	# FontVariation(base=无衬线, embolden=1.2) —— 那正是「粗体字看不清」的来源。
+	var root_theme: Theme = get_tree().root.theme
+	var bold_font: Font = root_theme.get_font("bold_font", "RichTextLabel")
+	check(bold_font != null, "The project theme pins RichTextLabel bold_font")
+	check(bold_font == root_theme.default_font, "Bold must use the same pixel font as body text")
+	check(not (bold_font is FontVariation), "Bold must not be a synthetic FontVariation")
+	check(not game._md_emphasis("**重点**").contains("[b]"), "Changelog emphasis no longer uses [b]")
+	game._show_menu()
+	game._show_changelog_panel()
+	await settle(1.0)
+	await capture("bold-changelog")
+	game._on_changelog_back()
+	await settle(0.4)
+	game._hide_menu()
 	var egg: Dictionary = GameState.KNOWLEDGE_CARDS["egg_dixinhu"].duplicate(true)
 	egg["condition"] = "turn == 1"
 	egg["seasons"] = ["春", "夏", "秋", "冬"]

@@ -7,6 +7,7 @@
 产出：
     assets/audio/ding.wav   「叮」——逐张弹分 / 指标结算
     assets/audio/land.wav   「啪」——甩牌落桌的闷响
+    assets/audio/deal.wav   「唰」——发牌时牌角离堆、牌面切风的声音（见文件末尾 DEAL 一段）
 
 ⚠ 生成后必须在 Godot 编辑器里打开一次工程（或跑 godot --headless --import），
    让它产出 .import 文件；否则导出包里没有音效。
@@ -84,18 +85,92 @@ def synth(recipe, seed=20260928):
     for i in range(n):
         out[i] += noise * math.exp(-(i / SR) / noise_t) * (rng.random() * 2.0 - 1.0)
 
-    # 起音 / 收尾斜坡，消除爆音
+    # 起音 / 收尾斜坡、tanh 软限幅 + 归一化（与 deal 共用同一条出口）
+    return finalize(out)
+
+
+# ==================== 发牌音（0.1.35 新增）====================
+# 「塑料卡片」的清脆声，一次发牌 = 每张牌一个 55ms 的「嚓」。
+# 第一版栽在哪儿（玩测反馈原话：「像敲铁桶」）：我给了 165Hz 的低频「体感」，
+#   再叠上 tanh 软限幅，低频被削出谐波、听着就是个桶。塑料片根本不那么响低频。
+# 现在三层全在高频，没有任何低频正弦：
+#   ① 边缘刮过牌堆的脆点：2.8ms 的亮噪声，高通 3kHz
+#   ② 片体（主音）：带通噪声，中心频率 6.8k→2.6kHz 往下扫，Q=1.2，衰减 τ=11ms
+#   ③ 顶部细屑：更高一条带通 9k→5kHz，Q=2.0，τ=5ms —— 让「脆」有颗粒感
+# 总时长压到 55ms（原来是 85ms），比 60ms 的发牌间隔还短，所以是一记一记的
+# 「嚓·嚓·嚓」，不会糊成一片。
+# 落桌那一声不在这里：牌飞 0.36s 才到手，落点由调用方复用现成的 land.wav
+# （见 main.gd 的 _finish_card_deal）。
+DEAL_DUR = 0.055
+DEAL_SEED = 20261013
+
+
+def _onepole(x, cut_fn):
+    """一阶低通，截止频率随时间变（cut_fn 收秒、给 Hz）。"""
+    out = [0.0] * len(x)
+    prev = 0.0
+    for i, v in enumerate(x):
+        fc = cut_fn(i / SR)
+        a = 1.0 - math.exp(-2.0 * math.pi * fc / SR)
+        prev += a * (v - prev)
+        out[i] = prev
+    return out
+
+
+def _highpass(x, fc):
+    lp = _onepole(x, lambda _t: fc)
+    return [v - l for v, l in zip(x, lp)]
+
+
+def _bandpass(x, center_fn, q):
+    """RBJ 双二阶带通，中心频率随时间变。脆响的「音高」就来自这条共振峰。"""
+    out = [0.0] * len(x)
+    x1 = x2 = y1 = y2 = 0.0
+    for i, v in enumerate(x):
+        w0 = 2.0 * math.pi * center_fn(i / SR) / SR
+        alpha = math.sin(w0) / (2.0 * q)
+        a0 = 1.0 + alpha
+        b0 = alpha / a0
+        b2 = -alpha / a0
+        a1 = (-2.0 * math.cos(w0)) / a0
+        a2 = (1.0 - alpha) / a0
+        y = b0 * v + b2 * x2 - a1 * y1 - a2 * y2
+        x2, x1 = x1, v
+        y2, y1 = y1, y
+        out[i] = y
+    return out
+
+
+def finalize(out):
+    """起音/收尾斜坡 + tanh 软限幅 + 归一化。ding/land/deal 共用同一条出口。"""
+    n = len(out)
     na = max(1, int(SR * ATTACK))
     nf = max(1, int(SR * FADE))
     for i in range(na):
         out[i] *= i / na
     for i in range(nf):
         out[n - 1 - i] *= i / nf
-
-    # tanh 软限幅 + 归一化：避免任何数字尖峰被硬削顶
     peak = max(abs(v) for v in out) or 1.0
     g = PEAK / peak
     return [math.tanh(v * g * 1.15) / math.tanh(1.15) for v in out]
+
+
+def synth_deal(seed=DEAL_SEED):
+    n = int(SR * DEAL_DUR)
+    rng = random.Random(seed)
+    white = [rng.random() * 2.0 - 1.0 for _ in range(n)]
+
+    # ① 边缘脆点：极短、极亮
+    tick = _highpass([white[i] * math.exp(-(i / SR) / 0.0028) for i in range(n)], 3000.0)
+    # ② 片体：中心频率往下扫的带通，是「嚓」的主音
+    body = _bandpass(white, lambda t: 2600.0 + 4200.0 * math.exp(-t / 0.012), 1.2)
+    body = [body[i] * (1.0 - math.exp(-(i / SR) / 0.0012)) * math.exp(-(i / SR) / 0.011)
+            for i in range(n)]
+    # ③ 顶部细屑：让高频有颗粒，别听着像一坨白噪
+    dust = _bandpass(white, lambda t: 4000.0 + 5000.0 * math.exp(-t / 0.020), 2.0)
+    dust = [dust[i] * math.exp(-(i / SR) / 0.005) for i in range(n)]
+
+    return finalize([0.85 * tick[i] + 1.0 * body[i] + 0.45 * dust[i] for i in range(n)])
 
 
 def write_wav(path, samples):
@@ -122,6 +197,9 @@ def main():
     for name, recipe in RECIPES.items():
         frames = write_wav(os.path.join(out_dir, name + ".wav"), synth(recipe))
         print("wrote %s.wav  (%d frames, %.2fs)" % (name, frames, frames / SR))
+
+    frames = write_wav(os.path.join(out_dir, "deal.wav"), synth_deal())
+    print("wrote deal.wav  (%d frames, %.2fs)" % (frames, frames / SR))
 
     print("\n下一步：在 Godot 编辑器里打开一次工程，生成 .import 文件。")
 

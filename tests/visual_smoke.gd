@@ -134,12 +134,13 @@ func _ready() -> void:
 	for v in game.knowledge_grid.get_children():
 		game._on_viewer_card_unhover(v)
 	await settle(0.3)
-	# 已收集的卡换成该类别画好的卡面、卡名写在卡面中间（苦草 = 植物）。
+	# 已收集的卡换成该类别画好的卡面，卡照（方图）贴在中间、卡名写在方图下面（苦草 = 植物）。
 	# ⚠ 别用 get_child(0)：第 0 张是彩蛋卡狄鑫壶，这时还没收集，是「未知」卡面。
 	var lit_index: int = Knowledge.all_ids().find("plant_kucao")
 	var lit_view: Control = game.knowledge_grid.get_child(lit_index)
 	var lit_face: TextureRect = (lit_view.get_meta("panel") as PanelContainer).get_meta("pixel_face")
-	check(lit_face.texture == PixelArt.knowledge_texture("苦草", "植物"), "已收集卡应换成该类别卡面并写上卡名")
+	check(lit_face.texture == PixelArt.knowledge_texture("苦草", "植物", game._knowledge_photo("plant_kucao")),
+		"已收集卡应换成该类别卡面（含卡照）并写上卡名")
 	var locked2: Control = game.knowledge_grid.get_child(0)
 	var locked2_face: TextureRect = (locked2.get_meta("panel") as PanelContainer).get_meta("pixel_face")
 	check(locked2_face.texture == PixelArt.KNOWLEDGE_FACE_LOCKED, "没收集的卡仍旧是「未知」卡面")

@@ -54,6 +54,11 @@ static func _nine(tex: Texture2D, m: float, pad: float, sh: float, content: floa
 
 
 ## 面板／提示框（danger = 危机、清空存档那类暖红面板）
+## 碎裂演出（刷新手牌用掉时）的碎片配色：跟蓝色按钮同一套色，
+## 亮面 / 底色 / 暗面 / 悬停描边循环取，别再用旧的木板棕黄。
+const SHARD_COLORS := [Color("34699f"), Color("2a5c8f"), Color("16344f"), Color("93b9e6")]
+
+
 static func panel(danger: bool = false, margin: float = PANEL_CONTENT) -> StyleBoxTexture:
 	return _nine(PANEL_DANGER if danger else PANEL, EDGE, 0.0, SHADOW, margin)
 

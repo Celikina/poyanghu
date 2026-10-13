@@ -31,6 +31,17 @@ const KNOWLEDGE_FACE_EGG := preload("res://assets/art/knowledge/easter-egg.png")
 const FACE_SCALE := 4        # 400×600 卡面上，字形放大 4 倍（与行动卡的卡名同规格）
 const FACE_SPACING := 80     # 行距
 const FACE_BAND_CENTER := 338 # 中间空白带的垂直中心（实测卡面 145~530）
+## 卡照（pptx 图集导入的 40 张方图）的位置与尺寸。
+## 数值照抄彩蛋卡狄鑫斛（kd-07）里那块插画面板：实测 x79..324 / y175..420，正好 246×246 的方图，
+## 名字写在方图下面。用户口径：「知识卡优先保证图片 1:1 大小，和狄鑫斛一样，
+## 文字自动调整大小做避让，同时要求能放得下」。
+const FACE_PHOTO_TOP := 175
+const FACE_PHOTO_MAX := 246
+const FACE_PHOTO_MIN := 140
+const FACE_PHOTO_GAP := 6      # 方图与卡名之间的空隙
+const FACE_NAME_BOTTOM := 510  # 卡名块下限（再往下 y≈540 是印好的「点击查看」，留 30px 喘气）
+const FACE_NAME_SCALES: Array[int] = [4, 3, 2]  # 卡名候选字形倍数，从大到小退
+const FACE_NAME_INDENT := 20   # 行距 = 20 × 字形倍数（scale 4 时正是 FACE_SPACING=80）
 const GLYPHS := preload("res://assets/art/card-font-glyphs.png")
 const SHADOW := Color8(150, 150, 150)
 const INK := Color.BLACK
@@ -98,32 +109,95 @@ static func dispatch_texture(card: Dictionary, baked: bool = true) -> Texture2D:
 	return result
 
 
-## 用画好的卡面做一张知识卡：只写卡名，按行数垂直居中放在卡面中间那块空白里
-## （底部「点击查看」在 y≈540，所以文字块别压下去）。图里的类别与「知识卡」是印好的，不再写。
-static func knowledge_texture(title: String, category: String) -> Texture2D:
+## 用画好的卡面做一张知识卡。
+## 有卡照（photo）时：方图摆在中间，卡名挪到方图下面，字号自动往下退直到放得下；
+## 没卡照时走老路 —— 只写卡名、垂直居中在中间那块空白带里。
+## （底部「点击查看」在 y≈540，所以文字块别压下去。图里的类别与「知识卡」是印好的，不再写。）
+static func knowledge_texture(title: String, category: String, photo: Texture2D = null) -> Texture2D:
 	_load_pixels()
 	var key := "kface\n" + title + "\n" + category
-	if textures.has(key):
-		return textures[key]
+	var plan: Dictionary = face_photo_plan(title) if photo != null else {}
+	if plan.is_empty():
+		if textures.has(key):
+			return textures[key]
+	else:
+		key += "\nphoto"
+		if textures.has(key):
+			return textures[key]
 	var source: Texture2D = knowledge_face(category)
 	var image := source.get_image().duplicate() as Image
 	image.convert(Image.FORMAT_RGBA8)
-	var lines := _lines(title)
-	var block_h := 16 * FACE_SCALE + (lines.size() - 1) * FACE_SPACING
-	var top := FACE_BAND_CENTER - block_h / 2
-	for i in lines.size():
-		_write(image, lines[i], top + i * FACE_SPACING, INK, -1, FACE_SCALE)
+	if plan.is_empty():
+		var lines := _lines(title)
+		var block_h := 16 * FACE_SCALE + (lines.size() - 1) * FACE_SPACING
+		var top := FACE_BAND_CENTER - block_h / 2
+		for i in lines.size():
+			_write(image, lines[i], top + i * FACE_SPACING, INK, -1, FACE_SCALE)
+	else:
+		_paste_photo(image, photo, plan)
+		var scale := int(plan["scale"])
+		var lines := _lines(title)
+		for i in lines.size():
+			_write(image, lines[i], int(plan["name_top"]) + i * FACE_NAME_INDENT * scale, INK, -1, scale)
 	var result := ImageTexture.create_from_image(image)
 	textures[key] = result
 	return result
 
 
-## 新卡面上卡名该占的那条带（测试拿它断言「只有这条带被改过」）
-static func knowledge_text_band(title: String) -> Rect2i:
+## 「方图 + 卡名」的排布方案；这张卡放不下任何一张方图时给 {}（退回只有卡名的老排版）。
+##
+## 规则（用户定的优先级）：
+##   ① 方图永远是正方形（1:1），边长先按狄鑫斛那块方图的 246 摆；
+##   ② 卡名自动往下退字号（4 → 3 → 2 倍）给它让位，退到 2 倍就到底；
+##   ③ 退到底还装不下，才反过来缩方图（最低 140px，再小在图鉴里就看不清了）。
+## 一行的卡名因此能拿到和狄鑫斛一模一样的 246×246。
+static func face_photo_plan(title: String) -> Dictionary:
+	_load_pixels()
+	var count := _lines(title).size()
+	for scale in FACE_NAME_SCALES:
+		var name_h := 16 * scale + maxi(count - 1, 0) * FACE_NAME_INDENT * scale
+		var side := mini(FACE_PHOTO_MAX, FACE_NAME_BOTTOM - FACE_PHOTO_TOP - FACE_PHOTO_GAP - name_h)
+		if side < FACE_PHOTO_MIN:
+			continue
+		var name_top := FACE_PHOTO_TOP + side + FACE_PHOTO_GAP
+		# 图与名之间剩的那点空档对半分，卡名落在中间比贴着图好看
+		name_top += (FACE_NAME_BOTTOM - name_top - name_h) / 2
+		return {"side": side, "scale": scale, "lines": count, "name_top": name_top,
+			"photo_x": int((source_width() - side) / 2.0)}
+	return {}
+
+
+static func source_width() -> int:
+	return 400
+
+
+## 把方图贴到卡面上。photo 已经是 1:1（tools/import_knowledge_photos.py 方裁过），
+## 这里只在边长和 246 对不上时缩一次，绝不改长宽比。
+static func _paste_photo(image: Image, photo: Texture2D, plan: Dictionary) -> void:
+	var side := int(plan["side"])
+	# ⚠ 必须 duplicate：ImageTexture.get_image() 给的是**纹理内部那张图**，
+	#   直接 resize 会把缓存里的照片纹理本身改小，下一张卡就拿到缩过的图。
+	var src := photo.get_image().duplicate() as Image
+	src.convert(Image.FORMAT_RGBA8)
+	if src.get_width() != side or src.get_height() != side:
+		src.resize(side, side, Image.INTERPOLATE_LANCZOS)
+	image.blit_rect(src, Rect2i(0, 0, side, side), Vector2i(int(plan["photo_x"]), FACE_PHOTO_TOP))
+
+
+## 这张卡面上「代码允许改」的那块区域（测试拿它断言别处像素没被动过）。
+## 有照片时 = 方图 + 卡名那一整条；没照片时 = 原来那条居中的文字带。
+static func knowledge_text_band(title: String, with_photo: bool = false) -> Rect2i:
+	_load_pixels()
+	if with_photo:
+		var plan := face_photo_plan(title)
+		if not plan.is_empty():
+			var bottom := int(plan["name_top"]) + 16 * int(plan["scale"]) \
+				+ maxi(int(plan["lines"]) - 1, 0) * FACE_NAME_INDENT * int(plan["scale"])
+			return Rect2i(0, FACE_PHOTO_TOP, source_width(), bottom - FACE_PHOTO_TOP)
 	var lines := _lines(title)
 	var block_h := 16 * FACE_SCALE + (lines.size() - 1) * FACE_SPACING
 	var top := FACE_BAND_CENTER - block_h / 2
-	return Rect2i(0, top, 400, block_h)
+	return Rect2i(0, top, source_width(), block_h)
 
 static func _width(text: String) -> int:
 	var width := 0
@@ -193,18 +267,19 @@ static func texture(title: String, footer: String = "", category: String = "") -
 	textures[key] = result
 	return result
 
-static func add_face(panel: PanelContainer, title: String, footer: String = "", locked: bool = false, category: String = "", dixinhu: bool = false, knowledge_category: String = "") -> TextureRect:
+static func add_face(panel: PanelContainer, title: String, footer: String = "", locked: bool = false, category: String = "", dixinhu: bool = false, knowledge_category: String = "", photo: Texture2D = null) -> TextureRect:
 	var face := TextureRect.new()
 	face.name = "PixelCardFace"
-	# 卡面来源：彩蛋 → 画好的整张；未解锁 → 统一的「未知」卡面；有该类别卡面 → 卡面 + 写卡名；
+	# 卡面来源：彩蛋 → 画好的整张；未解锁 → 统一的「未知」卡面；有该类别卡面 → 卡面 + 方图 + 卡名；
 	# 行动卡 → 三类手牌模板 + 卡名 + 深绿色金额。
+	# photo（知识卡卡照）只有走「该类别卡面」这条路时才用得上：彩蛋与未解锁都用画好的整张图。
 	var art: Texture2D = null
 	if dixinhu:
 		art = KNOWLEDGE_FACE_EGG
 	elif locked and KNOWLEDGE_FACE_LOCKED != null:
 		art = KNOWLEDGE_FACE_LOCKED
 	elif knowledge_face(knowledge_category) != null:
-		art = knowledge_texture(title, knowledge_category)
+		art = knowledge_texture(title, knowledge_category, photo)
 	face.texture = art if art != null else texture(title, footer, category)
 	face.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	face.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED

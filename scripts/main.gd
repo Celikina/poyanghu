@@ -262,6 +262,8 @@ var season_tagline: Label
 var season_dial: SeasonDial
 var dispatch_btn: Button          # 紧急调度：花 40 万点名一张当季牌
 var refresh_btn: Button           # 刷新手牌：花 5 万重抽整手，每回合限一次
+var funds_icon: TextureRect       # 资金栏金币图标：与六项指标同款的悬停/点击反馈
+var research_icon: TextureRect    # 科研点图标：同上（科研点提示也挂在它和标签上）
 var dispatch_panel: Control       # 紧急调度的选牌面板（与牌库同款的全屏卡牌网格）
 var dispatch_grid: HFlowContainer
 var dispatch_hint: Label          # 面板顶部说明（含当前调度费，逐次递增所以要重写）
@@ -412,8 +414,14 @@ const AUDIO_SETTINGS_PATH := "user://settings.json"
 const SFX_PATHS := {
 	"ding": "res://assets/audio/ding.wav",   # 逐张弹分 / 指标结算的「叮」
 	"land": "res://assets/audio/land.wav",   # 甩牌落桌的闷响
+	"deal": "res://assets/audio/deal.wav",   # 发牌：牌角离堆那一声「唰」（每张一声，见 _play_deal_animation）
 }
 const SFX_POOL_SIZE := 6        # 复音池：支撑每 0.045s 一个叮而互不打断
+# 发牌音的响度与错音：一局发 8~10 张，60ms 一张，压到 -5dB 才不会盖住 BGM；
+# 每张按 deal_index 换一点点音高（不用 randf —— 那会动到别人测试用的随机数序列）。
+const DEAL_SFX_DB := -5.0
+const DEAL_SFX_PITCH_STEPS: Array[float] = [1.0, 1.06, 0.95, 1.03]
+const LAND_SFX_DB := -15.0      # 牌落桌那一下：比发牌音低 10dB，只是「垫一下」
 var _sfx_players: Array = []
 var _sfx_streams: Dictionary = {}
 var _sfx_cursor: int = 0        # 轮转下标（比"找空闲播放器"简单，且一定不会切掉正在响的那个）
@@ -493,7 +501,13 @@ var knowledge_detail: Control          # 知识卡详情弹层（覆盖在查看
 var knowledge_detail_card: CenterContainer  # 左侧大牌容器
 var knowledge_detail_title: Label
 var knowledge_detail_body: RichTextLabel
+var knowledge_detail_source: RichTextLabel   # 详情页底部的常驻出处栏（卡照 + 资料）
 var _knowledge_big_card: Control = null     # 当前详情大牌（重开时清理）
+var _knowledge_photo_cache: Dictionary = {} # kid -> Texture2D（null 也算缓存，避免反复探测文件）
+
+# 知识卡卡照：pptx 图集（《鄱阳湖 · 知识卡图集》）导入的 40 张，统一方裁成 1:1 的 256×256
+# （生成器 tools/import_knowledge_photos.py）。画进卡面本身，见 PixelCardArt.knowledge_texture()。
+const KNOWLEDGE_PHOTO_DIR := "res://assets/art/knowledge/photos/"
 
 # ==================== 算分动画（小丑牌风）====================
 # 五类来源的**展示**顺序。⚠ 与 end_turn() 的真实执行顺序**不同**：
@@ -1976,7 +1990,9 @@ func _build_ui() -> void:
 	var funds_row := HBoxContainer.new()
 	funds_row.add_theme_constant_override("separation", 6)
 	# 34 高：可见的金币实体约 21px，和右边 24 号金色大字一样高（1:1 只有 14px，偏小）
-	funds_row.add_child(_make_art_icon(ICON_COIN, 34.0))
+	funds_icon = _make_art_icon(ICON_COIN, 34.0)
+	_attach_poke(funds_icon, 1.15)     # 指标图标 14px 才能放 1.35；这个 34px，放大要收着点
+	funds_row.add_child(funds_icon)
 	# ⚠ 必须写 24：_snap_px() 只认 12 的倍数，写 17 / 18 都会被吸附回 12px，
 	#   改完看不出一丁点变大（原来的 17 就是这么被吃掉的）。
 	funds_label = _make_label("0 / 80 万", 24, Color(1, 0.95, 0.6))
@@ -1987,8 +2003,12 @@ func _build_ui() -> void:
 
 	var research_row := HBoxContainer.new()
 	research_row.add_theme_constant_override("separation", 6)
-	research_row.add_child(_make_art_icon(ICON_RESEARCH))
+	research_icon = _make_art_icon(ICON_RESEARCH)
+	_attach_poke(research_icon, 1.25)
+	research_row.add_child(research_icon)
 	research_label = _make_label("科研点：0", 14, Color(0.82, 0.9, 1))
+	research_label.tooltip_text = _research_tooltip()
+	research_icon.tooltip_text = research_label.tooltip_text
 	research_label.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	research_row.add_child(research_label)
 	lv.add_child(research_row)
@@ -2744,16 +2764,17 @@ func _build_changelog_rows(col: VBoxContainer) -> void:
 				col.add_child(body)
 
 
-## 把公告里的 **重点** 转成 BBCode 加粗。
+## 把公告里的 **重点** 转成 BBCode 强调。
+## ⚠ 用颜色而不是 [b]：这套界面是点阵字，[b] 只会把笔画糊在一起（见 _setup_pixel_font）。
 ## ⚠ 开了 bbcode 之后，正文里其余的方括号必须转义成 [lb]，否则会被当成标签吃掉 ——
-##   例如「[已解决]」这种写法会静默消失。所以先转义、再插 [b]。
+##   例如「[已解决]」这种写法会静默消失。所以先转义、再插颜色标签。
 func _md_emphasis(s: String) -> String:
 	var parts := s.split("**")
 	var out := ""
 	for i in parts.size():
 		var chunk: String = str(parts[i]).replace("[", "[lb]")
 		if i % 2 == 1:
-			out += "[b]" + chunk + "[/b]"
+			out += "[color=#ffd479]" + chunk + "[/color]"
 		else:
 			out += chunk
 	return out
@@ -4322,6 +4343,12 @@ func _build_pause_menu() -> void:
 	pause_volume_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	pvol_controls.add_child(pause_volume_label)
 
+	# 主菜单那份设置面板一直有「返回」，暂停里这份 0.1.28 起只剩音量 —— 补回来，
+	# 否则进设置之后只能靠 Esc 猜着退，玩家找不到出口。
+	var ps_back := _make_button("返回", _on_pause_settings_back, 16)
+	ps_back.custom_minimum_size = Vector2(0, 40)
+	psv.add_child(ps_back)
+
 	_update_bgm_btn()        # 同步两个切换按钮文字
 	_sync_score_speed_ui()   # 两个结算速度滑块的文字也要填上（建的时候标签是空的）
 
@@ -5389,6 +5416,8 @@ func _sort_hand_cards(by_category: bool) -> void:
 		var tw := Motion.tween(p, "linear")
 		tw.set_parallel(true)
 		Motion.curve(tw, str(Motion.profiles.deal.ease))
+		# 排序后重发也是「发牌」，同样一张一声（与 _play_deal_animation 同一条音轨）
+		tw.tween_callback(_play_deal_sfx.bind(i)).set_delay(d)
 		tw.tween_property(p, "position", target, DEAL_DUR).set_delay(d)
 		tw.tween_property(p, "rotation", float(info["theta"]), DEAL_DUR).set_delay(d)
 		tw.tween_property(p, "scale", Vector2.ONE, DEAL_DUR).set_delay(d)
@@ -5858,11 +5887,13 @@ func _make_knowledge_card(kid: String, collected: bool) -> PanelContainer:
 	panel.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
 	panel.add_theme_stylebox_override("panel", _knowledge_card_style(collected))
 	var k: Dictionary = GameState.KNOWLEDGE_CARDS.get(kid, {})
-	# category 传**知识卡类别**（植物 / 鸟类 / …）：画好的卡面按类别取，卡名由 PixelCardArt 写到
-	# 卡面中间那块空白里。未收集的不传类别 —— 统一用「未知」卡面，不泄露它属于哪一类。
+	# category 传**知识卡类别**（植物 / 鸟类 / …）：画好的卡面按类别取，卡照（photos/<kid>.png）
+	# 方图贴进卡面中间、卡名写到方图下面，字号由 PixelCardArt.face_photo_plan() 自动退让。
+	# 未收集的不传类别也不传卡照 —— 统一用「未知」卡面，不泄露它属于哪一类、也不提前露出照片。
 	PixelCardArt.add_face(panel, str(k.get("name", "")) if collected else "？",
 		"知识卡" if collected else "未收集", not collected, "",
-		collected and kid == "egg_dixinhu", str(k.get("category", "")) if collected else "")
+		collected and kid == "egg_dixinhu", str(k.get("category", "")) if collected else "",
+		_knowledge_photo(kid) if collected else null)
 	if collected and kid == "egg_dixinhu":
 		var rim := ColorRect.new()
 		rim.name = "KnowledgeFoil"
@@ -5900,6 +5931,17 @@ func _knowledge_art(kid: String) -> Texture2D:
 	atlas.region = Rect2(Vector2(tile_pos) * tile, tile)
 	atlas.filter_clip = true
 	return atlas
+
+
+## 知识卡卡照：按卡 id 取 res://assets/art/knowledge/photos/<kid>.png。
+## 没这张图（彩蛋卡、或者图还没导）就返回 null —— 调用方一律按 null 处理，不报错。
+func _knowledge_photo(kid: String) -> Texture2D:
+	if _knowledge_photo_cache.has(kid):
+		return _knowledge_photo_cache[kid]
+	var path := KNOWLEDGE_PHOTO_DIR + kid + ".png"
+	var tex: Texture2D = load(path) if ResourceLoader.exists(path) else null
+	_knowledge_photo_cache[kid] = tex
+	return tex
 
 
 ## 详情：左大牌 + 右介绍框（打字机）—— 与牌库的卡牌详情同一套演出。
@@ -5944,6 +5986,7 @@ func _show_knowledge_detail(view: Control, kid: String) -> void:
 		fly.parallel().tween_property(big, "rotation", 0.0, Motion.seconds("carry"))
 	knowledge_detail_title.text = str(GameState.KNOWLEDGE_CARDS[kid]["name"]) if collected else "？？？"
 	knowledge_detail_body.text = _knowledge_detail_text(kid, collected)
+	knowledge_detail_source.text = _knowledge_source_lines(kid, collected)
 	Motion.cancel(knowledge_detail_body, "text_reveal")
 	if wetland and wetland.reduced_motion:
 		knowledge_detail_body.visible_characters = -1
@@ -5955,7 +5998,7 @@ func _show_knowledge_detail(view: Control, kid: String) -> void:
 	tw.tween_property(knowledge_detail_body, "visible_characters", total, clampf(total * 0.03, 0.4, 2.5))
 
 
-func _knowledge_detail_text(kid: String, collected: bool) -> String:
+func _knowledge_detail_text(kid: String, collected: bool, with_sources: bool = false) -> String:
 	if not collected:
 		return "[color=#8a8a8a]未收集[/color]\n\n这张知识卡还没有收集到。"
 	var k: Dictionary = GameState.KNOWLEDGE_CARDS[kid]
@@ -5972,20 +6015,45 @@ func _knowledge_detail_text(kid: String, collected: bool) -> String:
 	body += "生态角色：%s\n\n" % str(k["ecology"])
 	body += "当前威胁：%s\n\n" % str(k["threat"])
 	body += "管理建议：%s" % str(k["management"])
-	body += _knowledge_source_text(k)
+	# 弹窗没有固定底栏，出处直接跟正文一起滚；详情页有常驻出处栏，这里就不要再写一遍
+	if with_sources:
+		body += "\n\n" + _knowledge_source_lines(kid, true)
 	return body
 
 
-func _knowledge_source_text(card: Dictionary) -> String:
-	if not card.has("source_url"):
+## 详情页底部那条常驻的出处栏：卡照来源 + 文字资料来源，各一行，按需做成可点链接。
+## 之所以钉在正文框外面：写在正文里会被滚动条推到看不见的地方，而参赛作品的版权口径
+## 要求出处一眼可见。
+func _knowledge_source_lines(kid: String, collected: bool) -> String:
+	if not collected or kid == "egg_dixinhu":
 		return ""
-	return "\n\n资料来源：[url=%s]%s[/url]" % [card["source_url"], card["source_title"]]
+	var k: Dictionary = GameState.KNOWLEDGE_CARDS[kid]
+	var rows: Array[String] = []
+	var credit := str(k.get("photo_credit", ""))
+	if credit != "":
+		rows.append("[color=#8a8a8a]图片来源：[/color]%s"
+			% _source_link(credit, str(k.get("photo_url", ""))))
+	if k.has("source_url"):
+		rows.append("[color=#8a8a8a]资料来源：[/color]%s"
+			% _source_link(str(k.get("source_title", "")), str(k["source_url"])))
+	return "\n".join(rows)
+
+
+## 有 https 地址就把这段文字本身做成可点链接（点了走 _on_knowledge_source_clicked，
+## 那里只放行知识卡自己登记过的地址）。
+func _source_link(label: String, url: String) -> String:
+	if url.begins_with("https://"):
+		return "[url=%s]%s[/url]" % [url, label]
+	return label
 
 
 func _on_knowledge_source_clicked(meta: Variant) -> void:
+	# 只放行「某张知识卡自己登记的出处链接」——正文里的 url 不可能被点去开别的东西。
 	var url := str(meta)
+	if not url.begins_with("https://"):
+		return
 	for card in GameState.KNOWLEDGE_CARDS.values():
-		if url.begins_with("https://") and url == str(card.get("source_url", "")):
+		if url == str(card.get("source_url", "")) or url == str(card.get("photo_url", "")):
 			OS.shell_open(url)
 			return
 
@@ -6055,6 +6123,16 @@ func _build_knowledge_detail() -> void:
 	knowledge_detail_body.add_theme_font_size_override("normal_font_size", _snap_px(16))
 	knowledge_detail_body.add_theme_color_override("default_color", Color(0.96, 0.94, 0.9))
 	iv.add_child(knowledge_detail_body)
+
+	# 出处栏：钉在滚动区外面，任何一张卡打开都能一眼看到卡照与资料的来源（可点开原页）。
+	knowledge_detail_source = RichTextLabel.new()
+	knowledge_detail_source.bbcode_enabled = true
+	knowledge_detail_source.fit_content = true
+	knowledge_detail_source.scroll_active = false
+	knowledge_detail_source.meta_clicked.connect(_on_knowledge_source_clicked)
+	knowledge_detail_source.add_theme_font_size_override("normal_font_size", _snap_px(16))
+	knowledge_detail_source.add_theme_color_override("default_color", Color(0.72, 0.78, 0.82))
+	iv.add_child(knowledge_detail_source)
 
 	iv.add_child(_make_label("点击空白处返回", 12, Color("8eaaa8")))
 
@@ -6889,7 +6967,9 @@ func _play_refresh_break_animation() -> void:
 	rng.randomize()
 	for i in 9:
 		var shard := ColorRect.new()
-		shard.color = Color(0.60, 0.42, 0.23) if i % 2 == 0 else Color(0.80, 0.61, 0.34)
+		# 配色跟新 UI 的蓝色按钮同色系（见 UiSkin.SHARD_COLORS）。原来是木板棕黄，
+		# 0.1.33 整套界面换成 16bit 蓝皮之后，这些碎片看着像别的 UI 掉下来的渣。
+		shard.color = UiSkin.SHARD_COLORS[i % UiSkin.SHARD_COLORS.size()]
 		shard.size = Vector2(rng.randf_range(9.0, 24.0), rng.randf_range(5.0, 13.0))
 		shard.position = rect.position + Vector2(
 			rng.randf() * maxf(1.0, rect.size.x - shard.size.x),
@@ -7378,6 +7458,8 @@ func _play_deal_animation() -> void:
 		panel.modulate.a = 0.0
 		var tw := Motion.tween(panel, "linear", "deal")
 		tw.tween_interval(float(deal_index) * 0.06)
+		# 牌离开牌堆的那一瞬出声（不是落桌时）：逐张错开 60ms → 一串「劈里啪啦」
+		tw.tween_callback(_play_deal_sfx.bind(deal_index))
 		Motion.curve(tw, "power2.inOut")
 		tw.tween_property(panel, "position", target, 0.36)
 		tw.parallel().tween_property(panel, "rotation", float(info["theta"]), 0.36)
@@ -7386,8 +7468,16 @@ func _play_deal_animation() -> void:
 		tw.tween_callback(_finish_card_deal.bind(info, panel))
 		deal_index += 1
 
+## 发牌音：按「第几张」换音高，免得十声一模一样听着像机器。
+func _play_deal_sfx(deal_index: int) -> void:
+	play_sfx("deal", DEAL_SFX_PITCH_STEPS[deal_index % DEAL_SFX_PITCH_STEPS.size()], DEAL_SFX_DB)
+
+
 func _finish_card_deal(info: Dictionary, panel: PanelContainer) -> void:
 	if not is_instance_valid(panel) or not info.get("dealing", false): return
+	# 牌到手的落桌声：同一段动画的收尾，与开头的「唰」凑成一整套
+	play_sfx("land", DEAL_SFX_PITCH_STEPS[int(panel.get_meta("deal_index", 0)) % DEAL_SFX_PITCH_STEPS.size()],
+		LAND_SFX_DB)
 	info["dealing"] = false
 	info["flying"] = false
 	panel.position = info["base_pos"]
@@ -8682,7 +8772,7 @@ func _show_knowledge(card_id: String) -> void:
 	Knowledge.unlock(card_id)
 	_current_phase = "popup_knowledge"
 	var k: Dictionary = GameState.KNOWLEDGE_CARDS[card_id]
-	var body := _knowledge_detail_text(card_id, true)
+	var body := _knowledge_detail_text(card_id, true, true)   # 弹窗没有固定底栏，出处跟着正文走
 	_show_popup("知识卡 · %s" % k["name"], body, "收下（继续）", _on_resolve_continue)
 	if card_id == "egg_dixinhu":
 		var reveal := CenterContainer.new()
@@ -9003,6 +9093,25 @@ func _make_art_icon(tex: Texture2D, target_h: float = 0.0) -> TextureRect:
 	return tr
 
 
+## 资金栏的金币 / 科研点图标接上六项指标那套反馈（悬停放大 + 点击戳一下）。
+## 倍数按图标实际尺寸给：指标图标只有 14px 可以放到 1.35，这两个更大，得收着。
+func _attach_poke(icon: TextureRect, poke_hover_target: float) -> void:
+	icon.set_script(preload("res://scripts/metric_icon_effect.gd"))
+	icon.effects_owner = self
+	icon.hover_target = poke_hover_target
+
+
+## 科研点是唯一「看着是个数字、其实换能力」的累计值，悬停要说清它换到什么。
+## 阈值全部取自 GameState，改常量时提示跟着走。
+func _research_tooltip() -> String:
+	return ("科研点是累计值，用来换监测能力，不会消耗。\n"
+			+ "· 打「生态监测与科研」按档位得 1 / 2 / 3 点\n"
+			+ "· 回合末结转超出 %d 万上限的部分，每 10 万转 1 点\n"
+			+ "· 累计满 %d 点开启深预警：危机预警从提前 1 回合延长到提前 2 回合\n"
+			+ "· 累计 20 点以上，结算报告会记一条「长期数据库建立」") % [
+				GameState.MAX_CARRY, GameState.DEEP_WARN_RESEARCH]
+
+
 ## 旧的程序化图标网格（金额/科研点/指标都改用美术图后，这里只作历史备份，没人再调）
 ## 各数值/指标对应的像素图标网格
 func _icon_grid_for(kind: String) -> String:
@@ -9105,6 +9214,13 @@ func _setup_pixel_font() -> void:
 	var theme := Theme.new()
 	theme.default_font = ui_font
 	theme.default_font_size = 12
+	# 粗体（[b]）必须显式绑成正文字体本身。
+	# 不写这三行的话，RichTextLabel 会掉回引擎默认主题的 bold：那是一份
+	# FontVariation(base=引擎自带无衬线, variation_embolden=1.2)。叠加在这套点阵/像素字体上，
+	# 1px 的笔画被横向撑胖、字腔糊死 —— 玩测反馈原话「粗体字导致看不清文本」。
+	# 现在 [b] 与正文同版面（不加粗），要强调的地方改用颜色（见 _md_emphasis）。
+	for rtl_font in ["bold_font", "italics_font", "bold_italics_font"]:
+		theme.set_font(rtl_font, "RichTextLabel", ui_font)
 	theme.set_stylebox("panel", "TooltipPanel", UiSkin.panel())
 	theme.set_color("font_color", "TooltipLabel", VisualTheme.PAPER)
 	theme.set_font_size("font_size", "TooltipLabel", 12)
