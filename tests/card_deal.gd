@@ -53,6 +53,18 @@ func _ready() -> void:
 	check(texture_counts.size() >= 6, "Cold hand generation is spread across frames")
 	for i in range(1, texture_counts.size()):
 		check(int(texture_counts[i]) - int(texture_counts[i - 1]) <= 1, "At most one new face upload per frame")
+	# 0.1.35：发牌音。每张牌离堆响一声「唰」(deal)、落桌垫一声闷响 (land)。
+	# 采样挂在 process_frame 上，不额外 await —— 下面那两条时序断言对时间很敏感，不能拖。
+	check(game._sfx_streams.has("deal"), "Deal sound is loaded into the sfx pool")
+	var sfx_seen := {"deal": false, "land": false}
+	var sfx_monitor := func() -> void:
+		for player in game._sfx_players:
+			if not player.playing:
+				continue
+			for key in sfx_seen.keys():
+				if player.stream == game._sfx_streams.get(key):
+					sfx_seen[key] = true
+	get_tree().process_frame.connect(sfx_monitor)
 	new_hand()
 	await get_tree().process_frame
 	for i in game.card_infos.size():
@@ -73,6 +85,10 @@ func _ready() -> void:
 		check(not info.get("dealing", false) and not info.get("flying", false), "Arrival releases input ownership")
 		check(info.panel.position.distance_to(info.base_pos) < 0.1 and absf(info.panel.rotation - info.theta) < 0.01, "Cards arrive at the fan pose")
 	await shot("02-fan")
+	# 发牌音采样到此为止：整段发牌（离堆 + 落桌）应当两种声音都出现过
+	get_tree().process_frame.disconnect(sfx_monitor)
+	check(sfx_seen["deal"], "Dealing cards plays the riffle sound")
+	check(sfx_seen["land"], "Cards landing on the table plays the thud")
 	var staged: Dictionary = game.card_infos[0]
 	staged.selected = true
 	staged.staged_by_drag = true
