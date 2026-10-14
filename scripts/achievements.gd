@@ -50,22 +50,6 @@ const SHIELD_GRID := """
 	.....##.....
 """
 
-## 「被做局了」用的骰子：四个点，读作「开局就被灌了铅」。
-const DICE_GRID := """
-	..########..
-	.#XXXXXXXX#.
-	.#XXXXXXXX#.
-	.#X##XX##X#.
-	.#X##XX##X#.
-	.#XXXXXXXX#.
-	.#XXXXXXXX#.
-	.#X##XX##X#.
-	.#X##XX##X#.
-	.#XXXXXXXX#.
-	.#XXXXXXXX#.
-	..########..
-"""
-
 ## 「廉政先锋」用的方孔钱。
 const COIN_GRID := """
 	..########..
@@ -83,7 +67,7 @@ const COIN_GRID := """
 """
 
 ## 美术交付的成就图标（res://assets/art/achievements/，100×100 RGBA 透明底）。
-## 下面 LIST 里带 "tex" 的成就用这张图；没带的（目前只有隐藏成就「被做局了」）
+## 下面 LIST 里带 "tex" 的成就用这张图；没带的
 ## 回退到上面的像素网格现画，所以两条路必须都留着。
 ## ⚠ 美术图是平滑绘制的插画，不是像素画：缩放要线性过滤、未解锁要整体压暗
 ##   而不是像网格那样重新染色 —— 具体在 main.gd 的 _make_achievement_icon。
@@ -107,13 +91,6 @@ const LIST := [
 		"desc": "在困难难度下打满 16 回合通关（不是中途被撤换）",
 		"icon": SHIELD_GRID,
 		"tex": preload("res://assets/art/achievements/hard_clear.png"),
-	},
-	{
-		"id": "rigged",
-		"hidden": true,
-		"name": "被做局了",
-		"desc": "在噩梦模式下第 1 或第 2 回合就被撤换 —— 这局从发牌起就没打算让你赢",
-		"icon": DICE_GRID,
 	},
 	{
 		"id": "thrifty",
@@ -169,7 +146,7 @@ func _load() -> void:
 	var data = JSON.parse_string(text)
 	if data is Dictionary:
 		for k in data:
-			if bool(data[k]):
+			if bool(data[k]) and not find(str(k)).is_empty():
 				_unlocked[str(k)] = true
 
 

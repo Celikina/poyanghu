@@ -141,7 +141,7 @@ func check_tilt(card: Control, label: String) -> void:
 	var right: PackedVector2Array = shadow.points.duplicate()
 	shadow.update_projection(card, Vector2(-0.25, -0.25))
 	var left: PackedVector2Array = shadow.points.duplicate()
-	check(right.size() == 4 and left.size() == 4, label + " shadow projects four card corners")
+	check(right.size() > 4 and left.size() == right.size(), label + " shadow follows the rounded alpha silhouette")
 	check(right[0].distance_to(left[0]) > 2.0, label + " opposite gyro directions change shadow projection")
 	shadow.update_projection(card, Vector2(float(card.get_meta("gyro_x")), float(card.get_meta("gyro_y"))))
 	check(absf(float(material.get_shader_parameter("tilt_x"))) > 0.02, label + " tilts vertically")
@@ -368,6 +368,9 @@ func _ready() -> void:
 	# bounded convergence rather than treating a fixed 450 ms as exact rest.
 	var reflow_deadline := Time.get_ticks_msec() + 1000
 	while Time.get_ticks_msec() < reflow_deadline:
+		# This fixture disabled Game._process; drive the normal off-card hover path
+		# so released cards receive their current fan targets as they do in play.
+		game._update_card_hover(1.0 / 60.0, Vector2(-1000, -1000))
 		var converged := true
 		for remaining in game.card_infos:
 			if not remaining.get("staged_by_drag", false) and remaining.panel.position.distance_to(remaining.base_pos) >= 1.0:
@@ -486,6 +489,9 @@ func _ready() -> void:
 		game._layout_fan()
 	game._clear_save()
 	await settle(0.5)
+	for frame in 90:
+		game._update_card_hover(1.0 / 60.0, Vector2(-1000, -1000))
+		await get_tree().process_frame
 	var shake_base: Vector2 = click_panel.position
 	var shake_rotation: float = click_panel.rotation
 	game._reject_card(click_panel, "测试拒绝反馈")

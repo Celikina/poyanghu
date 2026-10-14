@@ -13,6 +13,16 @@ static func attach(scroll: ScrollContainer) -> void:
 	driver.name = "MotionWebScroll"
 	scroll.add_child(driver)
 
+static func reset_to_top(scroll: ScrollContainer) -> void:
+	if scroll == null: return
+	var driver := scroll.get_node_or_null("MotionWebScroll")
+	if driver:
+		driver.set_process(false)
+		driver.current = 0.0
+		driver.target = 0.0
+	scroll.scroll_horizontal = 0
+	scroll.scroll_vertical = 0
+
 func _ready() -> void:
 	add_to_group("motion_scrollers")
 	set_process(false)

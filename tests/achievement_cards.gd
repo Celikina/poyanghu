@@ -44,30 +44,18 @@ func _ready() -> void:
 	await settle(1.0)
 	game._show_achievements_panel()
 	await settle(0.4)
-	check(Achievements.LIST.size() == 5, "Five achievements are defined")
+	check(Achievements.LIST.size() == 4, "Four achievements are defined")
 	check(row_for("rigged") == null, "Locked hidden achievement has no row")
 	check(game.ach_rows_col.get_child_count() == 4, "Only four achievements are initially visible")
 	check(game.ach_count_label.text == "已解锁 0 / 4", "Hidden achievement does not leak through the total")
 	check(row_for("ecology_expert") != null, "Ecology expert is visible before unlocking")
 	await capture("achievements-hidden-locked")
-	Achievements.try_unlock("rigged")
-	await settle(0.3)
-	var rigged := row_for("rigged")
-	check(rigged != null, "Hidden achievement appears immediately after unlocking")
-	check(game.ach_rows_col.get_child_count() == 5, "Unlocking reveals one extra row")
-	check(game.ach_count_label.text == "已解锁 1 / 5", "Unlocked hidden achievement joins the total")
-	if rigged != null:
-		var title: Label = rigged.get_child(1).get_child(0)
-		check(title.get_theme_color("font_color").is_equal_approx(Color(1, 0.88, 0.55)), "Unlocked hidden achievement title is gold")
-		if DisplayServer.get_name() != "headless":
-			var icon: TextureRect = rigged.get_child(0)
-			var image: Image = icon.texture.get_image()
-			var gold := false
-			for y in image.get_height():
-				for x in image.get_width():
-					var color := image.get_pixel(x, y)
-					gold = gold or (color.a > 0.5 and color.r > color.b + 0.2 and color.g > color.b + 0.1)
-			check(gold, "Unlocked hidden achievement icon is gold")
+	Achievements._unlocked["rigged"] = true
+	Achievements._save()
+	Achievements._load()
+	check(not Achievements.is_unlocked("rigged"), "Removed achievement is filtered from old saves")
+	check(Achievements.find("rigged").is_empty(), "Removed achievement has no definition")
+	check(row_for("rigged") == null, "Removed achievement stays out of the menu")
 	var ids := Knowledge.all_ids()
 	for i in range(ids.size() - 1):
 		Knowledge.unlock(ids[i])
@@ -81,14 +69,13 @@ func _ready() -> void:
 	Knowledge.unlock(ids.back())
 	check(notifications.count("ecology_expert") == 1, "Repeated checks and cards do not repeat the achievement")
 	Achievements._load()
-	check(Achievements.is_unlocked("rigged") and Achievements.is_unlocked("ecology_expert"), "Both achievements survive save reload")
+	check(not Achievements.is_unlocked("rigged") and Achievements.is_unlocked("ecology_expert"), "Known achievements survive reload without the removed achievement")
 	Achievements.reset_all()
 	check(not Achievements.is_unlocked("ecology_expert"), "Reset clears the achievement")
 	Knowledge._load()
 	Achievements._watch_knowledge()
 	check(Achievements.is_unlocked("ecology_expert"), "Startup reconciliation rewards an existing complete collection")
 	check(not Achievements.is_unlocked("rigged"), "Collection completion must not unlock rigged")
-	Achievements.try_unlock("rigged")
 	game._ach_queue.clear()
 	game.ach_popup.visible = false
 	game._show_achievements_panel()

@@ -4,7 +4,7 @@ const Motion = preload("res://scripts/motion.gd")
 const MotionWeb = preload("res://scripts/motion_web.gd")
 const MotionSpring = preload("res://scripts/motion_spring.gd")
 const MotionScroll = preload("res://scripts/motion_scroll.gd")
-const WoodenTierLever = preload("res://scripts/wooden_tier_lever.gd")
+const PolicyStampSelector = preload("res://scripts/policy_stamp_selector.gd")
 const UiSkin := preload("res://scripts/ui_skin.gd")
 const CardFlight = preload("res://scripts/card_flight.gd")
 
@@ -279,6 +279,7 @@ var funds_icon: TextureRect       # 资金栏金币图标：与六项指标同�
 var research_icon: TextureRect    # 科研点图标：同上（科研点提示也挂在它和标签上）
 var dispatch_panel: Control       # 紧急调度的选牌面板（与牌库同款的全屏卡牌网格）
 var dispatch_grid: HFlowContainer
+var dispatch_scroll: ScrollContainer
 var dispatch_hint: Label          # 面板顶部说明（含当前调度费，逐次递增所以要重写）
 var _refresh_used_turn: int = -1  # 本回合是否已刷过手牌（-1 = 没刷过）
 var _season_dial_index: int = -1  # 指针当前停在第几季，避免 _update_hud 每帧重触发动画
@@ -331,13 +332,10 @@ const BOARD_CARD_SCALE := 0.50
 const BOARD_CARD_SPACING := 63.0
 const BOARD_CAPACITY := 5
 var play_deal_anim: bool = false              # 下次布局时播放发牌入场动画
-## 左下角「出牌档位」拉杆（局内 UI）：向左拨 = 基础投入（半价），中间 = 有效投入，向右拨 = 深度投入（双倍价）。
-## ⚠ 档位是**选牌那一刻**记进 card_infos 的（info["tier"]）——选中之后再拨拉杆，
-##   已选的牌不会改价、也不会改效果，玩家才能一回合内混着打不同档。
+## 政策力度卷轴：点击基础、有效或深度盖章。已选牌保留选定时的档位。
 var tier_lever: PanelContainer
 var lever_track: Control
 var lever_handle: Control
-var _lever_dragging := false
 var lever_cd_label: Label              # 「出牌档位」右边的冷却倒计时
 var lever_slot_btns: Array = []
 var lever_state_label: Label
@@ -347,6 +345,10 @@ var dim: ColorRect
 var popup_center: CenterContainer
 var popup_panel: PanelContainer
 var _knowledge_egg_reveal: Control
+var _knowledge_popup_card_id := ""
+var popup_content: BoxContainer
+var popup_photo_frame: PanelContainer
+var popup_photo: TextureRect
 var popup_title: Label
 var popup_body: RichTextLabel
 var popup_button: Button
@@ -428,6 +430,7 @@ const SFX_PATHS := {
 	"ding": "res://assets/audio/ding.wav",   # 逐张弹分 / 指标结算的「叮」
 	"land": "res://assets/audio/land.wav",   # 甩牌落桌的闷响
 	"deal": "res://assets/audio/card-dealing-zapsplat.mp3",
+	"stamp": "res://assets/audio/policy-stamp-sonilo.wav",
 }
 const SFX_POOL_SIZE := 6        # 复音池：支撑每 0.045s 一个叮而互不打断
 const DEAL_SFX_DB := -5.0
@@ -477,6 +480,7 @@ var _deck_hovered: bool = false
 var card_back_tex: Texture2D
 var deck_viewer: Control          # 牌库查看器（全屏弹层）
 var deck_viewer_grid: HFlowContainer
+var deck_viewer_scroll: ScrollContainer
 var _deck_open: bool = false
 var card_detail: Control          # 卡牌详情弹层（点击查看：左大牌 + 右介绍）
 var card_detail_card: CenterContainer  # 左侧大牌容器
@@ -511,6 +515,7 @@ var _deck_gyro_view: Control = null   # 当前鼠标悬停的牌库卡牌（只�
 # 但它是**独立一层**（MenuLayer 之上，因为入口在开始页而不是对局里）。
 var knowledge_viewer: Control          # 知识卡图鉴（全屏弹层）
 var knowledge_grid: HFlowContainer     # 知识卡网格
+var knowledge_scroll: ScrollContainer
 var knowledge_count_label: Label       # 「已收集 x / 总数」
 var knowledge_detail: Control          # 知识卡详情弹层（覆盖在查看器之上）
 var knowledge_detail_card: CenterContainer  # 左侧大牌容器
@@ -520,7 +525,7 @@ var knowledge_detail_source: RichTextLabel   # 详情页底部的常驻出处栏
 var _knowledge_big_card: Control = null     # 当前详情大牌（重开时清理）
 var _knowledge_photo_cache: Dictionary = {} # kid -> Texture2D（null 也算缓存，避免反复探测文件）
 
-# 知识卡卡照：pptx 图集（《鄱阳湖 · 知识卡图集》）导入的 40 张，统一方裁成 1:1 的 256×256
+# 知识卡卡照：pptx 图集（《鄱阳湖 · 知识卡图集》）导入的 40 张，统一方裁成 1:1 的 512×512
 # （生成器 tools/import_knowledge_photos.py）。画进卡面本身，见 PixelCardArt.knowledge_texture()。
 const KNOWLEDGE_PHOTO_DIR := "res://assets/art/knowledge/photos/"
 
@@ -2223,16 +2228,39 @@ func _build_ui() -> void:
 	popup_panel.add_child(pv)
 	popup_title = _make_label("", 22, Color(1, 0.9, 0.55))
 	pv.add_child(popup_title)
+	popup_content = BoxContainer.new()
+	popup_content.vertical = true
+	popup_content.add_theme_constant_override("separation", 20)
+	pv.add_child(popup_content)
+	popup_photo_frame = PanelContainer.new()
+	popup_photo_frame.name = "KnowledgeDropPhoto"
+	var photo_style := StyleBoxFlat.new()
+	photo_style.bg_color = Color("e9e5d3")
+	photo_style.border_color = Color("c9d7be")
+	photo_style.set_border_width_all(1)
+	photo_style.set_corner_radius_all(4)
+	photo_style.set_content_margin_all(6)
+	popup_photo_frame.add_theme_stylebox_override("panel", photo_style)
+	popup_photo_frame.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	popup_photo_frame.hide()
+	popup_content.add_child(popup_photo_frame)
+	popup_photo = TextureRect.new()
+	popup_photo.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	popup_photo.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	popup_photo.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
+	popup_photo.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	popup_photo_frame.add_child(popup_photo)
 	popup_body = RichTextLabel.new()
 	popup_body.bbcode_enabled = true
 	popup_body.fit_content = true
 	popup_body.custom_minimum_size = Vector2(540, 0)
 	popup_body.add_theme_font_size_override("normal_font_size", _snap_px(16))
 	popup_body.add_theme_color_override("default_color", Color(0.95, 0.95, 0.95))
-	pv.add_child(popup_body)
+	popup_content.add_child(popup_body)
 	popup_button = _make_button("继续", _on_popup_button, 18)
 	popup_button.custom_minimum_size = Vector2(0, 44)
 	pv.add_child(popup_button)
+	get_viewport().size_changed.connect(_layout_knowledge_popup)
 
 	# 主菜单（独立 CanvasLayer，盖在 HUD 与沙盘之上）
 	_build_menu()
@@ -2543,15 +2571,10 @@ func _build_menu() -> void:
 	svb.add_child(s_sep)
 
 	# 音量调节
-	var vol_row := HBoxContainer.new()
-	vol_row.add_theme_constant_override("separation", 8)
-	svb.add_child(vol_row)
-	var vol_lbl := _make_label("音量", 16, Color(0.82, 0.86, 0.9))
-	vol_row.add_child(vol_lbl)
 	var vol_controls := VBoxContainer.new()
 	vol_controls.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	vol_controls.add_theme_constant_override("separation", 2)
-	vol_row.add_child(vol_controls)
+	svb.add_child(vol_controls)
 	audio_volume_slider = HSlider.new()
 	audio_volume_slider.min_value = 0
 	audio_volume_slider.max_value = 100
@@ -4181,6 +4204,8 @@ func save_game() -> void:
 			"body": popup_body.text,
 			"button": popup_button.text,
 		}
+		if _current_phase == "popup_knowledge" and not _knowledge_popup_card_id.is_empty():
+			data["popup"]["knowledge_id"] = _knowledge_popup_card_id
 	var f := FileAccess.open(SAVE_PATH, FileAccess.WRITE)
 	if f != null:
 		f.store_string(JSON.stringify(data))
@@ -4221,7 +4246,15 @@ func load_game() -> bool:
 		"popup_event":
 			_show_popup("第 %d 回合 · 事件" % GameState.turn, str(popup.get("body", "")), "开始分配资金", _enter_allocate)
 		"popup_knowledge":
-			_show_popup(str(popup.get("title", "")), str(popup.get("body", "")), "收下（继续）", _on_resolve_continue)
+			var kid := str(popup.get("knowledge_id", ""))
+			if not GameState.KNOWLEDGE_CARDS.has(kid):
+				# Older saves kept only the title; recover its photograph by name.
+				for old_id in GameState.KNOWLEDGE_CARDS:
+					if str(popup.get("title", "")) == "知识卡 · %s" % GameState.KNOWLEDGE_CARDS[old_id]["name"]:
+						kid = str(old_id)
+						break
+			if GameState.KNOWLEDGE_CARDS.has(kid): _show_knowledge(kid)
+			else: _show_popup(str(popup.get("title", "")), str(popup.get("body", "")), "收下（继续）", _on_resolve_continue)
 		"popup_settlement":
 			_show_popup("结算反馈", str(popup.get("body", "")), "继续", _on_resolve_continue)
 		_:
@@ -4354,15 +4387,10 @@ func _build_pause_menu() -> void:
 	var ps_sep := HSeparator.new()
 	psv.add_child(ps_sep)
 
-	var pvol_row := HBoxContainer.new()
-	pvol_row.add_theme_constant_override("separation", 8)
-	psv.add_child(pvol_row)
-	var pvol_lbl := _make_label("音量", 16, Color(0.82, 0.86, 0.9))
-	pvol_row.add_child(pvol_lbl)
 	var pvol_controls := VBoxContainer.new()
 	pvol_controls.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	pvol_controls.add_theme_constant_override("separation", 2)
-	pvol_row.add_child(pvol_controls)
+	psv.add_child(pvol_controls)
 	pause_volume_slider = HSlider.new()
 	pause_volume_slider.min_value = 0
 	pause_volume_slider.max_value = 100
@@ -4954,6 +4982,7 @@ func _build_deck_viewer() -> void:
 	_update_sort_btn()
 
 	var scroll := ScrollContainer.new()
+	deck_viewer_scroll = scroll
 	MotionScroll.attach(scroll)
 	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
@@ -5029,6 +5058,7 @@ func _open_deck_viewer() -> void:
 		return
 	_deck_open = true
 	deck_viewer.visible = true
+	MotionScroll.reset_to_top(deck_viewer_scroll)
 	# 收起牌堆的悬停状态（避免残留黄框/孔雀开屏），并把其余 HUD 收出屏幕
 	_deck_hovered = false
 	deck_border.visible = false
@@ -5056,6 +5086,7 @@ func _open_deck_viewer() -> void:
 		cards.append(view)
 	# 等一帧布局完成后逐张发牌
 	await get_tree().process_frame
+	MotionScroll.reset_to_top(deck_viewer_scroll)
 	for i in cards.size():
 		var p: Control = cards[i]
 		var tw := Motion.tween(p, "enter", "arrival")
@@ -5237,12 +5268,25 @@ func _update_sort_btn() -> void:
 
 
 ## 排序冷却：锁死期间按钮禁用并显示倒计时，禁止交互/无按下反馈
+func _allocation_controls_locked() -> bool:
+	return _score_animating or _current_phase != "allocate" or GameState.game_over
+
+func _refresh_allocation_controls() -> void:
+	_update_sort_cooldown()
+	_update_lever_cooldown()
+	_refresh_action_buttons()
+
 func _update_sort_cooldown() -> void:
 	var remaining := SORT_COOLDOWN_MS - (Time.get_ticks_msec() - _sort_cooldown_ms)
-	_apply_sort_cooldown(deck_sort_btn, remaining)
-	_apply_sort_cooldown(hand_sort_btn, remaining)
-	if sandpan_view and sandpan_view.collapsed and hand_sort_btn:
+	if _score_animating:
+		if deck_sort_btn: deck_sort_btn.disabled = true
+	else:
+		_apply_sort_cooldown(deck_sort_btn, remaining)
+	if hand_sort_btn and (_allocation_controls_locked() or (sandpan_view and sandpan_view.collapsed)):
 		hand_sort_btn.disabled = true
+		hand_sort_btn.text = "按类别排序" if _deck_sort_by_category else "按费用排序"
+	else:
+		_apply_sort_cooldown(hand_sort_btn, remaining)
 
 
 ## 冷却期间按钮禁用并显示倒计时。冷却也是两边共用的。
@@ -5260,6 +5304,7 @@ func _apply_sort_cooldown(btn: Button, remaining: int) -> void:
 
 
 func _toggle_deck_sort() -> void:
+	if _score_animating: return
 	# 锁死两次切换之间的最低时间间隔（见 SORT_COOLDOWN_MS），杜绝连点造成排列错乱
 	var now := Time.get_ticks_msec()
 	if now - _sort_cooldown_ms < SORT_COOLDOWN_MS:
@@ -5340,6 +5385,7 @@ func _sort_deck_cards(by_category: bool) -> void:
 
 ## 出牌阶段的排序：与牌库共用一个模式、一套冷却，只是作用对象换成在场手牌。
 func _toggle_hand_sort() -> void:
+	if _allocation_controls_locked(): return
 	if sandpan_view and sandpan_view.collapsed: return
 	for info in card_infos:
 		if info.get("dealing", false): return
@@ -5600,6 +5646,7 @@ func _show_card_detail(view: Control, card: Dictionary) -> void:
 	var big: PanelContainer = made_big["panel"]
 	big.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	big.pivot_offset = Vector2(61, 82.5)
+	big.set_meta("shadow_preserve_size", true)
 	_bind_card_gyro(big)
 	big.set_meta("gyro_x", 0.0)
 	big.set_meta("gyro_y", 0.0)
@@ -5809,6 +5856,7 @@ func _build_knowledge_viewer() -> void:
 	title_bar.add_child(knowledge_count_label)
 
 	var scroll := ScrollContainer.new()
+	knowledge_scroll = scroll
 	MotionScroll.attach(scroll)
 	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
@@ -5846,6 +5894,7 @@ func _open_knowledge_viewer() -> void:
 	if knowledge_viewer.visible:
 		return
 	knowledge_viewer.visible = true
+	MotionScroll.reset_to_top(knowledge_scroll)
 	# 开始页的标题与选项列先让位（图鉴是一整屏）
 	menu_col.visible = false
 	_deck_gyro_view = null
@@ -5879,6 +5928,7 @@ func _open_knowledge_viewer() -> void:
 
 	# 等一帧布局完成后逐张发牌（与牌库同节奏）
 	await get_tree().process_frame
+	MotionScroll.reset_to_top(knowledge_scroll)
 	for i in views.size():
 		var p: Control = views[i]
 		var tw := Motion.tween(p, "enter", "arrival")
@@ -5988,6 +6038,7 @@ func _show_knowledge_detail(view: Control, kid: String) -> void:
 	var big: PanelContainer = _make_knowledge_card(kid, collected)
 	big.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	big.pivot_offset = Vector2(61, 82.5)
+	big.set_meta("shadow_preserve_size", true)
 	_bind_card_gyro(big)
 	big.set_meta("gyro_x", 0.0)
 	big.set_meta("gyro_y", 0.0)
@@ -6322,12 +6373,15 @@ func _make_metric_row(metric: String) -> VBoxContainer:
 	line.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	wrap.add_child(line)
 	if metric == "water_level":
-		line.color = Color("b6ebae")
-		line.anchor_bottom = 0.0
-		line.offset_top = -2.0
-		line.offset_bottom = 2.0
+		line.color = Color(0.71, 0.92, 0.68, 0.45)
+		line.z_index = 10
+		line.anchor_bottom = 1.0
+		line.offset_top = -1.0
+		line.offset_bottom = 1.0
 		high_line = ColorRect.new()
 		high_line.color = line.color
+		high_line.z_index = 10
+		high_line.anchor_bottom = 1.0
 		high_line.offset_top = line.offset_top
 		high_line.offset_bottom = line.offset_bottom
 		high_line.offset_left = -1
@@ -6702,9 +6756,16 @@ func _update_hud() -> void:
 			var bar: ProgressBar = metric_bars[metric]["bar"]
 			var val: Label = metric_bars[metric]["val"]
 			# 指标变化不是玩家直接操作 → 用动画"告知"变化（速查表：非用户触发可较长时长）
-			var tw := Motion.tween(bar, "linear", "value")
-			Motion.curve(tw, "power2.out")
-			tw.tween_property(bar, "value", float(m[metric]), 0.35)
+			var target := float(m[metric])
+			var active: Tween = bar.get_meta("motion_value") if bar.has_meta("motion_value") else null
+			var same_target := is_equal_approx(float(bar.get_meta("metric_value_target", INF)), target)
+			if not same_target or (not is_equal_approx(bar.value, target) and (active == null or not active.is_valid())):
+				bar.set_meta("metric_value_target", target)
+				Motion.cancel(bar, "value")
+				if not is_equal_approx(bar.value, target):
+					var tw := Motion.tween(bar, "linear", "value")
+					Motion.curve(tw, "power2.out")
+					tw.tween_property(bar, "value", target, 0.35)
 			val.text = str(m[metric])
 
 	var t: int = GameState.turn
@@ -6843,6 +6904,7 @@ func _enter_allocate() -> void:
 		refresh_btn.modulate.a = 1.0
 	_close_dispatch_panel()
 	_update_hud()
+	_refresh_allocation_controls()
 
 
 # ==================== 紧急调度 / 刷新手牌 ====================
@@ -6850,6 +6912,10 @@ func _enter_allocate() -> void:
 ## 刷新两个「花钱换牌」按钮的可用态与文案。
 ## 由 _update_hud() 频繁调用 —— 只改文本与 disabled，**绝不重建节点**。
 func _refresh_action_buttons() -> void:
+	if _allocation_controls_locked():
+		if refresh_btn: refresh_btn.disabled = true
+		if dispatch_btn: dispatch_btn.disabled = true
+		return
 	if dispatch_btn != null:
 		var cd: int = GameState.dispatch_cooldown_left()
 		if not GameState.dispatched_cards.is_empty():
@@ -6866,8 +6932,19 @@ func _refresh_action_buttons() -> void:
 			dispatch_btn.text = "紧急调度 · %d 万" % GameState.dispatch_cost()
 			dispatch_btn.disabled = false
 	if refresh_btn != null:
+		var spent := _refresh_used_turn == GameState.turn
+		if refresh_btn.get_meta("refresh_spent_appearance", false) != spent:
+			if not refresh_btn.has_meta("refresh_original_disabled_style"):
+				refresh_btn.set_meta("refresh_original_disabled_style", refresh_btn.get_theme_stylebox("disabled"))
+				refresh_btn.set_meta("refresh_original_focus_style", refresh_btn.get_theme_stylebox("focus"))
+			refresh_btn.add_theme_stylebox_override("disabled", StyleBoxEmpty.new() if spent else refresh_btn.get_meta("refresh_original_disabled_style"))
+			refresh_btn.add_theme_stylebox_override("focus", StyleBoxEmpty.new() if spent else refresh_btn.get_meta("refresh_original_focus_style"))
+			refresh_btn.set_meta("refresh_spent_appearance", spent)
 		if _refresh_used_turn == GameState.turn:
 			refresh_btn.text = "本回合已刷新"
+			refresh_btn.disabled = true
+		elif _refreshable_hand_count() == 0:
+			refresh_btn.text = "暂无可刷新手牌"
 			refresh_btn.disabled = true
 		elif GameState.funds < GameState.REFRESH_HAND_COST:
 			refresh_btn.text = "刷新手牌 · %d 万（资金不足）" % GameState.REFRESH_HAND_COST
@@ -6877,25 +6954,39 @@ func _refresh_action_buttons() -> void:
 			refresh_btn.disabled = false
 
 
-## 刷新手牌：花 5 万把整手重抽一遍（当季卡池）。每回合限一次。
+## Only ordinary cards still in the hand are exchanged; table and dispatch cards stay.
+func _refreshable_hand_count() -> int:
+	var count := 0
+	for info in card_infos:
+		if not info.get("staged_by_drag", false) and not info.get("dispatched", false) and is_instance_valid(info.get("panel")):
+			count += 1
+	return count
+
+
+## 刷新手牌：固定花 5 万，剩几张换几张（当季卡池）。每回合限一次。
 ## 用掉后按钮碎裂掉出屏幕，下回合 _enter_allocate() 复原。
 func _on_refresh_hand() -> void:
 	if _current_phase != "allocate" or _score_animating or _sort_animating:
 		return
 	if _refresh_used_turn == GameState.turn:
 		return
+	var replacement_count := _refreshable_hand_count()
+	if replacement_count == 0:
+		return
 	if not GameState.spend(GameState.REFRESH_HAND_COST):
 		return
 	_refresh_used_turn = GameState.turn
+	_refresh_action_buttons() # Synchronous used state, before gathering and art preparation.
 	var refresh_id := _score_anim_id
 	_sort_animating = true # Gathering owns the old hand until it reaches the deck.
 	_play_refresh_break_animation()
 	await _gather_refresh_hand()
 	if refresh_id != _score_anim_id: return
-	current_hand = GameState.draw_cards(7 + int(Talents.get_bonus("cards")))
+	current_hand = GameState.draw_cards(replacement_count)
 	await _prepare_hand_art(current_hand)
 	if refresh_id != _score_anim_id: return
 	_sort_animating = false
+	_deal_sfx_turn = -1 # Refresh is a new audible batch, even after this turn's initial deal.
 	play_deal_anim = true
 	_build_hand_panel(true)
 	_update_hud()
@@ -6946,8 +7037,8 @@ func _ui_canvas() -> CanvasLayer:
 	return get_node_or_null("UICanvas") as CanvasLayer
 
 
-## 「刷新手牌」用掉后的碎裂演出：按钮本体先隐去（**保留占位**，否则结束回合按钮会往上跳、
-## 造成误点），同时在原位炸出几块碎片、旋转着往下掉出屏幕。
+## 「刷新手牌」用掉后的碎裂演出：背景碎裂，新的已刷新文字立即显示。
+## 保留按钮占位，避免结束回合按钮跳动；碎片仍从原位旋转落出屏幕。
 func _play_refresh_break_animation() -> void:
 	var cv := _ui_canvas()
 	if cv == null:
@@ -6972,11 +7063,14 @@ func _play_refresh_break_animation() -> void:
 		tw.set_parallel(true)
 		Motion.curve(tw, "power1.in")
 		var land := Vector2(shard.position.x + rng.randf_range(-46.0, 46.0), 780.0)
-		tw.tween_property(shard, "position", land, rng.randf_range(0.55, 0.95)).set_delay(rng.randf_range(0.0, 0.14))
+		var duration := rng.randf_range(0.55, 0.95)
+		var delay := rng.randf_range(0.0, 0.14)
+		tw.tween_property(shard, "position", land, duration).set_delay(delay)
 		tw.tween_property(shard, "rotation", shard.rotation + rng.randf_range(-3.2, 3.2), 0.9)
 		tw.tween_property(shard, "modulate:a", 0.0, 0.55).set_delay(0.4)
-		Motion.tween(shard, "linear").tween_callback(shard.queue_free).set_delay(1.4)
-	refresh_btn.modulate.a = 0.0
+		tw.chain().tween_interval(1.4 - maxf(duration + delay, 0.95))
+		tw.chain().tween_callback(shard.queue_free)
+	refresh_btn.modulate.a = 1.0 # Keep the new text readable after its background shatters.
 
 
 ## 打开紧急调度的选牌面板
@@ -6988,6 +7082,7 @@ func _open_dispatch_panel() -> void:
 	if dispatch_panel == null:
 		_build_dispatch_panel()
 	dispatch_panel.visible = true
+	MotionScroll.reset_to_top(dispatch_scroll)
 	_deck_gyro_view = null          # 悬停态是从牌库那边借来的，开面板前先清干净
 	# 与牌库同一个做法：把其余 HUD 面板整体收出屏幕，让选牌这一屏是全屏的。
 	# _slide_main_ui 的控件清单里本来就有 left/right_panel / event_label / hand_panel /
@@ -7055,6 +7150,7 @@ func _build_dispatch_panel() -> void:
 	box.add_child(dispatch_hint)
 
 	var scroll := ScrollContainer.new()
+	dispatch_scroll = scroll
 	MotionScroll.attach(scroll)
 	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
@@ -7104,6 +7200,7 @@ func _fill_dispatch_grid() -> void:
 		views.append(view)
 	# 等一帧布局完成后逐张发牌（与牌库同一节奏，只是牌少、间隔收紧）
 	await get_tree().process_frame
+	MotionScroll.reset_to_top(dispatch_scroll)
 	for i in views.size():
 		var p: Control = views[i]
 		var tw := Motion.tween(p, "enter", "arrival")
@@ -7506,141 +7603,49 @@ const LEVER_STATE_TEXT := {
 	"effective": "有效投入 · 全价",
 	"deep": "深度投入 · 双倍价",
 }
-## 左下角「出牌档位」拉杆。半圆木座固定在中线，木杆绕轴左右摆到三个投入档。
-## 交互：按住杆身拖动时角度跟手，释放后吸附到对应档位并带弹性回落。
-## ⚠ 只影响**之后选中的牌**。已选中的牌在选的那一刻就把档位记进了 card_infos[i]["tier"]，
-##   所以一回合内可以先拨到基础档选两张便宜牌、再拨到深度档选一张大牌。
+## 用户提供的卷轴与印章，只给当前档位盖章。
 func _build_tier_lever(holder: Node) -> void:
 	tier_lever = PanelContainer.new()
-	tier_lever.anchor_left = 0.0
 	tier_lever.anchor_top = 1.0
-	tier_lever.anchor_right = 0.0
 	tier_lever.anchor_bottom = 1.0
 	tier_lever.offset_left = 14
-	tier_lever.offset_right = 226
-	tier_lever.offset_top = -146
+	tier_lever.offset_right = 266
+	tier_lever.offset_top = -203
 	tier_lever.offset_bottom = -14
-	_panel_style(tier_lever, Color(0.22, 0.16, 0.10, 0.96))
+	tier_lever.add_theme_stylebox_override("panel", StyleBoxEmpty.new())
 	tier_lever.visible = false
 	holder.add_child(tier_lever)
-
-	var lvb := VBoxContainer.new()
-	lvb.add_theme_constant_override("separation", 2)
-	tier_lever.add_child(lvb)
-
-	# 标题行 = [出牌档位] + [冷却倒计时]。倒计时放标题**右边**、不另起一行 ——
-	# 否则面板高度会随冷却有无而变化，把整条拉杆顶来顶去。
-	var title_row := HBoxContainer.new()
-	title_row.add_theme_constant_override("separation", 8)
-	title_row.alignment = BoxContainer.ALIGNMENT_CENTER
-	lvb.add_child(title_row)
-
-	var title := _make_label("政策力度", 12, Color(0.86, 0.80, 0.68))
-	title_row.add_child(title)
-
-	lever_cd_label = _make_label("", 12, Color(1.0, 0.60, 0.40))
-	lever_cd_label.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-	title_row.add_child(lever_cd_label)
-
-	lever_track = Control.new()
-	# 高度要同时容得下「手柄」（上半）+「基础/有效/深度」小字（下半），
-	# 否则手柄会压在档位文字上（实测截图里压到过「深度」）。
-	lever_track.custom_minimum_size = Vector2(0, 72)
-	lever_track.mouse_filter = Control.MOUSE_FILTER_STOP       # 整条轨都能点/拖
-	lever_track.resized.connect(_layout_lever_handle)
-	lever_track.gui_input.connect(_on_lever_input)
-	lvb.add_child(lever_track)
-
-	# 三个落档标签；木质半圆支座和拨杆由嵌入的 Godot 3D 视口绘制。
-	for i in LEVER_TIERS.size():
-		var tick := ColorRect.new()
-		var fx: float = (2.0 * float(i) + 1.0) / 6.0
-		tick.anchor_left = fx
-		tick.anchor_right = fx
-		tick.anchor_top = 0.0
-		tick.anchor_bottom = 0.0
-		tick.offset_left = -1
-		tick.offset_right = 1
-		tick.offset_top = 5
-		tick.offset_bottom = 9
-		tick.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		tick.set_meta("lever_tier_index", i)
-		lever_track.add_child(tick)
-		lever_slot_btns.append(tick)     # 复用作「刻度节点」列表（高亮时改颜色）
-
-	# 三个小字标签（基础 / 有效 / 深度），各占 1/3 宽
-	for i in LEVER_TIERS.size():
-		var lab := _make_label(str(GameState.TIER_NAMES[LEVER_TIERS[i]]).substr(0, 2), 12,
-			Color(0.62, 0.58, 0.50))
-		lab.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		lab.anchor_left = float(i) / 3.0
-		lab.anchor_right = float(i + 1) / 3.0
-		lab.anchor_top = 1.0
-		lab.anchor_bottom = 1.0
-		lab.offset_top = -16
-		lab.offset_bottom = 0
-		lab.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		lab.set_meta("lever_tier_index", i)
-		lever_track.add_child(lab)
-		lever_slot_btns.append(lab)      # 同上：标签也一起高亮
-
-	# 真实 3D 木杆与半圆木座。父轨仍负责点击和拖动输入。
-	lever_handle = Control.new()
-	lever_handle.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	lever_handle.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	lever_handle.set_script(WoodenTierLever)
-	lever_track.add_child(lever_handle)
-
-	lever_state_label = _make_label("", 12, Color(1.0, 0.92, 0.60))
-	lever_state_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	lvb.add_child(lever_state_label)
-
+	lever_track = PolicyStampSelector.new()
+	lever_track.custom_minimum_size = Vector2(252, 189)
+	tier_lever.add_child(lever_track)
+	lever_handle = lever_track
+	lever_track.tier_requested.connect(_on_policy_stamp_requested)
+	lever_track.stamp_landed.connect(_on_policy_stamp_landed)
+	lever_cd_label = _make_label("", 12, Color("ffd6a4"))
+	lever_cd_label.position = Vector2(160, 0)
+	lever_cd_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	lever_track.add_child(lever_cd_label)
 	_refresh_lever_visuals(false)
 
+func _on_policy_stamp_requested(tier: String) -> void:
+	if _allocation_controls_locked() or _paused: return
+	var old_tier := play_tier
+	var animate: bool = not (wetland and wetland.reduced_motion)
+	_set_play_tier(tier, animate)
+	if not animate and old_tier != play_tier: _on_policy_stamp_landed()
 
-## 拖动时木杆即时跟手，松开后选择最近档位并由弹簧吸回定位槽。
-func _on_lever_input(event: InputEvent) -> void:
-	if _current_phase != "allocate" or _paused or GameState.game_over:
-		return
-	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT:
-		if event.pressed:
-			if Time.get_ticks_msec() - _lever_cooldown_ms < LEVER_COOLDOWN_MS: return
-			_lever_dragging = true
-			_drag_tier_lever(event.position.x)
-		elif _lever_dragging:
-			_lever_dragging = false
-			var w: float = maxf(1.0, lever_track.size.x)
-			var idx := clampi(int(round(event.position.x / w * 3.0 - 0.5)), 0, LEVER_TIERS.size() - 1)
-			_set_play_tier(LEVER_TIERS[idx], true)
-			# 即使松回原档，杆身也会从拖动姿势弹回定位槽。
-			_place_lever_handle(true)
-	elif event is InputEventMouseMotion and _lever_dragging and (event.button_mask & MOUSE_BUTTON_MASK_LEFT) != 0:
-		_drag_tier_lever(event.position.x)
-
-
-func _drag_tier_lever(local_x: float) -> void:
-	if lever_track == null or lever_handle == null: return
-	var w: float = maxf(1.0, lever_track.size.x)
-	var progress := clampf((local_x - w * 0.5) / (w / 3.0), -1.0, 1.0)
-	lever_handle.set_drag_angle(-progress * WoodenTierLever.MAX_SWING_DEGREES)
-
-
-## 手柄按当前档位归位（尺寸变化时立刻归位，不播动画）
-func _layout_lever_handle() -> void:
-	if lever_handle == null or lever_track == null:
-		return
-	_place_lever_handle(false)
-
+func _on_policy_stamp_landed() -> void:
+	if _allocation_controls_locked() or _paused: return
+	play_sfx("stamp", 1.0, -3.0)
 
 func _place_lever_handle(animate: bool) -> void:
-	var idx: int = maxi(0, LEVER_TIERS.find(play_tier))
-	# 半圆木座固定在中线，杆身绕中心轴摆向左、中、右三个档位。
-	lever_handle.snap_to_tier(idx, animate)
+	lever_handle.snap_to_tier(maxi(0, LEVER_TIERS.find(play_tier)), animate)
 
 
 ## 切档：更新手柄姿态、刻度/标签高亮、状态文字，并刷新手牌上还没被选中的牌。
 ## 冷却期间**拉杆锁死**、直接吞掉输入；点当前档不算切档，也不会重置冷却。
 func _set_play_tier(tier: String, animate: bool = true) -> void:
+	if _score_animating: return
 	if not GameState.TIER_COST_MULT.has(tier):
 		return
 	if Time.get_ticks_msec() - _lever_cooldown_ms < LEVER_COOLDOWN_MS:
@@ -7660,15 +7665,14 @@ func _update_lever_cooldown() -> void:
 	if lever_cd_label == null:
 		return
 	var remaining := LEVER_COOLDOWN_MS - (Time.get_ticks_msec() - _lever_cooldown_ms)
-	var locked: bool = remaining > 0
-	if locked:
+	var phase_locked := _allocation_controls_locked()
+	var locked: bool = phase_locked or remaining > 0
+	if remaining > 0 and not phase_locked:
 		lever_cd_label.text = "冷却 %.1f 秒" % (float(remaining) / 1000.0)
 	elif lever_cd_label.text != "":
 		lever_cd_label.text = ""
 	if lever_track != null:
-		var want: float = 0.55 if locked else 1.0
-		if not is_equal_approx(lever_track.modulate.a, want):
-			lever_track.modulate.a = want
+		lever_track.set_locked(locked)
 
 
 func _refresh_lever_visuals(animate: bool) -> void:
@@ -7708,6 +7712,7 @@ func _make_card(card: Dictionary, tier: String = "", dispatched: bool = false) -
 	panel.set_meta("dispatched", dispatched)
 	if dispatched:
 		panel.get_meta("pixel_face").texture = PixelCardArt.dispatch_texture(card)
+		panel.get_meta("pixel_face").set_meta("shadow_silhouette", "dispatch/" + str(card["category"]) + "/" + str(panel.get_meta("pixel_face").texture.get_size()))
 	# Preserve the existing price-state interface; this Label never draws the card text.
 	var cost_l := Label.new()
 	cost_l.name = "PriceState"
@@ -7775,8 +7780,10 @@ func _update_card_face(info: Dictionary) -> void:
 	if bool(info.get("dispatched", false)):
 		cost_l.text = "调度"
 		face.texture = PixelCardArt.dispatch_texture(card)
+		face.set_meta("shadow_silhouette", "dispatch/" + str(card["category"]) + "/" + str(face.texture.get_size()))
 	else:
 		face.texture = PixelCardArt.texture(str(card["name"]), str(cost), str(card["category"]))
+		face.set_meta("shadow_silhouette", "action/" + str(card["category"]) + "/" + str(face.texture.get_size()))
 	# 锁定的牌用更亮的金色，一眼看出「这张是按哪个档锁住的」
 	cost_l.add_theme_color_override("font_color",
 		Color("956523") if locked else Color("6f542a"))
@@ -7852,6 +7859,7 @@ func _update_selected_label() -> void:
 		selected_label.visible = false
 	_update_turn_budget_label()
 	_update_execute_button()
+	_refresh_action_buttons()
 
 
 func _update_metric_preview() -> void:
@@ -8191,6 +8199,7 @@ func _finish_turn() -> void:
 	# ★ 必须在 execute_action 之前置位：否则每张牌 emit 的 metrics_changed
 	#   会把指标条先刷到中途值，动画还没开始就已经跳过了。
 	_score_animating = true
+	_refresh_allocation_controls()
 	for i in staged_indices:
 		var info: Dictionary = card_infos[i]
 		var is_dispatched: bool = info.get("dispatched", false)
@@ -8296,6 +8305,7 @@ func _finish_turn() -> void:
 	tier_lever.visible = false
 	_slide_side_panels(true)  # 结算后侧边栏收回屏幕外，让出沙盘
 	_current_phase = "popup_settlement"
+	_refresh_allocation_controls()
 	_update_turn_budget_label()
 	_show_popup("结算反馈", "\n".join(lines), "继续", _on_resolve_continue)
 	# 结算弹窗铺好之后再放攒下的危机预警/爆发。
@@ -8778,7 +8788,7 @@ func _show_knowledge(card_id: String) -> void:
 	_current_phase = "popup_knowledge"
 	var k: Dictionary = GameState.KNOWLEDGE_CARDS[card_id]
 	var body := _knowledge_detail_text(card_id, true)
-	_show_popup("知识卡 · %s" % k["name"], body, "收下（继续）", _on_resolve_continue)
+	_show_popup("知识卡 · %s" % k["name"], body, "收下（继续）", _on_resolve_continue, card_id)
 	if card_id == "egg_dixinhu":
 		var reveal := CenterContainer.new()
 		reveal.custom_minimum_size.y = 176
@@ -8838,13 +8848,6 @@ func _show_report(r: Dictionary) -> void:
 	# 只认「不是判负」，不看分数档位 —— 困难难度能撑满 16 回合本身就是成就。
 	if bool(r.get("victory", false)) and int(r.get("turns_survived", 0)) >= GameState.TOTAL_TURNS and GameState.difficulty == GameState.Difficulty.HARD:
 		Achievements.try_unlock("hard_clear")
-	# 「被做局了」：噩梦档第 1 或第 2 回合就被撤换。
-	# 这个模式本来就打不过，能死得这么快纯粹是开局掷得差（或运气）——
-	# 所以它是枚**纪念章**，不是惩罚。turns_survived 就是死亡时的回合号（见 generate_report）。
-	if bool(r.get("is_failure", false)) \
-			and GameState.difficulty == GameState.Difficulty.NIGHTMARE \
-			and int(r.get("turns_survived", 0)) <= 2:
-		Achievements.try_unlock("rigged")
 	# 「廉政先锋」：通关，且全程平均每回合花费不到门槛。
 	# 用 total_spent / 总回合数 这个**均值**口径，而不是"每一回合都得少花"——
 	# 后者太苛刻：玩家偶尔砸一张大牌救火就会被判出局，不给人留余地。
@@ -8904,7 +8907,57 @@ func _restart() -> void:
 
 
 # ==================== 通用弹窗 ====================
-func _show_popup(title: String, body: String, button_text: String, on_continue: Callable) -> void:
+func _layout_knowledge_popup() -> void:
+	if popup_photo_frame == null or not popup_photo_frame.visible: return
+	var viewport := get_viewport().get_visible_rect().size
+	var width := floorf(minf(800.0, viewport.x - 48.0))
+	var inner_width := width - UiSkin.PANEL_CONTENT * 2.0
+	var stacked := inner_width < 620.0 or get_window().size.x < 1000
+	var photo_size := 224.0 if stacked else 256.0
+	photo_size = minf(photo_size, inner_width)
+	popup_panel.custom_minimum_size = Vector2(width, 0)
+	popup_content.vertical = stacked
+	popup_photo_frame.custom_minimum_size = Vector2.ONE * photo_size
+	popup_photo_frame.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	popup_photo_frame.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
+	var text_width := inner_width if stacked else inner_width - photo_size - 20.0
+	# Leave space for wrapped headings and the always-visible collection button.
+	var available := viewport.y - 190.0 - (photo_size + 20.0 if stacked else 0.0)
+	# Shape at the final column width, then use only the space the text needs.
+	popup_body.size.x = text_width
+	var natural_height := float(popup_body.get_content_height())
+	var desired_height := maxf(128.0 if stacked else photo_size, natural_height)
+	var text_height := minf(desired_height, maxf(120.0, available))
+	popup_body.custom_minimum_size = Vector2(text_width, text_height)
+	popup_body.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	popup_body.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	# Container minimums can shrink between a wide and a stacked popup.
+	popup_panel.reset_size()
+	popup_panel.pivot_offset = popup_panel.size * 0.5
+
+
+func _configure_knowledge_popup(card_id: String) -> void:
+	_knowledge_popup_card_id = card_id
+	popup_photo.texture = _knowledge_photo(card_id) if not card_id.is_empty() else null
+	popup_photo_frame.visible = popup_photo.texture != null
+	popup_body.scroll_to_line(0)
+	if popup_photo_frame.visible:
+		popup_title.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		popup_body.fit_content = false
+		popup_body.scroll_active = true
+		_layout_knowledge_popup()
+	else:
+		popup_content.vertical = true
+		popup_panel.custom_minimum_size = Vector2(600, 0)
+		popup_title.autowrap_mode = TextServer.AUTOWRAP_OFF
+		popup_body.fit_content = true
+		popup_body.custom_minimum_size = Vector2(540, 0)
+		popup_body.size_flags_horizontal = Control.SIZE_FILL
+		popup_body.size_flags_vertical = Control.SIZE_FILL
+		popup_panel.reset_size()
+
+
+func _show_popup(title: String, body: String, button_text: String, on_continue: Callable, knowledge_id: String = "") -> void:
 	if is_instance_valid(_knowledge_egg_reveal):
 		_knowledge_egg_reveal.get_parent().remove_child(_knowledge_egg_reveal)
 		_knowledge_egg_reveal.queue_free()
@@ -8912,6 +8965,7 @@ func _show_popup(title: String, body: String, button_text: String, on_continue: 
 	if _popup_reveal and _popup_reveal.is_valid(): _popup_reveal.kill()
 	popup_title.text = title
 	popup_body.text = body
+	_configure_knowledge_popup(knowledge_id)
 	popup_button.text = button_text
 	_popup_continue = on_continue
 	popup_root.visible = true
@@ -9119,7 +9173,7 @@ func _research_tooltip() -> String:
 
 
 ## 成就图标控件：优先用美术交付的 PNG（LIST 里带 "tex" 的那几条），
-## 没有交付图的（隐藏成就「被做局了」）回退到像素网格现画。
+## 没有交付图的（无交付贴图的成就）回退到像素网格现画。
 ## ⚠ 两条路的缩放规则不一样：美术图是平滑插画，必须线性过滤 + 未解锁整体压暗；
 ##   网格是像素画，必须最近邻 + 换主色。混用会把其中一种弄花。
 func _make_achievement_icon(a: Dictionary, got: bool, px: int) -> TextureRect:
@@ -9128,7 +9182,7 @@ func _make_achievement_icon(a: Dictionary, got: bool, px: int) -> TextureRect:
 		tex = _achievement_art(a) if got else _achievement_art_locked(a)
 	var art := tex != null
 	if not art:
-		# 没有交付图的那几条（隐藏成就「被做局了」）：继续用像素网格现画
+		# 没有交付图的那几条（无交付贴图的成就）：继续用像素网格现画
 		var tint := ACH_GOLD if got else ACH_LOCKED
 		tex = _pixel_icon(str(a["icon"]), tint, tint.darkened(0.38), tint.lightened(0.32))
 	var tr := TextureRect.new()

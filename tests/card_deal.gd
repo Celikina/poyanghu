@@ -125,6 +125,15 @@ func _ready() -> void:
 		if not info.get("staged_by_drag", false): old_hand.append(info.panel)
 	var old_center: Vector2 = old_hand[0].get_global_transform() * (old_hand[0].size * 0.5)
 	GameState.funds = 1000
+	var refresh_audio := {"starts": 0, "previous": false, "duration": 0.0, "gather_sound": false}
+	var refresh_monitor := func() -> void:
+		var playing: bool = game._deal_sfx_player.playing
+		if playing and not refresh_audio.previous:
+			refresh_audio.starts += 1
+			refresh_audio.duration = game._deal_sfx_player.stream.get_length() / game._deal_sfx_player.pitch_scale
+		if playing and game._sort_animating: refresh_audio.gather_sound = true
+		refresh_audio.previous = playing
+	get_tree().process_frame.connect(refresh_monitor)
 	game._on_refresh_hand()
 	game._on_refresh_hand()
 	await get_tree().process_frame
@@ -146,7 +155,36 @@ func _ready() -> void:
 		if not info.get("staged_by_drag", false) and info.get("dealing", false): new_deal = true
 	check(new_deal, "Replacements are dealt after collection completes")
 	await wait_for(0.9)
-	check(not game._deal_sfx_player.playing, "Refreshing during the same turn does not repeat the first-deal recording")
+	get_tree().process_frame.disconnect(refresh_monitor)
+	check(refresh_audio.starts == 1, "Same-turn refresh plays one recording for its new batch")
+	check(not refresh_audio.gather_sound, "Refresh recording starts with replacements, after collection finishes")
+	check(game.current_hand.size() == old_hand.size() and game.card_infos.size() == 7, "Refresh exchanges the six remaining cards without enlarging the total hand")
+	check(is_equal_approx(refresh_audio.duration, 0.54 * old_hand.size() / 7.0), "Refresh sound scales to six replacements while preserving the table card")
+	check(not game._deal_sfx_player.playing, "Refresh recording stops when its batch finishes")
+	# Exercise actual refreshes after preparing smaller hands.
+	# The table card stays present and must not contribute to recording duration.
+	for count in [1, 3]:
+		refresh_audio.merge({"starts": 0, "previous": false, "duration": 0.0, "gather_sound": false}, true)
+		game.current_hand = GameState.ACTION_CARDS.slice(0, count)
+		game.play_deal_anim = false
+		game._build_hand_panel(true)
+		await wait_for(0.25)
+		GameState.turn += 1
+		game._deal_sfx_turn = GameState.turn
+		game._refresh_action_buttons()
+		var funds_before: int = GameState.funds
+		get_tree().process_frame.connect(refresh_monitor)
+		game._on_refresh_hand()
+		await wait_for(1.4)
+		get_tree().process_frame.disconnect(refresh_monitor)
+		var new_cards := 0
+		for info in game.card_infos:
+			if not info.get("staged_by_drag", false): new_cards += 1
+		check(new_cards == count and game.card_infos.has(staged), "Refresh redeals only its replacement batch while preserving the table card")
+		check(GameState.funds == funds_before - 5, "Refresh still charges a fixed five regardless of replacement count")
+		check(refresh_audio.starts == 1 and not refresh_audio.gather_sound, "Small refresh batches play once at redeal time")
+		check(is_equal_approx(refresh_audio.duration, 0.54 * count / 7.0), "Refresh recording scales by actual replacements, excluding the table card")
+		check(not game._deal_sfx_player.playing, "Small refresh recording ends after its own shortened duration")
 	get_window().size = Vector2i(960, 540)
 	new_hand()
 	await get_tree().process_frame
