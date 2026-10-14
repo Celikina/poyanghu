@@ -140,7 +140,7 @@ func _ready() -> void:
 	# Numbered annotation regression: exercise dynamic formatting after deletion.
 	for count in [0, 1, 3]:
 		GameState.dispatch_used_count = count
-		check(game._dispatch_hint_text() == "按「有效投入」档结算", "Dispatch text has no deleted price or cooldown fragments")
+		check(game._dispatch_hint_text() == "按「有效政策投入」档结算", "Dispatch text has no deleted price or cooldown fragments")
 	game._sync_audio_ui()
 	check(game.bgm_switch_btn == null and game.pause_bgm_btn == null, "Removed track text leaves no blank audio controls")
 	for card in GameState.ACTION_CARDS:
@@ -160,7 +160,7 @@ func _ready() -> void:
 	GameState.metrics.water_quality = 0
 	GameState.check_failure_now()
 	game._show_report(GameState.generate_report())
-	check(game.popup_body.text.contains("判负原因") and not game.popup_body.text.contains("直接死因"), "Failure report uses the edited heading")
+	check(game.popup_body.text.contains("失败原因") and not game.popup_body.text.contains("判负原因") and not game.popup_body.text.contains("直接死因"), "Failure report uses the edited heading")
 	check(not game.popup_body.text.contains("反思") and not game.popup_body.text.contains("补强建议") and not game.popup_body.text.contains("同一回合跌破"), "Failure report omits deleted sections and extra suggestions")
 	if game._popup_reveal and game._popup_reveal.is_valid(): game._popup_reveal.kill()
 	game.popup_body.visible_characters = -1

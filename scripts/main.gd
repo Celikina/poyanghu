@@ -2685,7 +2685,7 @@ func _build_menu() -> void:
 		["策划", "QQQi_ZZZhe"],
 		["主程 / 配乐", "Kanshin"],
 		["美术", "C3L1K1N4"],
-		["林学专家", "Oliveira"],
+		["科学顾问", "Oliveira"],
 	]
 	for e in credits:
 		var row := HBoxContainer.new()
@@ -4737,7 +4737,7 @@ func _refresh_warn_bar() -> void:
 		warn_bar.visible = false
 		return
 	var last: Dictionary = rows[rows.size() - 1]
-	warn_bar.text = "预警回顾 · %d 条" % rows.size()
+	warn_bar.text = "⚠️预警回顾 · %d 条" % rows.size()
 	warn_bar.tooltip_text = "最近预警：%s（第 %d 回合）· 共 %d 条\n点击查看本局完整记录" % [
 		_crisis_short_label(str(last["id"])), int(last["turn"]), rows.size()]
 	warn_bar.visible = true
@@ -7095,7 +7095,7 @@ func _open_dispatch_panel() -> void:
 
 ## 面板显示实际调度费；专用牌面不显示普通牌的定价。
 func _dispatch_hint_text() -> String:
-	return "按「有效投入」档结算"
+	return "按「有效政策投入」档结算"
 
 
 func _close_dispatch_panel() -> void:
@@ -7189,7 +7189,9 @@ func _fill_dispatch_grid() -> void:
 		var panel: PanelContainer = made["panel"]
 		var view := _make_gyro_card_view(panel)
 		view.set_meta("card", card)
-		view.tooltip_text = "%s\n\n调度后按「有效投入」档结算：%s" % [
+		view.tooltip_text = "%s
+
+调度后按「有效政策投入」档结算：%s" % [
 			str(card["desc"]), _tier_effects_text(card, GameState.DISPATCH_TIER)]
 		view.scale = Vector2(0.3, 0.3)
 		view.modulate.a = 0.0
@@ -7599,9 +7601,9 @@ const LEVER_TIERS := ["basic", "effective", "deep"]
 # 档位 → 状态文字。半价/全价/双倍价是 0.0.4 定价规则里**明确要给玩家**的那句话，
 # 属于规则而非隐性参数，可以上屏（难度负向倍率那类才不许写）。
 const LEVER_STATE_TEXT := {
-	"basic": "基础投入 · 半价",
-	"effective": "有效投入 · 全价",
-	"deep": "深度投入 · 双倍价",
+	"basic": "基础政策投入 · 半价",
+	"effective": "有效政策投入 · 全价",
+	"deep": "深度政策投入 · 双倍价",
 }
 ## 用户提供的卷轴与印章，只给当前档位盖章。
 func _build_tier_lever(holder: Node) -> void:
@@ -7723,7 +7725,9 @@ func _make_card(card: Dictionary, tier: String = "", dispatched: bool = false) -
 		cost, _tier_effects_text(card, use_tier)]
 	if dispatched:
 		cost_l.text = "调度"
-		panel.tooltip_text = "%s\n\n紧急调度 · 有效投入：%s" % [card["desc"], _tier_effects_text(card, use_tier)]
+		panel.tooltip_text = "%s
+
+紧急调度 · 有效政策投入：%s" % [card["desc"], _tier_effects_text(card, use_tier)]
 	return {"panel": panel, "cost_label": cost_l}
 
 
@@ -7790,7 +7794,9 @@ func _update_card_face(info: Dictionary) -> void:
 	info["panel"].tooltip_text = "%s\n\n%s（%d 万）：%s" % [
 		card["desc"], GameState.TIER_NAMES[tier], cost, _tier_effects_text(card, tier)]
 	if bool(info.get("dispatched", false)):
-		info["panel"].tooltip_text = "%s\n\n紧急调度 · 有效投入：%s" % [card["desc"], _tier_effects_text(card, tier)]
+		info["panel"].tooltip_text = "%s
+
+紧急调度 · 有效政策投入：%s" % [card["desc"], _tier_effects_text(card, tier)]
 
 
 ## 拉杆一动就把**还没选中**的牌全部刷新；已选中的保持锁定档位不动
@@ -8870,10 +8876,13 @@ func _show_report(r: Dictionary) -> void:
 			var fname: String = str(r.get("failure_metric_name", fm))
 			var fval: int = int(r.get("failure_value", GameState.metrics.get(fm, 0)))
 			var fthr: int = int(r.get("failure_threshold", GameState.failure_threshold_for(fm)))
-			body += "[b]判负原因：[/b]%s 跌至 [color=#ff9090]%d[/color]（生态红线 %d）\n" % [fname, fval, fthr]
+			body += "[b]失败原因：[/b]%s 跌至 [color=#ff9090]%d[/color]（生态红线 %d）
+" % [fname, fval, fthr]
 		if GameState.last_crisis_name != "":
 			body += "[color=#c08080]本回合危机：%s[/color]\n" % GameState.last_crisis_name
-		body += "你的修复工作被迫中止。这不是终点——换一个策略，再试一次。\n\n"
+		body += "你的修复工作被迫中止。请记住，你的每一个举措，都会影响到这一方水土的每一个变化
+
+"
 	body += "[b]生态维度[/b]（%s）\n" % r["eco"]["grade"]
 	for n in r["eco"]["notes"]:
 		body += "  · %s\n" % n

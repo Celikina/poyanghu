@@ -365,7 +365,7 @@ const ACTION_CARDS := [
 			"effective": {"effects": [{"metric": "water_level", "delta": 8, "delay": 0}, {"metric": "vegetation", "delta": 4, "delay": 2} , {"metric": "community", "delta": -2, "delay": 0}]},
 			"deep":      {"effects": [{"metric": "water_level", "delta": 18, "delay": 0}, {"metric": "vegetation", "delta": 8, "delay": 0}, {"metric": "community", "delta": -4, "delay": 0}]},
 		},
-		"side_note": {"deep": "深度控水可能淹没下游农田，社区信任 -4"},
+		"side_note": {"deep": "深度控水工程量较大，施工周期长"},
 	},
 	{
 		"id": "veg_restore", "name": "植被补种", "category": "ecology",
@@ -378,7 +378,7 @@ const ACTION_CARDS := [
 			"effective": {"effects": [{"metric": "vegetation", "delta": 8, "delay": 2}, {"metric": "birds", "delta": 5, "delay": 3} , {"metric": "community", "delta": -2, "delay": 0}]},
 			"deep":      {"effects": [{"metric": "vegetation", "delta": 9, "delay": 0}, {"metric": "birds", "delta": 7, "delay": 0} , {"metric": "community", "delta": -4, "delay": 0}]},
 		},
-		"side_note": {"effective": "效果延迟 2~3 回合后显现"},
+		"side_note": {"effective": "植被种植还需要一定时间生长"},
 	},
 	{
 		# 与「植被补种」的分工：补种是**播种**（delayed 2~3 回合，便宜、附带候鸟收益），
@@ -395,7 +395,7 @@ const ACTION_CARDS := [
 			"effective": {"effects": [{"metric": "vegetation", "delta": 11, "delay": 0} , {"metric": "community", "delta": -2, "delay": 0}]},
 			"deep":      {"effects": [{"metric": "vegetation", "delta": 25, "delay": 0}, {"metric": "community", "delta": -3, "delay": 0}]},
 		},
-		"side_note": {"deep": "大规模移栽要占用湖区作业面，社区信任 -3"},
+		"side_note": {"deep": "大规模移栽要占用湖区作业面，影响居民日常作业和生产"},
 	},
 	{
 		# 与「沉水植物移栽」配成一对：移栽是**买成株**（贵、当回合落地、有社区代价），
@@ -411,7 +411,7 @@ const ACTION_CARDS := [
 			"effective": {"effects": [{"metric": "vegetation", "delta": 13, "delay": 2} , {"metric": "community", "delta": -1, "delay": 0}]},
 			"deep":      {"effects": [{"metric": "vegetation", "delta": 20, "delay": 0}, {"metric": "community", "delta": -2, "delay": 0}]},
 		},
-		"side_note": {"effective": "效果延迟 2~3 回合后显现"},
+		"side_note": {"effective": "植被种植还需要一定时间生长"},
 	},
 	{
 		"id": "water_monitor", "name": "水质监测与病害防治", "category": "ecology",
@@ -424,7 +424,7 @@ const ACTION_CARDS := [
 			"effective": {"effects": [{"metric": "water_quality", "delta": 6, "delay": 0}]},
 			"deep":      {"effects": [{"metric": "water_quality", "delta": 12, "delay": 0}]},
 		},
-		"side_note": {"effective": "提前发现病害，避免植被延迟受损"},
+		"side_note": {"effective": "监测水质变化，建立水体植被保护体系。"},
 	},
 	{
 		"id": "invasive_clear", "name": "外来物种清除", "category": "ecology",
@@ -437,7 +437,7 @@ const ACTION_CARDS := [
 			"effective": {"effects": [{"metric": "vegetation", "delta": 5, "delay": 1}, {"metric": "fish", "delta": 5, "delay": 1} , {"metric": "community", "delta": -2, "delay": 0}]},
 			"deep":      {"effects": [{"metric": "vegetation", "delta": 9, "delay": 0}, {"metric": "fish", "delta": 10, "delay": 0}, {"metric": "water_quality", "delta": -3, "delay": 0} , {"metric": "community", "delta": -4, "delay": 0}]},
 		},
-		"side_note": {"deep": "快速化学清除有副作用，水质 -3"},
+		"side_note": {"deep": "化学物质的加入会影响湖区的生态"},
 	},
 	{
 		"id": "bird_canteen", "name": "候鸟食堂营建", "category": "ecology",
@@ -450,7 +450,7 @@ const ACTION_CARDS := [
 			"effective": {"effects": [{"metric": "birds", "delta": 6, "delay": 1} , {"metric": "community", "delta": -2, "delay": 0}]},
 			"deep":      {"effects": [{"metric": "birds", "delta": 13, "delay": 0}, {"metric": "community", "delta": -3, "delay": 0}]},
 		},
-		"side_note": {"deep": "未与农户充分协商，社区信任 -3"},
+		"side_note": {"deep": "食堂需要当地居民共建，吸引了候鸟，但同时占用了农户的部分土地。"},
 	},
 	{
 		"id": "rescue", "name": "应急救护", "category": "ecology",
@@ -476,7 +476,7 @@ const ACTION_CARDS := [
 			"effective": {"effects": [{"metric": "community", "delta": 8, "delay": 0}]},
 			"deep":      {"effects": [{"metric": "community", "delta": 16, "delay": 0}]},
 		},
-		"side_note": {"deep": "全额补偿 + 转产扶持"},
+		"side_note": {"deep": "全额补偿和转产扶持一起行动，缓解人鸟关系"},
 	},
 	{
 		"id": "industry_switch", "name": "转产投资", "category": "social",
@@ -489,7 +489,7 @@ const ACTION_CARDS := [
 			"effective": {"effects": [{"metric": "community", "delta": 8, "delay": 2}, {"metric": "fish", "delta": 3, "delay": 2}]},
 			"deep":      {"effects": [{"metric": "community", "delta": 11, "delay": 0}, {"metric": "fish", "delta": 4, "delay": 0}]},
 		},
-		"side_note": {"effective": "2-3回合后见效"},
+		"side_note": {"effective": "转产投资需要一段时间的转型"},
 	},
 	{
 		"id": "guard_team", "name": "社区共管与护鸟队", "category": "social",
@@ -502,7 +502,7 @@ const ACTION_CARDS := [
 			"effective": {"effects": [{"metric": "community", "delta": 5, "delay": 1}, {"metric": "fish", "delta": 3, "delay": 1}]},
 			"deep":      {"effects": [{"metric": "community", "delta": 8, "delay": 0}, {"metric": "fish", "delta": 5, "delay": 0}]},
 		},
-		"side_note": {"effective": "与执法巡逻有协同加成"},
+		"side_note": {"effective": "社区共同管理保护鸟类，促使人鸟和谐。"},
 	},
 	{
 		"id": "education", "name": "科普宣传与公众参与", "category": "social",
@@ -528,7 +528,7 @@ const ACTION_CARDS := [
 			"effective": {"effects": [{"metric": "fish", "delta": 6, "delay": 1} , {"metric": "community", "delta": -1, "delay": 0}]},
 			"deep":      {"effects": [{"metric": "fish", "delta": 12, "delay": 0}, {"metric": "community", "delta": -2, "delay": 0}]},
 		},
-		"side_note": {"deep": "严格执法可能引发不满，社区信任 -2"},
+		"side_note": {"deep": "加强了执法力度，规整日常生活的同时增加了更多要求"},
 	},
 	{
 		"id": "research", "name": "生态监测与科研", "category": "manage",
@@ -541,7 +541,7 @@ const ACTION_CARDS := [
 			"effective": {"effects": [{"metric": "water_quality", "delta": 3, "delay": 0}]},
 			"deep":      {"effects": [{"metric": "water_quality", "delta": 6, "delay": 0}]},
 		},
-		"side_note": {"deep": "科研点数 +3，预报更准"},
+		"side_note": {"deep": "建立长期数据库，预报更准"},
 	},
 	{
 		"id": "water_replenish", "name": "生态补水（引江济湖）", "category": "ecology",
@@ -554,7 +554,7 @@ const ACTION_CARDS := [
 			"effective": {"effects": [{"metric": "water_level", "delta": 11, "delay": 0}, {"metric": "vegetation", "delta": 3, "delay": 1} , {"metric": "community", "delta": -2, "delay": 0}]},
 			"deep":      {"effects": [{"metric": "water_level", "delta": 24, "delay": 0}, {"metric": "vegetation", "delta": 6, "delay": 0}, {"metric": "community", "delta": -3, "delay": 0}]},
 		},
-		"side_note": {"deep": "引水挤占下游农业用水，社区信任 -3"},
+		"side_note": {"deep": "引水挤占下游农业用水，影响居民日常作业和用水"},
 	},
 	{
 		"id": "water_storage", "name": "蓄水保水工程", "category": "ecology",
@@ -567,7 +567,7 @@ const ACTION_CARDS := [
 			"effective": {"effects": [{"metric": "water_level", "delta": 9, "delay": 0} , {"metric": "community", "delta": -2, "delay": 0}]},
 			"deep":      {"effects": [{"metric": "water_level", "delta": 21, "delay": 0}, {"metric": "community", "delta": -3, "delay": 0}]},
 		},
-		"side_note": {"deep": "拦蓄过多影响下游用水，社区信任 -3"},
+		"side_note": {"deep": "拦蓄过多可能会影响下游居民生活用水"},
 	},
 	{
 		"id": "water_schedule", "name": "闸坝联合调度", "category": "manage",
@@ -580,7 +580,7 @@ const ACTION_CARDS := [
 			"effective": {"effects": [{"metric": "water_level", "delta": 7, "delay": 0}, {"metric": "water_quality", "delta": 2, "delay": 0} , {"metric": "community", "delta": -1, "delay": 0}]},
 			"deep":      {"effects": [{"metric": "water_level", "delta": 15, "delay": 0}, {"metric": "water_quality", "delta": 5, "delay": 0}, {"metric": "community", "delta": -2, "delay": 0}]},
 		},
-		"side_note": {"deep": "调水涉及上下游利益，社区信任 -2"},
+		"side_note": {"deep": "调水影响上下流的生活和生产，需要一点时间适应"},
 	},
 	{
 		"id": "flood_release", "name": "分洪退水调度", "category": "manage",
@@ -592,7 +592,7 @@ const ACTION_CARDS := [
 			"effective": {"effects": [{"metric": "water_level", "delta": -12, "delay": 0}, {"metric": "community", "delta": -2, "delay": 0}]},
 			"deep": {"effects": [{"metric": "water_level", "delta": -20, "delay": 0}, {"metric": "community", "delta": -3, "delay": 0}]},
 		},
-		"side_note": {"deep": "集中分洪占用沿岸作业空间，社区信任 -3；退水过度会加重干旱"},
+		"side_note": {"deep": "集中分洪占用沿岸作业空间，缩小当地居民的作业用地；退水过度会加重干旱"},
 	},
 	{
 		"id": "emergency_drainage", "name": "应急排涝", "category": "manage",
@@ -604,7 +604,7 @@ const ACTION_CARDS := [
 			"effective": {"effects": [{"metric": "water_level", "delta": -7, "delay": 0}, {"metric": "community", "delta": -1, "delay": 0}]},
 			"deep": {"effects": [{"metric": "water_level", "delta": -12, "delay": 0}, {"metric": "community", "delta": -2, "delay": 0}]},
 		},
-		"side_note": {"deep": "泵站作业扰动沿岸生活，社区信任 -2；退水过度会加重干旱"},
+		"side_note": {"deep": "泵站作业产生噪声扰动沿岸日常生活；过度退水会造成干旱的加剧"},
 	},
 	{
 		"id": "outlet_clearance", "name": "泄水口疏通", "category": "manage",
@@ -616,7 +616,7 @@ const ACTION_CARDS := [
 			"effective": {"effects": [{"metric": "water_level", "delta": -9, "delay": 0}, {"metric": "water_quality", "delta": 2, "delay": 1}, {"metric": "community", "delta": -2, "delay": 0}]},
 			"deep": {"effects": [{"metric": "water_level", "delta": -16, "delay": 0}, {"metric": "water_quality", "delta": 3, "delay": 1}, {"metric": "community", "delta": -3, "delay": 0}]},
 		},
-		"side_note": {"effective": "疏通施工影响沿岸作业，社区信任 -2；水质改善在下一回合生效"},
+		"side_note": {"effective": "疏通施工影响沿岸作业，产生的噪音影响周边社区；水质改善在下一回合生效"},
 	},
 	{
 		"id": "floodplain_diversion", "name": "滞洪区分流", "category": "ecology",
@@ -628,7 +628,7 @@ const ACTION_CARDS := [
 			"effective": {"effects": [{"metric": "water_level", "delta": -10, "delay": 0}, {"metric": "vegetation", "delta": 3, "delay": 1}, {"metric": "community", "delta": -2, "delay": 0}]},
 			"deep": {"effects": [{"metric": "water_level", "delta": -18, "delay": 0}, {"metric": "vegetation", "delta": 6, "delay": 1}, {"metric": "community", "delta": -4, "delay": 0}]},
 		},
-		"side_note": {"deep": "扩大滞洪区占用沿岸土地，社区信任 -4；植被在下一回合恢复"},
+		"side_note": {"deep": "扩大滞洪区占用沿岸土地，缩小了农田面积；植被在下一回合恢复"},
 	},
 	{
 		"id": "wetland_restore", "name": "退田还湿（湿地生态修复）", "category": "ecology",
@@ -641,7 +641,7 @@ const ACTION_CARDS := [
 			"effective": {"effects": [{"metric": "vegetation", "delta": 10, "delay": 2}, {"metric": "water_quality", "delta": 5, "delay": 2}, {"metric": "community", "delta": -2, "delay": 0}]},
 			"deep":      {"effects": [{"metric": "vegetation", "delta": 11, "delay": 0}, {"metric": "water_quality", "delta": 6, "delay": 0}, {"metric": "birds", "delta": 3, "delay": 0}, {"metric": "community", "delta": -4, "delay": 0}]},
 		},
-		"side_note": {"effective": "退田农户短期受损，社区信任 -2"},
+		"side_note": {"effective": "退田农户短期内需要转业"},
 	},
 	{
 		"id": "floating_island", "name": "人工浮岛（生态浮床）", "category": "ecology",
@@ -667,7 +667,7 @@ const ACTION_CARDS := [
 			"effective": {"effects": [{"metric": "water_quality", "delta": 7, "delay": 1}, {"metric": "fish", "delta": 2, "delay": 2} , {"metric": "community", "delta": -2, "delay": 0}]},
 			"deep":      {"effects": [{"metric": "water_quality", "delta": 14, "delay": 0}, {"metric": "fish", "delta": 4, "delay": 0}, {"metric": "vegetation", "delta": -3, "delay": 0} , {"metric": "community", "delta": -4, "delay": 0}]},
 		},
-		"side_note": {"deep": "机械清淤扰动湖床，短期植被 -3"},
+		"side_note": {"deep": "机械清淤扰动湖床，改善水质和鱼类的同时，短期植被被破坏。"},
 	},
 	{
 		"id": "habitat_protect", "name": "越冬栖息地保护", "category": "ecology",
@@ -693,7 +693,7 @@ const ACTION_CARDS := [
 			"effective": {"effects": [{"metric": "community", "delta": 6, "delay": 0}, {"metric": "birds", "delta": 3, "delay": 1}]},
 			"deep":      {"effects": [{"metric": "community", "delta": 12, "delay": 0}, {"metric": "birds", "delta": 7, "delay": 0}, {"metric": "water_quality", "delta": -2, "delay": 0}]},
 		},
-		"side_note": {"deep": "游客激增带来环境压力，水质 -2"},
+		"side_note": {"deep": "游客激增带来环境压力，水质保护压力提升"},
 	},
 	{
 		"id": "damage_insurance", "name": "野生动物致害保险", "category": "social",
@@ -706,7 +706,7 @@ const ACTION_CARDS := [
 			"effective": {"effects": [{"metric": "community", "delta": 7, "delay": 0}, {"metric": "birds", "delta": 2, "delay": 1}]},
 			"deep":      {"effects": [{"metric": "community", "delta": 12, "delay": 0}, {"metric": "birds", "delta": 5, "delay": 0}]},
 		},
-		"side_note": {"deep": "保险兜底后农户不再驱赶候鸟"},
+		"side_note": {"deep": "保险促进农户一起协助保护候鸟"},
 	},
 	{
 		"id": "eco_brand", "name": "生态产品认证与助销", "category": "social",
@@ -719,7 +719,7 @@ const ACTION_CARDS := [
 			"effective": {"effects": [{"metric": "community", "delta": 6, "delay": 1}, {"metric": "water_quality", "delta": 3, "delay": 2}]},
 			"deep":      {"effects": [{"metric": "community", "delta": 7, "delay": 0}, {"metric": "water_quality", "delta": 5, "delay": 0}, {"metric": "vegetation", "delta": 3, "delay": 0}]},
 		},
-		"side_note": {"effective": "减少化肥农药投入，水质间接改善"},
+		"side_note": {"effective": "减少化肥农药投入，保护水质生态环境"},
 	},
 	{
 		"id": "fish_restock", "name": "增殖放流", "category": "manage",
@@ -732,7 +732,7 @@ const ACTION_CARDS := [
 			"effective": {"effects": [{"metric": "fish", "delta": 8, "delay": 2}, {"metric": "community", "delta": 2, "delay": 2}]},
 			"deep":      {"effects": [{"metric": "fish", "delta": 11, "delay": 0}, {"metric": "community", "delta": 3, "delay": 0}]},
 		},
-		"side_note": {"deep": "渔民共享放流收益，社区信任 +4"},
+		"side_note": {"deep": "保护生态的同时，增加当地渔民的放流收益。"},
 	},
 	{
 		# 与「增殖放流」配成一对：放流是**直接投鱼苗**（manage 类，全部延迟 1~2 回合，
@@ -749,7 +749,7 @@ const ACTION_CARDS := [
 			"effective": {"effects": [{"metric": "fish", "delta": 9, "delay": 0}, {"metric": "fish", "delta": 4, "delay": 2} , {"metric": "community", "delta": -2, "delay": 0}]},
 			"deep":      {"effects": [{"metric": "fish", "delta": 19, "delay": 0}, {"metric": "fish", "delta": 8, "delay": 0}, {"metric": "community", "delta": -3, "delay": 0}]},
 		},
-		"side_note": {"deep": "产卵场禁渔期影响短期捕捞，社区信任 -3"},
+		"side_note": {"deep": "产卵场禁渔期影响短期捕捞，渔民需要在禁渔期安置"},
 	},
 	{
 		"id": "smart_patrol", "name": "智慧巡护（无人机遥感）", "category": "manage",
@@ -775,7 +775,7 @@ const ACTION_CARDS := [
 			"effective": {"effects": [{"metric": "fish", "delta": 6, "delay": 2}, {"metric": "birds", "delta": 4, "delay": 2}, {"metric": "community", "delta": 3, "delay": 2}]},
 			"deep":      {"effects": [{"metric": "fish", "delta": 8, "delay": 0}, {"metric": "birds", "delta": 6, "delay": 0}, {"metric": "community", "delta": 4, "delay": 0}]},
 		},
-		"side_note": {"effective": "2回合后生效"},
+		"side_note": {"effective": "湿地法推动需要时间建立、完善和普及"},
 	},
 	{
 		"id": "grazing_ban", "name": "封洲禁牧", "category": "manage",
@@ -788,7 +788,7 @@ const ACTION_CARDS := [
 			"effective": {"effects": [{"metric": "vegetation", "delta": 5, "delay": 0}, {"metric": "community", "delta": -2, "delay": 0}]},
 			"deep":      {"effects": [{"metric": "vegetation", "delta": 10, "delay": 0}, {"metric": "community", "delta": -4, "delay": 0}]},
 		},
-		"side_note": {"effective": "牧民失去放牧地，社区信任 -2"},
+		"side_note": {"effective": "保护候鸟食用植被生长，但是会影响牧民的放牧地。"},
 	},
 
 	# ==================== 补牌：社会 / 管理（2026-09-28）====================
@@ -841,7 +841,7 @@ const ACTION_CARDS := [
 			"effective": {"effects": [{"metric": "fish", "delta": 9, "delay": 0}, {"metric": "community", "delta": 3, "delay": 0}]},
 			"deep":      {"effects": [{"metric": "fish", "delta": 18, "delay": 0}, {"metric": "community", "delta": 6, "delay": 0}]},
 		},
-		"side_note": {"effective": "渔获归集体后，个体偷捕的动机下降"},
+		"side_note": {"effective": "打捞作业归集体后，个体偷捕的比例下降"},
 	},
 	{
 		"id": "bird_friendly", "name": "候鸟友好社区", "category": "social",
@@ -893,7 +893,7 @@ const ACTION_CARDS := [
 			"effective": {"effects": [{"metric": "vegetation", "delta": 12, "delay": 1}, {"metric": "water_quality", "delta": 5, "delay": 1}, {"metric": "community", "delta": -3, "delay": 0}]},
 			"deep":      {"effects": [{"metric": "vegetation", "delta": 19, "delay": 0}, {"metric": "water_quality", "delta": 9, "delay": 0}, {"metric": "community", "delta": -5, "delay": 0}]},
 		},
-		"side_note": {"deep": "搬迁触动既有生计，社区信任 -5"},
+		"side_note": {"deep": "搬迁影响当地居民的长期居住地，推动工程较大"},
 	},
 
 	# ---------- 管理（6 张）----------
@@ -901,7 +901,7 @@ const ACTION_CARDS := [
 		"id": "sluice_fry", "name": "灌江纳苗", "category": "manage",
 		"season": "spring",
 		"tags": ["增殖放流", "水工调控"],
-		"desc": "汛期开闸引江，让长江鱼苗随水进入湖区 —— 老办法，但管用。",
+		"desc": "汛期开闸引江，让长江鱼苗随水进入湖区。",
 		"cost": 40,
 		"tiers": {
 			"basic":     {"effects": [{"metric": "fish", "delta": 6, "delay": 0} , {"metric": "community", "delta": -1, "delay": 0}]},
@@ -934,7 +934,7 @@ const ACTION_CARDS := [
 			"effective": {"effects": [{"metric": "water_quality", "delta": 11, "delay": 0} , {"metric": "community", "delta": -1, "delay": 0}]},
 			"deep":      {"effects": [{"metric": "water_quality", "delta": 24, "delay": 0}, {"metric": "community", "delta": -2, "delay": 0}]},
 		},
-		"side_note": {"deep": "大规模打捞影响湖面作业，社区信任 -2"},
+		"side_note": {"deep": "大规模打捞影响湖面作业，影响居民日常作业和生产"},
 	},
 	{
 		"id": "obstruction_clear", "name": "湖区清障执法", "category": "manage",
@@ -947,7 +947,7 @@ const ACTION_CARDS := [
 			"effective": {"effects": [{"metric": "vegetation", "delta": 9, "delay": 0}, {"metric": "fish", "delta": 3, "delay": 1} , {"metric": "community", "delta": -2, "delay": 0}]},
 			"deep":      {"effects": [{"metric": "vegetation", "delta": 15, "delay": 0}, {"metric": "fish", "delta": 8, "delay": 0} , {"metric": "community", "delta": -4, "delay": 0}]},
 		},
-		"side_note": {"deep": "拆除围网触及既得利益，执法阻力不小"},
+		"side_note": {"deep": "拆除围网影响水面作业，推动难度大"},
 	},
 	{
 		"id": "lake_chief", "name": "湖长制考核", "category": "manage",
@@ -960,7 +960,7 @@ const ACTION_CARDS := [
 			"effective": {"effects": [{"metric": "community", "delta": 8, "delay": 0}, {"metric": "water_quality", "delta": 4, "delay": 1}]},
 			"deep":      {"effects": [{"metric": "community", "delta": 12, "delay": 0}, {"metric": "water_quality", "delta": 7, "delay": 0}, {"metric": "vegetation", "delta": 4, "delay": 0}]},
 		},
-		"side_note": {"effective": "考核压力层层传导，治理动作随之变快"},
+		"side_note": {"effective": "一人划定一片水域，工作细分，治理动作随之变快"},
 	},
 	{
 		"id": "fishway", "name": "水工程鱼道建设", "category": "manage",
@@ -986,7 +986,7 @@ const ACTION_CARDS := [
 			"effective": {"effects": [{"metric": "water_quality", "delta": 11, "delay": 0}, {"metric": "vegetation", "delta": 3, "delay": 0}, {"metric": "community", "delta": -2, "delay": 0}]},
 			"deep":      {"effects": [{"metric": "water_quality", "delta": 22, "delay": 0}, {"metric": "vegetation", "delta": 6, "delay": 0}, {"metric": "community", "delta": -4, "delay": 0}]},
 		},
-		"side_note": {"deep": "砂石行业转产安置不到位，社区信任 -4"},
+		"side_note": {"deep": "砂石行业发展时间长，转业难度较大"},
 	},
 	{
 		"id": "nonpoint_intercept", "name": "汛期面源污染拦截", "category": "ecology",
@@ -999,7 +999,7 @@ const ACTION_CARDS := [
 			"effective": {"effects": [{"metric": "water_quality", "delta": 9, "delay": 0}, {"metric": "fish", "delta": 4, "delay": 0}, {"metric": "community", "delta": -2, "delay": 0}]},
 			"deep":      {"effects": [{"metric": "water_quality", "delta": 18, "delay": 0}, {"metric": "fish", "delta": 8, "delay": 0}, {"metric": "community", "delta": -4, "delay": 0}]},
 		},
-		"side_note": {"deep": "拦截带要占用沿岸农田与作业面，社区信任 -4"},
+		"side_note": {"deep": "拦截带要占用沿岸农田与作业面，影响居民日常作业与生产"},
 	},
 	# ==================== 新增：7 张四季通用卡（2026-10-07）====================
 	# 每项指标各配一张正向/调节卡；定价按工程平衡口径（三档 = 0.5/1/2 倍价，
@@ -1016,7 +1016,7 @@ const ACTION_CARDS := [
 			"effective": {"effects": [{"metric": "water_level", "delta": 8, "delay": 1}, {"metric": "vegetation", "delta": 2, "delay": 2}]},
 			"deep":      {"effects": [{"metric": "water_level", "delta": 15, "delay": 0}, {"metric": "vegetation", "delta": 4, "delay": 2}, {"metric": "community", "delta": -2, "delay": 0}]},
 		},
-		"side_note": {"deep": "大流量下泄要占用灌溉与发电用水，社区信任 -2"},
+		"side_note": {"deep": "大流量下泄要占用灌溉与发电用水，可能影响周边农户的劳动生产"},
 	},
 	{
 		"id": "preseason_drawdown", "name": "汛前预泄腾库", "category": "manage",
@@ -1029,7 +1029,7 @@ const ACTION_CARDS := [
 			"effective": {"effects": [{"metric": "water_level", "delta": -16, "delay": 1}, {"metric": "vegetation", "delta": 7, "delay": 2}]},
 			"deep":      {"effects": [{"metric": "water_level", "delta": -26, "delay": 1}, {"metric": "vegetation", "delta": 12, "delay": 1}, {"metric": "community", "delta": 2, "delay": 0}]},
 		},
-		"side_note": {"basic": "预泄留出库容，水位变化要等一回合才落到湖里"},
+		"side_note": {"basic": "预泄留出库容，为汛期做出准备。"},
 	},
 	{
 		"id": "riparian_buffer", "name": "滨湖缓冲带与生态沟渠", "category": "ecology",
@@ -1042,7 +1042,7 @@ const ACTION_CARDS := [
 			"effective": {"effects": [{"metric": "water_quality", "delta": 7, "delay": 1}, {"metric": "vegetation", "delta": 2, "delay": 1}]},
 			"deep":      {"effects": [{"metric": "water_quality", "delta": 13, "delay": 0}, {"metric": "vegetation", "delta": 4, "delay": 1}]},
 		},
-		"side_note": {"effective": "拦截带建成后逐步生效，延迟 1 回合"},
+		"side_note": {"effective": "拦截带建成后会效果会缓慢出现优势。"},
 	},
 	{
 		"id": "artificial_spawning_nest", "name": "人工鱼巢投放", "category": "manage",
@@ -1055,7 +1055,7 @@ const ACTION_CARDS := [
 			"effective": {"effects": [{"metric": "fish", "delta": 6, "delay": 2}, {"metric": "water_quality", "delta": 2, "delay": 2}]},
 			"deep":      {"effects": [{"metric": "fish", "delta": 11, "delay": 1}, {"metric": "water_quality", "delta": 3, "delay": 2}, {"metric": "community", "delta": -1, "delay": 0}]},
 		},
-		"side_note": {"basic": "鱼巢需浸没一段时间才见效，延迟 2 回合"},
+		"side_note": {"basic": "吸引鱼类在此产卵、孵化、生长、成年，需要一定时间才能显出效果。"},
 	},
 	{
 		"id": "crab_control_replanting", "name": "控蟹护草与底质改良", "category": "ecology",
@@ -1068,7 +1068,7 @@ const ACTION_CARDS := [
 			"effective": {"effects": [{"metric": "vegetation", "delta": 10, "delay": 2}]},
 			"deep":      {"effects": [{"metric": "vegetation", "delta": 20, "delay": 1}, {"metric": "community", "delta": -2, "delay": 0}]},
 		},
-		"side_note": {"deep": "围网作业影响湖区捕捞，社区信任 -2"},
+		"side_note": {"deep": "围网作业影响渔船捕捞作业，减小了水域面积"},
 	},
 	{
 		"id": "waterbird_food_supply", "name": "越冬候鸟食源补给", "category": "ecology",
@@ -1081,7 +1081,7 @@ const ACTION_CARDS := [
 			"effective": {"effects": [{"metric": "birds", "delta": 8, "delay": 1}, {"metric": "vegetation", "delta": 2, "delay": 2}]},
 			"deep":      {"effects": [{"metric": "birds", "delta": 16, "delay": 0}, {"metric": "vegetation", "delta": 3, "delay": 2}, {"metric": "community", "delta": -2, "delay": 0}]},
 		},
-		"side_note": {"deep": "大面积留茬影响农户复种，社区信任 -2"},
+		"side_note": {"deep": "大面积留茬可能影响后续耕种，增加农户工作量"},
 	},
 	{
 		"id": "wetland_benefit_compensation", "name": "湿地生态效益补偿", "category": "social",
@@ -1094,7 +1094,7 @@ const ACTION_CARDS := [
 			"effective": {"effects": [{"metric": "community", "delta": 8, "delay": 1}, {"metric": "birds", "delta": 2, "delay": 1}]},
 			"deep":      {"effects": [{"metric": "community", "delta": 15, "delay": 0}, {"metric": "birds", "delta": 3, "delay": 2}]},
 		},
-		"side_note": {"effective": "补偿款按季兑付，社区信任延迟 1 回合到账"},
+		"side_note": {"effective": "补偿款按季兑付，到账后社区人民较为满意"},
 	},
 
 ]
@@ -4084,5 +4084,5 @@ func _build_reflection() -> String:
 	else:
 		parts.append("你长期忽视科研监测，很多风险直到爆发才被发现。")
 
-	parts.append("这是代价认知：每一个决策都在改变鄱阳湖，而资源永远不够覆盖所有需求。")
+	parts.append("你每一个决策和执行都会影响这一方水土的变化，如何用有限的资源覆盖到覆盖到全方面呢，这需要你好好思考。")
 	return "　".join(parts)

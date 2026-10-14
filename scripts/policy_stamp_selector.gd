@@ -31,7 +31,7 @@ func _ready() -> void:
 		button.flat = true
 		for style in ["normal", "hover", "pressed", "disabled", "focus"]:
 			button.add_theme_stylebox_override(style, StyleBoxEmpty.new())
-		button.tooltip_text = ["基础投入 · 半价", "有效投入 · 全价", "深度投入 · 双倍价"][i]
+		button.tooltip_text = ["基础政策投入 · 半价", "有效政策投入 · 全价", "深度政策投入 · 双倍价"][i]
 		button.pressed.connect(func(): tier_requested.emit(TIERS[i]))
 		add_child(button)
 		buttons.append(button)
