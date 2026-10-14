@@ -59,7 +59,9 @@ func verify_face(panel: PanelContainer, title: String, footer: String, dixinhu: 
 	check(face.texture == PixelArt.texture(title, footer), "Correct name and fee/state")
 	var category: String = "knowledge" if footer in ["知识卡", "未收集"] else PixelArt.category_for(title)
 	var base: Image = PixelArt.base_image(category)
-	var glyph_scale := 4 if PixelArt.SUITS.has(category) else 1
+	# 带括号的长卡名会退到 3/2 倍（括号组必须整组一行），实际字号问渲染层要，别假定 4 倍。
+	var glyph_scale := PixelArt.face_glyph_scale(title, category)
+	var is_action := PixelArt.SUITS.has(category)
 	var image := face.texture.get_image()
 	var unchanged := true
 	var shadows := 0
@@ -68,12 +70,14 @@ func verify_face(panel: PanelContainer, title: String, footer: String, dixinhu: 
 		for x in image.get_width():
 			var pixel := image.get_pixel(x, y)
 			if pixel != base.get_pixel(x, y):
-				var title_region := Rect2i(68, 133, 268, 253) if glyph_scale == 4 else Rect2i(16, 32, 65, 65)
-				var cost_region := Rect2i(120, 417, 112, 68) if glyph_scale == 4 else Rect2i(16, 100, 65, 17)
+				var title_region := Rect2i(68, 133, 268, 253) if is_action else Rect2i(16, 32, 65, 65)
+				var cost_region := Rect2i(120, 417, 112, 68) if is_action else Rect2i(16, 100, 65, 17)
 				unchanged = unchanged and (title_region.has_point(Vector2i(x, y)) or cost_region.has_point(Vector2i(x, y)))
 				if pixel == Color8(150, 150, 150):
 					shadows += 1
-					shadow_offset_correct = shadow_offset_correct and image.get_pixel(x - glyph_scale, y - glyph_scale) in [Color.BLACK, PixelArt.COST_INK]
+					# 卡名为了让括号成组可能退字号，金额一直是 4 倍 —— 两块的阴影偏移各按自己的字号查。
+					var offset := 4 if (is_action and cost_region.has_point(Vector2i(x, y))) else glyph_scale
+					shadow_offset_correct = shadow_offset_correct and image.get_pixel(x - offset, y - offset) in [Color.BLACK, PixelArt.COST_INK]
 	check(unchanged, "Every pixel outside text and shadow remains original")
 	check(shadows > 0, "Shadow is exactly RGB 150,150,150")
 	check(shadow_offset_correct, "Every shadow pixel is one source pixel below/right of ink")

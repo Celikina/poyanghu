@@ -595,7 +595,7 @@ func probe_bottom_right_bounds() -> void:
 		get_window().size = window_size
 		for long_text in [true, false]:
 			game.selected_label.text = "桌面待打出：12 张\n行动位 12/12 · 预算 12345/10000 万\n资金不足，请调整待打出卡牌的顺序和投入档位" if long_text else "拖牌到上方桌面待打出"
-			game.dispatch_btn.text = "紧急调度 · 400 万（含待打出预算不足）" if long_text else "紧急调度 · 40 万"
+			game.dispatch_btn.text = "紧急调度 · 400 万(含待打出预算不足)" if long_text else "紧急调度 · 40 万"
 			await settle(0.12)
 			check_bottom_right_bounds("Content change")
 			game._slide_main_ui(true)

@@ -48,10 +48,18 @@ const CREEPER_ART := preload("res://assets/creeper.png")
 # 转正后实测（tools 探针扫描）：菜单半视野里的 216 个候选点中，有 144 个在进入对局后会出画；
 # 出画的判据是屏幕 y 落到画面上方。取右上方那一档 —— 开始页完整可见、对局时整只出画。
 const CREEPER_ANCHOR := Vector2(0.9700000, 0.0400000)
+## 美术交付的九款民居：1 / 1.1 / 1.2 与 2 / 2.1 / 2.2 是同族变体，3 / 3.1 与 4 各成一款。
+## 每栋房子取哪一款由「局种子 + 位置序号」决定（见 _house_art_index）——同一局里同一块地
+## 永远是同一栋房子（扩建、暂停、读档都不会变脸），换一局才重新洗牌。
 const HOUSE_ART := [
 	preload("res://assets/houses/house1.png"),
+	preload("res://assets/houses/house1_1.png"),
+	preload("res://assets/houses/house1_2.png"),
 	preload("res://assets/houses/house2.png"),
+	preload("res://assets/houses/house2_1.png"),
+	preload("res://assets/houses/house2_2.png"),
 	preload("res://assets/houses/house3.png"),
+	preload("res://assets/houses/house3_1.png"),
 	preload("res://assets/houses/house4.png"),
 ]
 ## 房子贴图被画进 76×76 的方框、锚点纵向在 0.86 —— 必须和 _draw_houses 的绘制一致。
@@ -72,8 +80,9 @@ const SHADOWS := {
 	"island": false,     # 浮岛
 }
 ## Per-art radius caps, further limited by the opaque sprite footprint.
-const HOUSE_SHADOW_RADIUS := [30.0, 31.0, 34.0, 36.0]
-const HOUSE_SHADOW_FOOT := [0.0, 0.0, 6.0, 6.0]
+## 逐款的影子半径/脚点，顺序与 HOUSE_ART 一一对应（同族给同一档）。
+const HOUSE_SHADOW_RADIUS := [30.0, 30.0, 30.0, 31.0, 31.0, 31.0, 34.0, 34.0, 36.0]
+const HOUSE_SHADOW_FOOT := [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 6.0, 6.0, 6.0]
 ## 空地（只有一株芦苇标记）的接触阴影：草本植物，给小一号的。
 const PLOT_SHADOW_RADIUS := 15.0
 const PLOT_SHADOW_FOOT := 3.0
@@ -1479,6 +1488,14 @@ func _house_shape(art_index: int) -> Dictionary:
 		_measure_house_art()
 	return house_art_shape[art_index % house_art_shape.size()]
 
+## 这栋房子取哪一版素材：按「局种子 + 位置序号」确定性地算，不消耗对局随机流。
+## 同一局里同一块地永远是同一栋（扩建、暂停、读档都不变脸），换局才重新洗牌。
+func _house_art_index(site_index: int) -> int:
+	var count := HOUSE_ART.size()
+	if count <= 0:
+		return 0
+	return int(abs(hash("%d:%d" % [GameState.run_seed, site_index]))) % count
+
 ## 76px 房框里的像素长度 → 地图 uv 长度。屏幕像素与 uv 的比例由当前相机决定
 ## （菜单拉远 / 对局推近时会变，所以每次都现算，不写死）。
 func _px_to_uv(px: float) -> float:
@@ -1559,7 +1576,7 @@ func _contact_shadow_specs(items: Array[Dictionary] = []) -> Array[Dictionary]:
 					alpha = 0.12
 				else:
 					var sc := maxf(0.12, phase * phase * (3.0 - 2.0 * phase))
-					var art_index := index % HOUSE_ART.size()
+					var art_index := _house_art_index(index)
 					var shape := _house_shape(art_index)
 					radius = minf(float(HOUSE_SHADOW_RADIUS[art_index]), float(shape["half_w"]) * 1.12) * sc
 					foot = (float(shape["bottom"]) + float(HOUSE_SHADOW_FOOT[art_index]) * 0.5) * sc
@@ -1619,7 +1636,7 @@ func _draw_house(c: Control, i: int) -> void:
 		return
 	var eased := phase * phase * (3.0 - 2.0 * phase)
 	var sc := maxf(0.12, eased)
-	var art_index := i % HOUSE_ART.size()
+	var art_index := _house_art_index(i)
 	if phase < 0.99:
 		# Foundation and scaffold make both construction and wetland retreat legible.
 		c.draw_rect(Rect2(p + Vector2(-19, -7), Vector2(38, 8)), Color("6f6949"))

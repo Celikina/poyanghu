@@ -81,14 +81,14 @@ const LIST := [
 	{
 		"id": "flush",
 		"name": "？！同花！？",
-		"desc": "在同一回合打出三张同一类别的牌（都是生态 / 社会 / 管理）",
+		"desc": "在同一回合打出三张同一类别的牌(都是生态 / 社会 / 管理)",
 		"icon": MEDAL_GRID,
 		"tex": preload("res://assets/art/achievements/flush.png"),
 	},
 	{
 		"id": "hard_clear",
 		"name": "最强管理员",
-		"desc": "在困难难度下打满 16 回合通关（不是中途被撤换）",
+		"desc": "在困难难度下打满 16 回合通关(不是中途被撤换)",
 		"icon": SHIELD_GRID,
 		"tex": preload("res://assets/art/achievements/hard_clear.png"),
 	},

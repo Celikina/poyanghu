@@ -374,9 +374,9 @@ const ACTION_CARDS := [
 		"desc": "补种苦草等沉水植物，扩大草洲覆盖。",
 		"cost": 30,
 		"tiers": {
-			"basic":     {"effects": [{"metric": "vegetation", "delta": 6, "delay": 2} , {"metric": "community", "delta": -1, "delay": 0}]},
-			"effective": {"effects": [{"metric": "vegetation", "delta": 8, "delay": 2}, {"metric": "birds", "delta": 5, "delay": 3} , {"metric": "community", "delta": -2, "delay": 0}]},
-			"deep":      {"effects": [{"metric": "vegetation", "delta": 9, "delay": 0}, {"metric": "birds", "delta": 7, "delay": 0} , {"metric": "community", "delta": -4, "delay": 0}]},
+			"basic":     {"effects": [{"metric": "vegetation", "delta": 8, "delay": 1} , {"metric": "community", "delta": -1, "delay": 0}]},
+			"effective": {"effects": [{"metric": "vegetation", "delta": 12, "delay": 1} , {"metric": "birds", "delta": 5, "delay": 3} , {"metric": "community", "delta": -2, "delay": 0}]},
+			"deep":      {"effects": [{"metric": "vegetation", "delta": 15, "delay": 0}, {"metric": "birds", "delta": 7, "delay": 0} , {"metric": "community", "delta": -4, "delay": 0}]},
 		},
 		"side_note": {"effective": "植被种植还需要一定时间生长"},
 	},
@@ -391,9 +391,9 @@ const ACTION_CARDS := [
 		"desc": "移栽成株苦草、黑藻，快速重建水下草场。",
 		"cost": 40,
 		"tiers": {
-			"basic":     {"effects": [{"metric": "vegetation", "delta": 6, "delay": 1} , {"metric": "community", "delta": -1, "delay": 0}]},
-			"effective": {"effects": [{"metric": "vegetation", "delta": 11, "delay": 0} , {"metric": "community", "delta": -2, "delay": 0}]},
-			"deep":      {"effects": [{"metric": "vegetation", "delta": 25, "delay": 0}, {"metric": "community", "delta": -3, "delay": 0}]},
+			"basic":     {"effects": [{"metric": "vegetation", "delta": 8, "delay": 0} , {"metric": "community", "delta": -1, "delay": 0}]},
+			"effective": {"effects": [{"metric": "vegetation", "delta": 13, "delay": 0} , {"metric": "community", "delta": -2, "delay": 0}]},
+			"deep":      {"effects": [{"metric": "vegetation", "delta": 28, "delay": 0}, {"metric": "community", "delta": -3, "delay": 0}]},
 		},
 		"side_note": {"deep": "大规模移栽要占用湖区作业面，影响居民日常作业和生产"},
 	},
@@ -407,9 +407,9 @@ const ACTION_CARDS := [
 		"desc": "保育苦草、黑藻的冬芽与种子库，为后续萌发留足种源。",
 		"cost": 30,
 		"tiers": {
-			"basic":     {"effects": [{"metric": "vegetation", "delta": 8, "delay": 3} , {"metric": "community", "delta": -1, "delay": 0}]},
-			"effective": {"effects": [{"metric": "vegetation", "delta": 13, "delay": 2} , {"metric": "community", "delta": -1, "delay": 0}]},
-			"deep":      {"effects": [{"metric": "vegetation", "delta": 20, "delay": 0}, {"metric": "community", "delta": -2, "delay": 0}]},
+			"basic":     {"effects": [{"metric": "vegetation", "delta": 10, "delay": 2} , {"metric": "community", "delta": -1, "delay": 0}]},
+			"effective": {"effects": [{"metric": "vegetation", "delta": 16, "delay": 1} , {"metric": "community", "delta": -1, "delay": 0}]},
+			"deep":      {"effects": [{"metric": "vegetation", "delta": 22, "delay": 0}, {"metric": "community", "delta": -2, "delay": 0}]},
 		},
 		"side_note": {"effective": "植被种植还需要一定时间生长"},
 	},
@@ -498,9 +498,9 @@ const ACTION_CARDS := [
 		"desc": "建立护鸟员队伍，形成社区巡护网络。",
 		"cost": 20,
 		"tiers": {
-			"basic":     {"effects": [{"metric": "community", "delta": 4, "delay": 1}]},
-			"effective": {"effects": [{"metric": "community", "delta": 5, "delay": 1}, {"metric": "fish", "delta": 3, "delay": 1}]},
-			"deep":      {"effects": [{"metric": "community", "delta": 8, "delay": 0}, {"metric": "fish", "delta": 5, "delay": 0}]},
+			"basic":     {"effects": [{"metric": "community", "delta": 4, "delay": 1}, {"metric": "birds", "delta": 2, "delay": 1}]},
+			"effective": {"effects": [{"metric": "community", "delta": 5, "delay": 1}, {"metric": "fish", "delta": 3, "delay": 1}, {"metric": "birds", "delta": 4, "delay": 1}]},
+			"deep":      {"effects": [{"metric": "community", "delta": 8, "delay": 0}, {"metric": "fish", "delta": 5, "delay": 0}, {"metric": "birds", "delta": 7, "delay": 0}]},
 		},
 		"side_note": {"effective": "社区共同管理保护鸟类，促使人鸟和谐。"},
 	},
@@ -544,7 +544,7 @@ const ACTION_CARDS := [
 		"side_note": {"deep": "建立长期数据库，预报更准"},
 	},
 	{
-		"id": "water_replenish", "name": "生态补水（引江济湖）", "category": "ecology",
+		"id": "water_replenish", "name": "生态补水(引江济湖)", "category": "ecology",
 		"season": "winter",
 		"tags": ["补水调度"],
 		"desc": "跨流域引水补充湖区水量，缓解枯水、恢复浅滩生境。",
@@ -631,7 +631,7 @@ const ACTION_CARDS := [
 		"side_note": {"deep": "扩大滞洪区占用沿岸土地，缩小了农田面积；植被在下一回合恢复"},
 	},
 	{
-		"id": "wetland_restore", "name": "退田还湿（湿地生态修复）", "category": "ecology",
+		"id": "wetland_restore", "name": "退田还湿(湿地生态修复)", "category": "ecology",
 		"season": "autumn",
 		"tags": ["生态修复"],
 		"desc": "将环湖低产农田退还为湿地，重建自然水文节律。",
@@ -644,7 +644,7 @@ const ACTION_CARDS := [
 		"side_note": {"effective": "退田农户短期内需要转业"},
 	},
 	{
-		"id": "floating_island", "name": "人工浮岛（生态浮床）", "category": "ecology",
+		"id": "floating_island", "name": "人工浮岛(生态浮床)", "category": "ecology",
 		"season": "spring",
 		"tags": ["水体治理"],
 		"desc": "布置人工浮岛与生态浮床，吸附氮磷、净化水体。",
@@ -752,7 +752,7 @@ const ACTION_CARDS := [
 		"side_note": {"deep": "产卵场禁渔期影响短期捕捞，渔民需要在禁渔期安置"},
 	},
 	{
-		"id": "smart_patrol", "name": "智慧巡护（无人机遥感）", "category": "manage",
+		"id": "smart_patrol", "name": "智慧巡护(无人机遥感)", "category": "manage",
 		"season": "all",
 		"tags": ["执法巡护"],
 		"desc": "无人机与遥感全天候巡护，监测非法捕捞、火情与水质。",
@@ -1064,9 +1064,9 @@ const ACTION_CARDS := [
 		"desc": "围网阻隔并清除啃食幼苗的绒螯蟹幼蟹，配合底质改良重建沉水植物群落。",
 		"cost": 30,
 		"tiers": {
-			"basic":     {"effects": [{"metric": "vegetation", "delta": 5, "delay": 2}]},
-			"effective": {"effects": [{"metric": "vegetation", "delta": 10, "delay": 2}]},
-			"deep":      {"effects": [{"metric": "vegetation", "delta": 20, "delay": 1}, {"metric": "community", "delta": -2, "delay": 0}]},
+			"basic":     {"effects": [{"metric": "vegetation", "delta": 7, "delay": 1}]},
+			"effective": {"effects": [{"metric": "vegetation", "delta": 13, "delay": 1}]},
+			"deep":      {"effects": [{"metric": "vegetation", "delta": 24, "delay": 0}, {"metric": "community", "delta": -2, "delay": 0}]},
 		},
 		"side_note": {"deep": "围网作业影响渔船捕捞作业，减小了水域面积"},
 	},
@@ -1130,7 +1130,7 @@ const KNOWLEDGE_CARDS := {
 		"management": "保护碟形湖与草洲，营建候鸟食堂。",
 		"condition": "birds < 62",
 		"tags": ["栖息地营造", "应急救护"],
-		"photo_credit": "Wikimedia Commons · CC BY 4.0 · A Dim Light Chaser（2023，摄于鄱阳湖）",
+		"photo_credit": "Wikimedia Commons · CC BY 4.0 · A Dim Light Chaser(2023，摄于鄱阳湖)",
 	},
 	"bird_xiaotiane": {
 		"name": "小天鹅", "category": "鸟类", "trigger": "observation",
@@ -1170,7 +1170,7 @@ const KNOWLEDGE_CARDS := {
 		"management": "应优先农业防治与生态调控，科学用药为最后手段。",
 		"condition": "vegetation < 40",
 		"tags": ["物种防控"],
-		"photo_credit": "Wikimedia Commons · CC BY-SA 4.0 · Shouyong / Linda Wong（2023，湖南）",
+		"photo_credit": "Wikimedia Commons · CC BY-SA 4.0 · Shouyong / Linda Wong(2023，湖南)",
 	},
 	"cons_disease": {
 		"name": "苦草病害的因果", "category": "案例", "trigger": "consequence",
@@ -1210,7 +1210,7 @@ const KNOWLEDGE_CARDS := {
 		"threat": "上游污染可能沿河进入湖区。",
 		"management": "保护湖泊也要保护上游河流，治理需要多地合作。",
 		"condition": "", "tags": ["水体治理", "社区参与"], "action_ids": ["lake_chief", "nonpoint_intercept"],
-		"photo_credit": "NASA · 公有领域（2012）",
+		"photo_credit": "NASA · 公有领域(2012)",
 		"source_title": "中科院：科普湿地",
 		"source_url": "https://neigae.cas.cn/klwee/qt/kpsd/201604/t20160421_7562770.html",
 	},
@@ -1221,7 +1221,7 @@ const KNOWLEDGE_CARDS := {
 		"threat": "人为阻隔会改变水流与生物的通行条件。",
 		"management": "研究江湖联系后再开展水工程，保护必要的通道。",
 		"condition": "", "tags": ["水工调控", "增殖放流"], "action_ids": ["sluice_fry", "fishway", "water_replenish"],
-		"photo_credit": "MDPI Remote Sensing 期刊 · CC BY 4.0（2024）",
+		"photo_credit": "MDPI Remote Sensing 期刊 · CC BY 4.0(2024)",
 		"source_title": "中科院地理所：鄱阳湖",
 		"source_url": "https://igsnrr.cas.cn/cbkx/kpyd/zgdl/cnszy/202009/t20200910_5692411.html",
 	},
@@ -1243,7 +1243,7 @@ const KNOWLEDGE_CARDS := {
 		"threat": "改变水文联系可能改变小湖原有的生态环境。",
 		"management": "因地制宜维护生态水位，保留不同类型的湿地生境。",
 		"condition": "", "tags": ["补水调度", "栖息地营造"], "action_ids": ["water_control", "water_comanage"], "seasons": ["秋"],
-		"photo_credit": "USFWS（美国鱼类及野生动物管理局）· 公有领域",
+		"photo_credit": "USFWS(美国鱼类及野生动物管理局)· 公有领域",
 		"source_title": "中科院：通江湖泊水文过程研究",
 		"source_url": "https://niglas.cas.cn/xwdt_1_1/yjjz/202005/t20200528_5599537.html",
 	},
@@ -1265,7 +1265,7 @@ const KNOWLEDGE_CARDS := {
 		"threat": "水下噪声和人类活动可能影响江豚及幼豚。",
 		"management": "保护栖息水域，支持巡护、监测和减少干扰。",
 		"condition": "", "tags": ["执法巡护", "科研监测"], "action_ids": ["patrol", "research"],
-		"photo_credit": "Wikimedia Commons · CC BY 3.0 · Huangdan2060（中科院武汉水生所）",
+		"photo_credit": "Wikimedia Commons · CC BY 3.0 · Huangdan2060(中科院武汉水生所)",
 		"source_title": "中科院水生所：新生长江江豚",
 		"source_url": "https://ihb.cas.cn/xwdt/zhxw/202406/t20240621_7193987.html",
 	},
@@ -1287,7 +1287,7 @@ const KNOWLEDGE_CARDS := {
 		"threat": "只把所有雁记成一种，会遗漏物种之间的差异。",
 		"management": "借助图鉴与望远镜辨认，记录时间、地点和种类。",
 		"condition": "", "tags": ["科研监测", "栖息地营造"], "action_ids": ["research", "habitat_protect"], "seasons": ["冬"],
-		"photo_credit": "Wikimedia Commons · CC BY-SA 2.0 · Alastair Rae（2014，摄于鄱阳湖）",
+		"photo_credit": "Wikimedia Commons · CC BY-SA 2.0 · Alastair Rae(2014，摄于鄱阳湖)",
 		"source_title": "中科院：鄱阳湖越冬雁类研究",
 		"source_url": "https://igsnrr.cas.cn/sourcedb/zw/lw/202504/t20250409_7592059.html",
 	},
@@ -1353,7 +1353,7 @@ const KNOWLEDGE_CARDS := {
 		"threat": "只关注某一种动物，可能忽略它赖以生存的食物和环境。",
 		"management": "一起保护生境和食源，观察治理带来的连锁变化。",
 		"condition": "", "tags": ["生态修复", "栖息地营造"], "action_ids": ["veg_restore", "spawning_ground", "habitat_protect"],
-		"photo_credit": "Wikimedia Commons · CC BY-SA 4.0 · Basile Morin（2019）",
+		"photo_credit": "Wikimedia Commons · CC BY-SA 4.0 · Basile Morin(2019)",
 		"source_title": "国家林草局：多方协力守护候鸟家园",
 		"source_url": "https://www.forestry.gov.cn/c/www/dzbhdt/657022.jhtml",
 	},
@@ -1408,7 +1408,7 @@ const KNOWLEDGE_CARDS := {
 		"threat": "过量施肥及管理不当会加重农业面源污染。",
 		"management": "科学减量施肥，结合拦截带和流域治理减少污染输入。",
 		"condition": "", "tags": ["水体治理", "生态修复"], "action_ids": ["nonpoint_intercept", "lake_chief"], "seasons": ["夏"],
-		"photo_credit": "USDA NRCS（美国农业部）· 公有领域",
+		"photo_credit": "USDA NRCS(美国农业部)· 公有领域",
 		"source_title": "生态环境部：鄱阳湖保护修复问题",
 		"source_url": "https://www.mee.gov.cn/ywgz/zysthjbhdc/dcjl/202405/t20240517_1073473.shtml",
 	},
@@ -1441,7 +1441,7 @@ const KNOWLEDGE_CARDS := {
 		"threat": "调查范围和记录方式不一致，会增加比较的困难。",
 		"management": "按规范记录时间、地点、种类与数量，使用科技手段辅助监测。",
 		"condition": "", "tags": ["科研监测", "执法巡护"], "action_ids": ["research", "smart_patrol"],
-		"photo_credit": "USGS（美国地质调查局）· 公有领域",
+		"photo_credit": "USGS(美国地质调查局)· 公有领域",
 		"source_title": "国家林草局：鄱阳湖候鸟保护工作",
 		"source_url": "https://www.forestry.gov.cn/c/www/dzbhdt/655834.jhtml",
 	},
@@ -1496,7 +1496,7 @@ const KNOWLEDGE_CARDS := {
 		"threat": "自行追捕、喂食或治疗，可能给鸟和自己带来风险。",
 		"management": "保持距离，告知监护人并记录位置，联系保护区或专业救助机构。",
 		"condition": "", "tags": ["应急救护", "公众参与"], "action_ids": ["rescue", "guard_team"],
-		"photo_credit": "USCG（美国海岸警卫队）· 公有领域",
+		"photo_credit": "USCG(美国海岸警卫队)· 公有领域",
 		"source_title": "国家林草局：鄱阳湖的候鸟救助",
 		"source_url": "https://www.forestry.gov.cn/c/www/dzbhdt/634206.jhtml",
 	},
@@ -1507,7 +1507,7 @@ const KNOWLEDGE_CARDS := {
 		"threat": "车辆碾压湿地等行为会破坏栖息环境。",
 		"management": "只在允许区域活动，不驾车进入草洲，支持保护区巡护。",
 		"condition": "", "tags": ["执法巡护", "公众参与"], "action_ids": ["patrol", "wetland_law", "obstruction_clear"],
-		"photo_credit": "易车 · 吉普穆马人论坛（草洲上的越野车）",
+		"photo_credit": "易车 · 吉普穆马人论坛(草洲上的越野车)",
 		"photo_url": "https://baa.m.yiche.com/jipumumaren/thread-50427945.html",
 		"source_title": "国家林草局：鄱阳湖候鸟保护工作",
 		"source_url": "https://www.forestry.gov.cn/c/www/dzbhdt/655834.jhtml",
@@ -1965,7 +1965,7 @@ func _advance_seasonal_legacy() -> void:
 			var next_year := str(int((turn - 1) / 4) + 1)
 			winter_returns[next_year] = mini(20, ceili(int(winter["loss"]) * 0.5))
 			if int(winter_returns[next_year]) > 0:
-				_add_log("上冬未恢复鸟群损失：本年迁入基准减少 %d（冬季口径）" % int(winter_returns[next_year]))
+				_add_log("上冬未恢复鸟群损失：本年迁入基准减少 %d(冬季口径)" % int(winter_returns[next_year]))
 	var remaining: Array = []
 	for entry in seasonal_legacy:
 		if entry["kind"] == "food":
@@ -3170,14 +3170,14 @@ func natural_evolution_plan(roll_random: bool = true, water_delta_override: int 
 	var drift := water_drift_range(season)
 	var wl_raw_lo: int = int(drift[0])
 	var wl_raw_hi: int = int(drift[1])
-	var wl_why: String = "春季涨水（五河来水，水位小幅回升）"
+	var wl_why: String = "春季涨水(五河来水，水位小幅回升)"
 	match season:
 		"summer":
-			wl_why = "夏季高水（长江汛期，水位大幅上涨、易漫滩）"
+			wl_why = "夏季高水(长江汛期，水位大幅上涨、易漫滩)"
 		"autumn":
-			wl_why = "秋季落水（水位回落，洲滩渐次露出）"
+			wl_why = "秋季落水(水位回落，洲滩渐次露出)"
 		"winter":
-			wl_why = "冬季枯水（全年最低，碟形湖脱离主湖）"
+			wl_why = "冬季枯水(全年最低，碟形湖脱离主湖)"
 	var wl: int = settlement_water_delta() if roll_random else roundi((wl_raw_lo + wl_raw_hi) / 2.0)
 	if water_delta_override != 999: wl = clampi(water_delta_override, wl_raw_lo, wl_raw_hi)
 	out.append({"metric": "water_level", "delta": wl,
@@ -3217,11 +3217,11 @@ func natural_evolution_plan(roll_random: bool = true, water_delta_override: int 
 		sim["vegetation"] = clampi(int(sim.get("vegetation", 0)) + _scaled_delta(-3), 0, 100)
 	elif q > 70:
 		out.append({"metric": "vegetation", "delta": 1, "min": 1, "max": 1, "kind": "gain",
-			"why": "水质 %d 良好（>70）→ 植被恢复" % q})
+			"why": "水质 %d 良好(>70)→ 植被恢复" % q})
 		sim["vegetation"] = clampi(int(sim.get("vegetation", 0)) + 1, 0, 100)
 	else:
 		out.append({"metric": "vegetation", "delta": 0, "min": 0, "max": 0, "kind": "none",
-			"why": "水质 %d（45~70）→ 植被本回合不变" % q})
+			"why": "水质 %d(45~70)→ 植被本回合不变" % q})
 
 	# Bird health and migration are calculated once from the evolved habitat.
 	var birds := bird_evolution(sim)
@@ -3246,7 +3246,7 @@ func natural_evolution_plan(roll_random: bool = true, water_delta_override: int 
 			"why": "下降"})
 	else:
 		out.append({"metric": "community", "delta": 0, "min": 0, "max": 0, "kind": "none",
-			"why": "本回合不变（信任度 ≥ 45，或已投入补偿）"})
+			"why": "本回合不变(信任度 ≥ 45，或已投入补偿)"})
 
 	return out
 
@@ -3698,7 +3698,7 @@ func _check_failure() -> bool:
 			failure_metric = metric
 			failure_value = metric_failure_value(str(metric))
 			failure_reason = "留湖与迁徙候鸟总量跌破生态红线。" if metric == "birds" else "上级对你的政绩不满意，将你撤换。"
-			_add_log("✖ %s（%s 只剩 %d，已跌破生态红线 %d）" % [failure_reason, METRIC_NAMES.get(metric, metric), failure_value, threshold])
+			_add_log("✖ %s(%s 只剩 %d，已跌破生态红线 %d)" % [failure_reason, METRIC_NAMES.get(metric, metric), failure_value, threshold])
 			game_ended.emit(generate_report())
 			return true
 	return false
@@ -3949,7 +3949,7 @@ func _apply_settlement(delta: int) -> void:
 	var before := settlement
 	settlement = clampi(settlement + delta, 0, 100)
 	if settlement != before:
-		_add_log("环湖人类围垦%s（%d）" % ["扩张" if delta > 0 else "收缩", delta])
+		_add_log("环湖人类围垦%s(%d)" % ["扩张" if delta > 0 else "收缩", delta])
 
 
 func _find_card(card_id: String) -> Dictionary:
@@ -4035,9 +4035,9 @@ func _eval_social() -> Dictionary:
 	for cid in ["community_comp", "industry_switch", "fisher_retrain", "eco_resettle"]:
 		cover += int(ever_played.get(str(cid), 0))
 	if cover >= 3:
-		notes.append("转产与补偿覆盖到位（整局累计 %d 次）。" % cover)
+		notes.append("转产与补偿覆盖到位(整局累计 %d 次)。" % cover)
 	elif cover > 0:
-		notes.append("转产与补偿有投入但不连续（整局累计 %d 次），建议补强。" % cover)
+		notes.append("转产与补偿有投入但不连续(整局累计 %d 次)，建议补强。" % cover)
 	else:
 		notes.append("整局没做过转产与补偿，社区信任缺乏支撑。")
 	return {"score": float(comm), "grade": grade, "notes": notes}
@@ -4047,7 +4047,7 @@ func _eval_manage() -> Dictionary:
 	var eff := 100.0 if total_spent == 0 else clampf(100.0 - abs(total_spent - (TOTAL_TURNS * 55)) / (TOTAL_TURNS * 55) * 100.0, 0, 100)
 	var grade := _grade(eff)
 	var notes: Array = []
-	notes.append("科研点数累计：%d（代表长期监测积累）" % research_points)
+	notes.append("科研点数累计：%d(代表长期监测积累)" % research_points)
 	# 科研点现在有实际作用了（深预警），评语要与机制对齐，不能还是纯叙述
 	if deep_warning_on():
 		notes.append("监测预警已升级：危机可提前 2 回合预判。")

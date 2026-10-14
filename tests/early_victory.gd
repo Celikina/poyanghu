@@ -56,7 +56,7 @@ func _ready() -> void:
 	# ---- ① 门槛：严格高于 80，候鸟看留湖基数而不是总量 ----
 	green_fixture(state, 1)
 	state.metrics["vegetation"] = 80
-	check(not state.early_win_met(), "恰好 80 不算达标（要求严格高于 80）")
+	check(not state.early_win_met(), "恰好 80 不算达标(要求严格高于 80)")
 	state.metrics["vegetation"] = 81
 	check(state.early_win_met(), "五项都高于 80 且留湖顶格时达标")
 	state.bird_population["base"] = 54
@@ -71,7 +71,7 @@ func _ready() -> void:
 	state.bird_population["migrants"] = 0
 	state.bird_population["total"] = 60
 	state.metrics["birds"] = 60
-	check(state.early_win_met(), "夏季总量只有 60 也达标（判的是留湖基数，与季节来客无关）")
+	check(state.early_win_met(), "夏季总量只有 60 也达标(判的是留湖基数，与季节来客无关)")
 	check(state.early_win_missing().is_empty(), "达标时没有缺项")
 
 	# ---- ② 连续两个回合的结算才通关 ----
@@ -82,7 +82,7 @@ func _ready() -> void:
 	check(state.early_win_streak == 1, "第一回合之后连续计数为 1，实际 %d" % state.early_win_streak)
 	green_fixture(state, 2)
 	state.end_turn()
-	check(state.game_over and not state.is_failure, "连续两个回合后提前通关（不是判负）")
+	check(state.game_over and not state.is_failure, "连续两个回合后提前通关(不是判负)")
 	var report: Dictionary = state.generate_report()
 	check(bool(report["victory"]) and int(report["turns_survived"]) < state.TOTAL_TURNS,
 		"报告记为提前胜利且回合数小于 16，实际 %d" % int(report["turns_survived"]))

@@ -43,6 +43,12 @@ const FACE_NAME_BOTTOM := 510  # 卡名块下限（再往下 y≈540 是印好�
 const FACE_NAME_SCALES: Array[int] = [4, 3, 2]  # 卡名候选字形倍数，从大到小退
 const FACE_NAME_INDENT := 18
 const FACE_NAME_WIDTH := 284
+## 行动卡卡面写卡名的那块区域（400×600 卡面上的像素坐标），与回归测试里的 title_region 一致。
+## 加半角括号后卡名宽度会变，长卡名要靠 FACE_GLYPH_SCALES 往下退字号才放得进这块区域。
+const FACE_TEXT_WIDTH := 268
+const FACE_TEXT_TOP := 133
+const FACE_TEXT_HEIGHT := 253
+const FACE_LINE_SPACING := 75   # 四倍字形下的行距（三倍/两倍按比例缩）
 const GLYPHS := preload("res://assets/art/card-font-glyphs.png")
 const SHADOW := Color8(150, 150, 150)
 const INK := Color.BLACK
@@ -103,8 +109,16 @@ static func dispatch_texture(card: Dictionary, baked: bool = true) -> Texture2D:
 	var lines := _lines(str(card["name"]))
 	var top := 133 if lines.size() >= 4 else 167
 	var spacing := 71 if lines.size() >= 4 else 75
+	var glyph_scale := 4
+	# 调度牌名和手牌同一个口径：带括号的长牌名退字号，括号组必须整组一行。
+	var paren_fit := _paren_fit(str(card["name"]))
+	if not paren_fit.is_empty():
+		glyph_scale = int(paren_fit["scale"])
+		lines = paren_fit["lines"]
+		top = int(paren_fit["top"])
+		spacing = int(paren_fit["spacing"])
 	for i in lines.size():
-		_write(image, lines[i], top + i * spacing, INK, -1, 4)
+		_write(image, lines[i], top + i * spacing, INK, -1, glyph_scale)
 	var result := ImageTexture.create_from_image(image)
 	if baked: textures[key] = result
 	return result
@@ -205,17 +219,70 @@ static func _width(text: String) -> int:
 		width += int(mapping.get(character, mapping["？"])[2])
 	return width
 
+## 换行的最小单位。括号组（(...) / （...））整体算一个 token —— 卡名换行时绝不把括号里的
+## 字劈到两行（「退田还湿（湿地生态修复）」不会断成「（湿地生」+「态修复）」）。
+static func _tokens(text: String) -> Array[String]:
+	var tokens: Array[String] = []
+	var buffer := ""
+	for character in text:
+		if not buffer.is_empty():
+			buffer += character
+			if character == ")" or character == "）":
+				tokens.append(buffer)
+				buffer = ""
+			continue
+		if character == "(" or character == "（":
+			buffer = character
+			continue
+		tokens.append(character)
+	if not buffer.is_empty():
+		tokens.append(buffer)
+	return tokens
+
 static func _lines(text: String, max_width: int = 64) -> Array[String]:
 	var lines: Array[String] = []
 	var line := ""
-	for character in text:
-		if not line.is_empty() and _width(line + character) > max_width:
+	for token in _tokens(text):
+		if not line.is_empty() and _width(line + token) > max_width:
 			lines.append(line)
 			line = ""
-		line += character
+		line += token
 	if not line.is_empty():
 		lines.append(line)
 	return lines
+
+## 带括号的长卡名：括号组放不进四倍字形的可用宽度时，依次退到三倍、两倍字形，
+## 并按该字号下的可用宽度重新换行，保证括号组整组落在同一行且不出卡面文字区。
+## 没有括号、或四倍就放得下时返回空字典 —— 调用方走原来的排版，观感不变。
+static func _paren_fit(title: String) -> Dictionary:
+	var widest := 0
+	for token in _tokens(title):
+		widest = maxi(widest, _width(token))
+	if widest <= int(FACE_TEXT_WIDTH / 4.0):
+		return {}
+	for scale in [4, 3, 2]:
+		var limit := int(FACE_TEXT_WIDTH / float(scale))
+		var rows := _lines(title, limit)
+		var fits := true
+		for row in rows:
+			if _width(row) > limit:
+				fits = false
+				break
+		if not fits:
+			continue
+		var row_spacing := int(round(FACE_LINE_SPACING * int(scale) / 4.0))
+		var block: int = 16 * int(scale) + maxi(rows.size() - 1, 0) * row_spacing
+		return {"scale": int(scale), "lines": rows, "spacing": row_spacing,
+			"top": FACE_TEXT_TOP + (FACE_TEXT_HEIGHT - block) / 2}
+	return {}
+
+## 这张卡名实际用的字形倍数（带括号的长卡名会退到 3 或 2）。回归测试与烘焙共用这一处判断，
+## 别在别处再写一遍「行动卡卡名一定是 4 倍」。
+static func face_glyph_scale(title: String, category: String) -> int:
+	if not SUITS.has(category):
+		return 1
+	var fit := _paren_fit(title)
+	return int(fit["scale"]) if not fit.is_empty() else 4
 
 static func _write(image: Image, text: String, top: int, ink: Color = INK, left_override: int = -1, glyph_scale: int = 1) -> void:
 	var left := int((image.get_width() - _width(text) * glyph_scale) / 2.0) if left_override < 0 else left_override
@@ -256,12 +323,20 @@ static func texture(title: String, footer: String = "", category: String = "") -
 	if SUITS.has(category):
 		top = 133 if lines.size() >= 4 else 167
 		spacing = 71 if lines.size() >= 4 else 75
+		# 卡名带括号、四倍字形放不下那一组时，换成适配后的字号与换行（没有括号就不进这里）。
+		var paren_fit := _paren_fit(title)
+		if not paren_fit.is_empty():
+			glyph_scale = int(paren_fit["scale"])
+			lines = paren_fit["lines"]
+			top = int(paren_fit["top"])
+			spacing = int(paren_fit["spacing"])
 	for i in lines.size():
 		_write(image, lines[i], top + i * spacing, INK, -1, glyph_scale)
 	if not footer.is_empty():
 		# Costs are already in ten-thousands; the supplied banknote prints 萬.
+		# 金额固定 4 倍：卡名为了括号成组可能退字号，价钱不跟着变小。
 		if SUITS.has(category):
-			_write(image, footer, 417, COST_INK, 179 - _width(footer) * 2, glyph_scale)
+			_write(image, footer, 417, COST_INK, 179 - _width(footer) * 2, 4)
 		else: _write(image, footer, 100)
 	var result := ImageTexture.create_from_image(image)
 	textures[key] = result

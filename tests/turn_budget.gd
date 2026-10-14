@@ -51,7 +51,7 @@ func refresh_budget_case() -> void:
 	GameState.funds = 110
 	check(game._card_selection_error(candidate).is_empty(), "Exactly 40 remaining permits the 40-cost card")
 	GameState.funds = 109
-	check(game._card_selection_error(candidate) == "资金不足（还需 40 万，可用 39 万）", "39 remaining correctly rejects the 40-cost card")
+	check(game._card_selection_error(candidate) == "资金不足(还需 40 万，可用 39 万)", "39 remaining correctly rejects the 40-cost card")
 	GameState.funds = 113
 	game._on_refresh_hand()
 	await settle(1.8)
@@ -59,7 +59,7 @@ func refresh_budget_case() -> void:
 	check(game._committed_funds() == 70, "Refresh keeps the 70-cost staged cards")
 	check(game.funds_label.text == "75 / 113 万", "Refresh fee is included in used budget")
 	check(GameState.turn_other_spent == 5 and game.funds_label.tooltip_text.contains("刷新手牌：5 万") and game.funds_label.tooltip_text.contains("剩余预算：38 万"), "Budget breakdown explains the actual remaining funds")
-	check(game._card_selection_error(candidate) == "资金不足（还需 40 万，可用 38 万）", "Post-refresh validation uses the actual 38 remaining")
+	check(game._card_selection_error(candidate) == "资金不足(还需 40 万，可用 38 万)", "Post-refresh validation uses the actual 38 remaining")
 	game.save_game()
 	game._refresh_used_turn = -1
 	check(game.load_game(), "Refresh budget saves and reloads")

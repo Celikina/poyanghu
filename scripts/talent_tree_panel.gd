@@ -52,7 +52,7 @@ func _ready() -> void:
 	wallet = text_label("灵感 0", 22, VisualTheme.MINT)
 	wallet.mouse_filter = Control.MOUSE_FILTER_PASS
 	heading.add_child(wallet)
-	var rewards := text_label("胜利奖励（含提前胜利）：简单 1 灵感 · 普通 2 灵感 · 困难 3 灵感 · 噩梦全树满级", 13, VisualTheme.MINT)
+	var rewards := text_label("胜利奖励(含提前胜利)：简单 1 灵感 · 普通 2 灵感 · 困难 3 灵感 · 噩梦全树满级", 13, VisualTheme.MINT)
 	rewards.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	content.add_child(rewards)
 	var body := HBoxContainer.new()

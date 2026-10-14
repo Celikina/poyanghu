@@ -71,7 +71,7 @@ func _ready() -> void:
 	check(game.event_label.text.contains("【开场】") and game.event_label.text.contains("开启你的第一个决策"),
 		"第 1 回合横幅应是开场台词，实际「" + game.event_label.text + "」")
 	check(not game.event_label.text.contains("枯水") and not game.event_label.text.contains("告急"),
-		"开场不该断言当下生态（开局六项是按种子掷的），实际「" + game.event_label.text + "」")
+		"开场不该断言当下生态(开局六项是按种子掷的)，实际「" + game.event_label.text + "」")
 	await capture("0.1.17-事件幅-开场")
 
 	# 之后把回合推到 3（仍是春季，参考区间不变），让横幅回到「现场态势」而不是固定台词
@@ -89,8 +89,8 @@ func _ready() -> void:
 		"差值 62 应判激化且扣 2，实际 " + str(st))
 	print("BANNER_CONFLICT " + game.event_label.text)
 	check(game.event_label.text.contains("白鹤进入稻田") and game.event_label.text.contains("人鸟冲突"),
-		"横幅应照原版口径描述情况（社区报告那条），实际「" + game.event_label.text + "」")
-	check(not game.event_label.text.contains("人鸟矛盾"), "横幅不该点名「人鸟矛盾」（暗线），实际「" + game.event_label.text + "」")
+		"横幅应照原版口径描述情况(社区报告那条)，实际「" + game.event_label.text + "」")
+	check(not game.event_label.text.contains("人鸟矛盾"), "横幅不该点名「人鸟矛盾」(暗线)，实际「" + game.event_label.text + "」")
 	check(not game.event_label.text.contains("激化"), "横幅不该出现「激化」字样，实际「" + game.event_label.text + "」")
 	check(not game.event_label.text.contains("62") and not game.event_label.text.contains("食源"),
 		"横幅只描述情况、不报数字，实际「" + game.event_label.text + "」")
@@ -104,11 +104,11 @@ func _ready() -> void:
 	var cbody: String = plain_bb(game.metric_tip_body.text).replace("\n", " / ")
 	print("TOOLTIP_COMMUNITY " + cbody)
 	check(game.metric_tip.visible, "社区信任的悬停小窗应可见")
-	check(cbody.contains("自然演化（含洪旱）   -2"),
-		"自然演化那一栏应把这笔扣减算进去（显示在同一处），实际「" + cbody + "」")
+	check(cbody.contains("自然演化(含洪旱)   -2"),
+		"自然演化那一栏应把这笔扣减算进去(显示在同一处)，实际「" + cbody + "」")
 	check(cbody.contains("· 其中人鸟矛盾 −2"), "小窗应有一行安静的来源小计，实际「" + cbody + "」")
-	check(cbody.contains("回合末约   53"), "回合末约应把这一笔算进去（55−2=53），实际「" + cbody + "」")
-	check(cbody.contains("回合末余量   3"), "回合末余量也要跟着变（53−红线50=3），实际「" + cbody + "」")
+	check(cbody.contains("回合末约   53"), "回合末约应把这一笔算进去(55−2=53)，实际「" + cbody + "」")
+	check(cbody.contains("回合末余量   3"), "回合末余量也要跟着变(53−红线50=3)，实际「" + cbody + "」")
 	check(not cbody.contains("⚠ 人鸟矛盾"), "小窗不该用人鸟矛盾做醒目告警，实际「" + cbody + "」")
 	await capture("0.1.17-悬停详情-人鸟矛盾")
 
@@ -141,7 +141,7 @@ func _ready() -> void:
 	game.set_process(true)
 	await _set_metrics({"water_level": 55, "vegetation": 60, "water_quality": 60, "fish": 55, "birds": 45, "community": 60})
 	print("BANNER_SAFE " + game.event_label.text)
-	check(game.event_label.text.contains("暂未触发明显洪旱预警或候鸟进田情况"), "水位 55（春 49–61 区间内）应显示没有明显洪旱预警或候鸟进田，实际「" + game.event_label.text + "」")
+	check(game.event_label.text.contains("暂未触发明显洪旱预警或候鸟进田情况"), "水位 55(春 49–61 区间内)应显示没有明显洪旱预警或候鸟进田，实际「" + game.event_label.text + "」")
 	await capture("0.1.17-顶部态势-平稳")
 
 	# ⑥ 第 15 回合：横幅必须是收官那句（同样按反馈要求放在事件幅里）

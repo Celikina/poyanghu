@@ -64,21 +64,21 @@ func _ready() -> void:
 	check(window_rect.has_point(secret) and secret.x > window_rect.size.x * 0.40, "Menu camera must keep the Creeper inside the unshaded view")
 	check(window_rect.encloses(creeper_screen_rect()), "Entire Creeper must fit inside the menu view")
 	check(game.wetland.scenery_props.size() > 200, "Empty meadows need varied pixel vegetation and stones")
-	# 房影：四张贴图各自量过不透明外形（逐栋调半径的依据），且 px→uv 换算可用
-	check(game.wetland.house_art_shape.size() == 4, "四张房子贴图都应量出外形，实际 %d" % game.wetland.house_art_shape.size())
+	# 房影：九款贴图各自量过不透明外形（逐款调半径的依据），且 px→uv 换算可用
+	check(game.wetland.house_art_shape.size() == 9, "九款房子贴图都应量出外形，实际 %d" % game.wetland.house_art_shape.size())
 	var shape_bottoms: Array = game.wetland.house_art_shape.map(func(s): return float(s["bottom"]))
-	check(shape_bottoms.size() == 4, "应量到四栋的脚点")
-	check(not is_equal_approx(shape_bottoms[0], shape_bottoms[3]), "四栋房子的脚点不该一样 —— 影子是逐栋调的")
-	check(game.wetland.HOUSE_SHADOW_RADIUS.size() == 4, "逐栋影子半径表应有四张")
-	check(game.wetland.HOUSE_SHADOW_RADIUS[0] != game.wetland.HOUSE_SHADOW_RADIUS[2], "不同房子的影子半径应不同")
-	check(game.wetland.HOUSE_SHADOW_FOOT.size() == 4, "逐栋影子下推量表应有四张")
-	check(game.wetland.HOUSE_SHADOW_RADIUS[0] < game.wetland.HOUSE_SHADOW_RADIUS[2], "矮房的影子应比高楼大一圈")
-	check(game.wetland.HOUSE_SHADOW_FOOT[0] < game.wetland.HOUSE_SHADOW_FOOT[2], "矮房的影子应比高楼更往前推（高楼要多被压住）")
+	check(shape_bottoms.size() == 9, "应量到九款的脚点")
+	check(not is_equal_approx(shape_bottoms[0], shape_bottoms[8]), "不同款房子的脚点不该一样 —— 影子是逐款调的")
+	check(game.wetland.HOUSE_SHADOW_RADIUS.size() == 9, "逐款影子半径表应有九项")
+	check(game.wetland.HOUSE_SHADOW_RADIUS[0] != game.wetland.HOUSE_SHADOW_RADIUS[8], "不同房子的影子半径应不同")
+	check(game.wetland.HOUSE_SHADOW_FOOT.size() == 9, "逐款影子下推量表应有九项")
+	check(game.wetland.HOUSE_SHADOW_RADIUS[0] < game.wetland.HOUSE_SHADOW_RADIUS[8], "矮房的影子应比高楼大一圈")
+	check(game.wetland.HOUSE_SHADOW_FOOT[0] < game.wetland.HOUSE_SHADOW_FOOT[8], "矮房的影子应比高楼更往前推(高楼要多被压住)")
 	check(game.wetland.SHADOWS.get("building", false) and game.wetland.SHADOWS.get("tree", false), "房子和树的影子都应打开")
 	check(not game.wetland.SHADOWS.get("boat", true) and not game.wetland.SHADOWS.get("island", true), "船和浮岛暂不投影子")
-	check(game.wetland.SHADOW_FLATTEN < 1.0, "影子要额外压扁（真 3D 只压到 0.707，偏圆）")
+	check(game.wetland.SHADOW_FLATTEN < 1.0, "影子要额外压扁(真 3D 只压到 0.707，偏圆)")
 	check(game.wetland.TREE_SHADOW_RADIUS > 0.0, "树影半径应有效")
-	check(game.wetland._px_to_uv(44.0) > 0.0, "px→uv 换算应可用（影子半径换算依赖它）")
+	check(game.wetland._px_to_uv(44.0) > 0.0, "px→uv 换算应可用(影子半径换算依赖它)")
 	for prop in game.wetland.scenery_props:
 		check(prop.pos.distance_to(game.wetland.CREEPER_ANCHOR) >= 0.15, "Scenery must leave the secret clearing open")
 	for route in [game.wetland.yangtze_route, game.wetland.gan_route]:
@@ -117,7 +117,7 @@ func _ready() -> void:
 	click_ev.button_index = MOUSE_BUTTON_LEFT
 	game._on_knowledge_card_click(click_ev, first_view, "plant_kucao")
 	await settle(2.6)   # 详情正文是打字机（最长 2.5s），等它写完再拍
-	check(game.knowledge_detail.visible, "点未收集的卡也该打开详情（显示未收集 + ？）")
+	check(game.knowledge_detail.visible, "点未收集的卡也该打开详情(显示未收集 + ？)")
 	check(game.knowledge_detail_title.text == "？？？", "未收集详情标题应是 ？？？，实际「%s」" % game.knowledge_detail_title.text)
 	check(game.knowledge_detail_body.text.find("未收集") != -1, "未收集详情该写明「未收集」")
 	check(game.knowledge_detail_body.text.find("？") != -1, "未收集详情该出现「？」")
@@ -140,7 +140,7 @@ func _ready() -> void:
 	var lit_view: Control = game.knowledge_grid.get_child(lit_index)
 	var lit_face: TextureRect = (lit_view.get_meta("panel") as PanelContainer).get_meta("pixel_face")
 	check(lit_face.texture == PixelArt.knowledge_texture("苦草", "植物", game._knowledge_photo("plant_kucao")),
-		"已收集卡应换成该类别卡面（含卡照）并写上卡名")
+		"已收集卡应换成该类别卡面(含卡照)并写上卡名")
 	var locked2: Control = game.knowledge_grid.get_child(0)
 	var locked2_face: TextureRect = (locked2.get_meta("panel") as PanelContainer).get_meta("pixel_face")
 	check(locked2_face.texture == PixelArt.KNOWLEDGE_FACE_LOCKED, "没收集的卡仍旧是「未知」卡面")

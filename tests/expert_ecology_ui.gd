@@ -152,7 +152,7 @@ func _ready() -> void:
 	check(not game._knowledge_detail_text("egg_dixinhu", false).contains("在游戏里"), "Locked knowledge card omits the deleted instruction")
 	for crisis in GameState.CRISES:
 		var warning: String = game._crisis_body_text(crisis, true)
-		check(not warning.contains("优先打出") and not warning.contains("应对建议（"), "Warning formats after deleting the supply placeholder")
+		check(not warning.contains("优先打出") and not warning.contains("应对建议("), "Warning formats after deleting the supply placeholder")
 	GameState.metrics.community = 30
 	GameState.used_action_ids = []
 	var plan: Array = GameState.natural_evolution_plan()

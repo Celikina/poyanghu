@@ -32,7 +32,7 @@ func poke_check(label: String, icon: TextureRect, target: float) -> void:
 	check(is_equal_approx(icon.hover_target, target), "%s 图标的悬停倍数应为 %.2f" % [label, target])
 	icon.mouse_entered.emit()
 	await settle(0.22)
-	check(icon.hover_scale > 1.01, "%s 图标悬停要放大（现在 %.3f）" % [label, icon.hover_scale])
+	check(icon.hover_scale > 1.01, "%s 图标悬停要放大(现在 %.3f)" % [label, icon.hover_scale])
 	var click := InputEventMouseButton.new()
 	click.button_index = MOUSE_BUTTON_LEFT
 	click.pressed = true
@@ -79,7 +79,7 @@ func _ready() -> void:
 		var c: Node = canvas.get_child(i)
 		if c is ColorRect:
 			shards.append(c)
-	check(shards.size() == 9, "碎裂演出应炸出 9 块碎片（实际 %d）" % shards.size())
+	check(shards.size() == 9, "碎裂演出应炸出 9 块碎片(实际 %d)" % shards.size())
 	var palette: Array = preload("res://scripts/ui_skin.gd").SHARD_COLORS
 	var in_palette := 0
 	var blue := 0
@@ -89,8 +89,8 @@ func _ready() -> void:
 		if s.color.b > s.color.r:
 			blue += 1
 	check(in_palette == shards.size(),
-			"碎片颜色必须取自 UiSkin.SHARD_COLORS（%d / %d）" % [in_palette, shards.size()])
-	check(blue == shards.size(), "碎片必须全是蓝色系（%d / %d）" % [blue, shards.size()])
+			"碎片颜色必须取自 UiSkin.SHARD_COLORS(%d / %d)" % [in_palette, shards.size()])
+	check(blue == shards.size(), "碎片必须全是蓝色系(%d / %d)" % [blue, shards.size()])
 	game.refresh_btn.modulate.a = 1.0
 
 	# ---- 2. 科研点悬停要写清它换到什么 ----
@@ -98,9 +98,9 @@ func _ready() -> void:
 	check(tip.contains("深预警") and tip.contains(str(GameState.DEEP_WARN_RESEARCH)),
 			"科研点提示要说清深预警门槛")
 	check(tip.contains("1 / 2 / 3") and tip.contains(str(GameState.MAX_CARRY)),
-			"科研点提示要写清来源（档位点数与结转上限）")
+			"科研点提示要写清来源(档位点数与结转上限)")
 	check(tip.contains("20"), "科研点提示要写清结算报告那条附加评语")
-	check(game.research_icon.tooltip_text == tip, "图标与标签的提示必须一致（鼠标停在图标上也要出）")
+	check(game.research_icon.tooltip_text == tip, "图标与标签的提示必须一致(鼠标停在图标上也要出)")
 
 	# ---- 3. 金币 / 科研点跟六项指标一样的悬停与戳动 ----
 	await poke_check("金币", game.funds_icon, 1.15)
