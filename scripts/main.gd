@@ -239,6 +239,8 @@ class SeasonDial extends Control:
 ## Permanent study and seeded random talents coexist; allocations start next run.
 const TALENT_TREE_ENABLED := true
 const TalentTreePanel := preload("res://scripts/talent_tree_panel.gd")
+## 开始页右上角的照片条（可左右切换 / 点图放大看原图并标出处）
+const TitlePhotoCarousel := preload("res://scripts/title_photo_carousel.gd")
 
 # 成就图标配色：解锁 = 金牌，未解锁 = 灰牌（同一个网格，只换颜色）
 const ACH_GOLD := Color(0.98, 0.80, 0.30)
@@ -362,6 +364,7 @@ var _banner_override: String = ""
 
 # 主菜单
 var menu_root: Control
+var title_photos: TitlePhotoCarousel    # 右上角照片条（跟着 menu_col 显隐）
 var menu_utilities: GridContainer
 var menu_separator: HSeparator
 var menu_col: VBoxContainer            # 左下角选项列
@@ -2561,6 +2564,19 @@ func _build_menu() -> void:
 	menu_quit_btn.custom_minimum_size = Vector2(0, 40)
 	menu_col.add_child(menu_quit_btn)
 
+	# --- 右上角：鄱阳湖照片条（可左右切换 / 点图放大看原图并标出处）---
+	# 显隐跟着 menu_col 走：设置/成就/制作人员…任何面板打开时都会把 menu_col 收起来，
+	# 照片条跟着一起收，不会压在新面板上；开始游戏（menu_root 收起）时同样收掉。
+	title_photos = TitlePhotoCarousel.new()
+	title_photos.name = "TitlePhotoCarousel"
+	title_photos.reduced_motion_check = func() -> bool:
+		return wetland != null and wetland.reduced_motion
+	# ⚠ 必须挂在 menu_root 上：放大层是往父节点加的全屏层，挂在自己的小块里只有 520×420
+	menu_root.add_child(title_photos)
+	menu_col.visibility_changed.connect(_sync_title_photos)
+	menu_root.visibility_changed.connect(_sync_title_photos)
+	_sync_title_photos()
+
 	# --- 第 4 页：天赋树 ---
 	menu_talent_panel = TalentTreePanel.new()
 	menu_talent_panel.visible = false
@@ -3313,6 +3329,20 @@ func _set_hud_visible(v: bool) -> void:
 		canvas.visible = v
 	if not v:
 		_close_warn_history()   # 回主菜单/开始页时，别把回顾面板留在屏幕上
+
+
+## 开始页右上角照片条：只在「开始页 + 左下选项列可见」时出现。
+## 跟着 menu_col 走的原因：设置/成就/知识卡/制作人员/更新日志/天赋树每个面板打开时
+## 都会先把 menu_col 收起来，返回时再放回来 —— 一处判据自动覆盖全部分支，
+## 也不用在这些函数里各加一行（漏一处就是「照片条压在新面板上」）。
+## 放大层是独立的全屏模态，收起时必须一起关，否则它会留在屏幕上。
+func _sync_title_photos() -> void:
+	if title_photos == null:
+		return
+	var show_photos: bool = menu_root.visible and menu_col.visible
+	title_photos.visible = show_photos
+	if not show_photos:
+		title_photos.close_zoom()
 
 
 ## 开始页层级：0 = 主选项 / 1 = 难度 / 2 = 种子
