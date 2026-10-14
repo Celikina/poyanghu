@@ -10,6 +10,7 @@ const CardFlight = preload("res://scripts/card_flight.gd")
 
 const VisualTheme = preload("res://scripts/visual_theme.gd")
 const PixelCardArt = preload("res://scripts/pixel_card_art.gd")
+const ChangelogAccess = preload("res://scripts/changelog_access.gd")
 const PixelWetland = preload("res://scripts/pixel_wetland.gd")
 var wetland: Control
 var card_art_preview: CanvasLayer
@@ -391,6 +392,14 @@ var menu_talent_panel: PanelContainer
 var menu_settings_panel: PanelContainer
 var menu_credits_panel: PanelContainer
 var menu_changelog_panel: PanelContainer
+var _changelog_gate: VBoxContainer
+var _changelog_content: VBoxContainer
+var _changelog_password: LineEdit
+var _changelog_status: Label
+var _changelog_rows: VBoxContainer
+var _changelog_scroll: ScrollContainer
+var _changelog_failed_attempts := 0
+var _changelog_retry_at_ms := 0
 var menu_achievements_panel: PanelContainer
 var menu_clear_save_btn: Button
 var menu_clear_confirm_panel: PanelContainer
@@ -2752,30 +2761,60 @@ func _build_menu() -> void:
 	g_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	gvb.add_child(g_title)
 
+	_changelog_gate = VBoxContainer.new()
+	_changelog_gate.add_theme_constant_override("separation", 16)
+	gvb.add_child(_changelog_gate)
+	var lock_title := _make_label("更新日志已上锁", 22, Color(1, 0.9, 0.55))
+	lock_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_changelog_gate.add_child(lock_title)
+	var lock_hint := _make_label("请输入密码，每次查看都需重新解锁", 16, Color(0.72, 0.76, 0.80))
+	lock_hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_changelog_gate.add_child(lock_hint)
+	_changelog_password = LineEdit.new()
+	_changelog_password.secret = true
+	_changelog_password.max_length = 128
+	_changelog_password.placeholder_text = "输入密码"
+	_changelog_password.custom_minimum_size = Vector2(0, 48)
+	_changelog_password.add_theme_font_size_override("font_size", 20)
+	_changelog_password.text_submitted.connect(_submit_changelog_password)
+	_changelog_gate.add_child(_changelog_password)
+	_changelog_status = _make_label("", 16, Color(1, 0.65, 0.55))
+	_changelog_status.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_changelog_gate.add_child(_changelog_status)
+	var unlock_button := _make_button("解锁查看", _submit_changelog_password, 18)
+	unlock_button.custom_minimum_size = Vector2(0, 48)
+	_changelog_gate.add_child(unlock_button)
+	_changelog_content = VBoxContainer.new()
+	_changelog_content.add_theme_constant_override("separation", 10)
+	_changelog_content.visible = false
+	gvb.add_child(_changelog_content)
+
 	var g_sub := _make_label("当前版本 %s" % Changelog.CURRENT, 14, Color(0.72, 0.76, 0.80))
 	g_sub.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	gvb.add_child(g_sub)
+	_changelog_content.add_child(g_sub)
 
 	var g_sep := HSeparator.new()
-	gvb.add_child(g_sep)
+	_changelog_content.add_child(g_sep)
 
 	# 必须用 ScrollContainer：日志只会越写越长，老弹窗系统不滚动会顶穿窗口
 	var g_scroll := ScrollContainer.new()
 	MotionScroll.attach(g_scroll)
 	g_scroll.custom_minimum_size = Vector2(540, 360)
 	g_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
-	gvb.add_child(g_scroll)
+	_changelog_content.add_child(g_scroll)
+	_changelog_scroll = g_scroll
 
 	var g_col := VBoxContainer.new()
 	g_col.add_theme_constant_override("separation", 12)
 	g_col.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	g_scroll.add_child(g_col)
 
-	_build_changelog_rows(g_col)
+	_changelog_rows = g_col
 
 	var g_back := _make_button("返回", _on_changelog_back, 16)
 	g_back.custom_minimum_size = Vector2(0, 40)
 	gvb.add_child(g_back)
+	menu_changelog_panel.visibility_changed.connect(_on_changelog_visibility_changed)
 
 	# --- 成就面板 ---
 	menu_achievements_panel = PanelContainer.new()
@@ -3513,7 +3552,61 @@ func _show_changelog_panel() -> void:
 	menu_settings_panel.visible = false
 	menu_credits_panel.visible = false
 	menu_achievements_panel.visible = false
+	_reset_changelog_lock()
 	menu_changelog_panel.visible = true
+	_focus_changelog_password.call_deferred()
+
+
+func _reset_changelog_lock() -> void:
+	_changelog_password.clear()
+	_changelog_status.text = ""
+	_changelog_content.visible = false
+	_changelog_gate.visible = true
+	# 解锁不跨打开保留，关闭后连日志节点也清掉。
+	for child in _changelog_rows.get_children():
+		_changelog_rows.remove_child(child)
+		child.queue_free()
+
+
+func _on_changelog_visibility_changed() -> void:
+	if not menu_changelog_panel.is_visible_in_tree():
+		_reset_changelog_lock()
+
+
+func _focus_changelog_password() -> void:
+	if menu_changelog_panel.is_visible_in_tree() and _changelog_gate.visible:
+		_changelog_password.grab_focus()
+
+
+func _submit_changelog_password(_submitted: String = "") -> void:
+	if not menu_changelog_panel.is_visible_in_tree() or not _changelog_gate.visible:
+		return
+	var now := Time.get_ticks_msec()
+	if now < _changelog_retry_at_ms:
+		_changelog_password.clear()
+		_changelog_status.text = "尝试过于频繁，请稍后再试"
+		_focus_changelog_password()
+		return
+	if _changelog_password.text.is_empty():
+		_changelog_status.text = "请输入密码"
+		_focus_changelog_password()
+		return
+	var allowed := ChangelogAccess.verify(_changelog_password.text)
+	_changelog_password.clear()
+	if not allowed:
+		_changelog_failed_attempts += 1
+		if _changelog_failed_attempts >= 3:
+			_changelog_retry_at_ms = now + mini(30000, 5000 * (1 << mini(3, _changelog_failed_attempts - 3)))
+		_changelog_status.text = "密码不正确，请重试" if now >= _changelog_retry_at_ms else "密码不正确，请稍后再试"
+		_focus_changelog_password()
+		return
+	_changelog_failed_attempts = 0
+	_changelog_retry_at_ms = 0
+	_changelog_status.text = ""
+	_build_changelog_rows(_changelog_rows)
+	_changelog_scroll.set_deferred("scroll_vertical", 0)
+	_changelog_gate.visible = false
+	_changelog_content.visible = true
 
 
 func _on_changelog_back() -> void:
@@ -3838,6 +3931,12 @@ func _unhandled_input(event: InputEvent) -> void:
 
 ## Capture release/motion globally so a held card keeps tracking the pointer outside its panel.
 func _input(event: InputEvent) -> void:
+	# 在 LineEdit 消费 ESC 之前处理返回，输入框获得焦点时也能关闭并重新上锁。
+	if event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_ESCAPE \
+			and menu_changelog_panel != null and menu_changelog_panel.is_visible_in_tree():
+		_on_changelog_back()
+		get_viewport().set_input_as_handled()
+		return
 	if _card_press_panel == null:
 		return
 	if event is InputEventMouseMotion:
