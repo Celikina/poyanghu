@@ -599,6 +599,14 @@ var _plant_pos_seed: int = -1        # 已生成位置对应的种子，换局�
 # 开场像素 PPT（Undertale 风：首次游玩讲背景）
 var intro_layer: CanvasLayer = null
 var intro_root: Control = null
+## 结局短片：美术交付的 mp4 原片（4K60、36 秒）转成了 Godot 唯一支持的 Ogg Theora。
+## 口径：四个难度各自第一次走完一局、看完结算报告回主菜单时自动播一次；设置里随时能重看；
+## 只要在播片，游戏 BGM 全程关掉，播完从头重放。
+const ENDING_VIDEO := "res://assets/video/ending.ogv"
+var ending_layer: CanvasLayer = null
+var ending_player: VideoStreamPlayer = null
+var ending_hint: Label = null
+var _ending_playing: bool = false
 var intro_col: VBoxContainer = null
 var intro_image: TextureRect = null
 var intro_title: Label = null
@@ -2616,6 +2624,10 @@ func _build_menu() -> void:
 	replay_btn.custom_minimum_size = Vector2(0, 52)
 	svb.add_child(replay_btn)
 
+	var replay_ending_btn := _make_button("重新观看结尾短片", _on_replay_ending, 20)
+	replay_ending_btn.custom_minimum_size = Vector2(0, 52)
+	svb.add_child(replay_ending_btn)
+
 	# 更新日志 / 制作人员：从主菜单挪进设置里
 	menu_changelog_btn = _make_button("更新日志", _show_changelog_panel, 18)
 	menu_changelog_btn.custom_minimum_size = Vector2(0, 44)
@@ -3491,6 +3503,88 @@ func _on_replay_intro() -> void:
 	_show_intro()
 
 
+func _on_replay_ending() -> void:
+	menu_settings_panel.visible = false
+	menu_root.visible = false
+	_play_ending()
+
+
+## 每个难度一份「结尾短片看过」的标记（账号级，和 intro_seen / 成就一样不随存档清空）。
+func _ending_seen_path() -> String:
+	return "user://ending_seen_%d" % int(GameState.difficulty)
+
+
+func _has_seen_ending() -> bool:
+	return FileAccess.file_exists(_ending_seen_path())
+
+
+func _mark_ending_seen() -> void:
+	var f := FileAccess.open(_ending_seen_path(), FileAccess.WRITE)
+	if f != null:
+		f.close()
+
+
+## 该难度第一次结束：标记成已看、开始播片，返回 true 让主菜单延后到播完。
+## 看过、或者素材缺失（比如导出时漏了视频）都返回 false，直接回主菜单，不卡流程。
+func _try_play_ending() -> bool:
+	if _has_seen_ending() or not ResourceLoader.exists(ENDING_VIDEO):
+		return false
+	_mark_ending_seen()
+	_play_ending()
+	return true
+
+
+func _build_ending_layer() -> void:
+	ending_layer = CanvasLayer.new()
+	ending_layer.layer = 90
+	ending_layer.visible = false
+	add_child(ending_layer)
+	var backdrop := ColorRect.new()
+	backdrop.color = Color.BLACK
+	backdrop.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	backdrop.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	ending_layer.add_child(backdrop)
+	ending_player = VideoStreamPlayer.new()
+	ending_player.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	ending_player.expand = true                       # 铺满窗口，保持比例
+	ending_player.volume_db = linear_to_db(maxf(bgm_volume, 0.001))
+	ending_player.finished.connect(_finish_ending)
+	ending_layer.add_child(ending_player)
+	ending_hint = _make_label("点击或按 Esc 跳过", 14, Color(1, 1, 1, 0.62))
+	ending_hint.set_anchors_and_offsets_preset(Control.PRESET_CENTER_BOTTOM)
+	ending_hint.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	ending_layer.add_child(ending_hint)
+
+
+func _play_ending() -> void:
+	if ending_layer == null:
+		_build_ending_layer()
+	if not ResourceLoader.exists(ENDING_VIDEO):
+		_show_menu()
+		return
+	if bgm_player != null:
+		bgm_player.stop()          # 只要在播片，BGM 就停着
+	_ending_playing = true
+	ending_layer.visible = true
+	# 每次都按当前音量设定刷新一遍 —— 玩家可能刚在设置里拖过滑块
+	ending_player.volume_db = linear_to_db(maxf(bgm_volume, 0.001))
+	ending_player.stream = load(ENDING_VIDEO)
+	ending_player.play()
+
+
+## 播完与跳过走同一条收尾：关层、BGM 从头放、回主菜单。
+func _finish_ending() -> void:
+	if not _ending_playing:
+		return
+	_ending_playing = false
+	if ending_player != null:
+		ending_player.stop()
+	if ending_layer != null:
+		ending_layer.visible = false
+	_apply_bgm()                   # _apply_bgm 是 stop + 从头 play
+	_show_menu()
+
+
 # ==================== 音频 / BGM ====================
 ## 读取音量与 BGM 选择（无存档则用默认）
 func _load_audio_settings() -> void:
@@ -3691,6 +3785,13 @@ func _hide_menu() -> void:
 # ==================== 暂停 / 存档 ====================
 ## 游戏进行中按下 ESC：弹出暂停菜单（继续游戏 / 设置 / 退出至主菜单）
 func _unhandled_input(event: InputEvent) -> void:
+	if _ending_playing:
+		# 结局播片：点击或 ESC 跳过（跳过的收尾和播完一样）
+		if (event is InputEventKey and event.pressed and not event.echo) \
+				or (event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT):
+			_finish_ending()
+			get_viewport().set_input_as_handled()
+		return
 	if _intro_playing:
 		# 开场 PPT：回车/点击下一张，ESC 直接跳过
 		if event is InputEventKey and event.pressed and not event.echo:
@@ -8918,6 +9019,9 @@ func _restart() -> void:
 	_playing = false
 	_current_event = ""
 	_banner_override = ""
+	# 四个难度各自第一次走完一局：先放结尾短片（播完自己回主菜单）；看过或没素材就直接回
+	if _try_play_ending():
+		return
 	# 回到主菜单，让玩家可重新输入种子（留空则随机）
 	_show_menu()
 
