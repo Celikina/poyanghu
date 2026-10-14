@@ -361,7 +361,7 @@ const ACTION_CARDS := [
 		"desc": "调节湖区水位，改善沉水植物块茎发育。",
 		"cost": 40,
 		"tiers": {
-			"basic":     {"effects": [{"metric": "water_level", "delta": 6, "delay": 1} , {"metric": "community", "delta": -1, "delay": 0}, {"metric": "vegetation", "delta": 1, "delay": 0}]},
+			"basic":     {"effects": [{"metric": "water_level", "delta": 6, "delay": 1} , {"metric": "community", "delta": -1, "delay": 0}]},
 			"effective": {"effects": [{"metric": "water_level", "delta": 8, "delay": 0}, {"metric": "vegetation", "delta": 5, "delay": 2} , {"metric": "community", "delta": -2, "delay": 0}]},
 			"deep":      {"effects": [{"metric": "water_level", "delta": 18, "delay": 0}, {"metric": "vegetation", "delta": 9, "delay": 0}, {"metric": "community", "delta": -4, "delay": 0}]},
 		},
@@ -550,7 +550,7 @@ const ACTION_CARDS := [
 		"desc": "跨流域引水补充湖区水量，缓解枯水、恢复浅滩生境。",
 		"cost": 50,
 		"tiers": {
-			"basic":     {"effects": [{"metric": "water_level", "delta": 7, "delay": 0} , {"metric": "community", "delta": -1, "delay": 0}, {"metric": "vegetation", "delta": 1, "delay": 0}]},
+			"basic":     {"effects": [{"metric": "water_level", "delta": 7, "delay": 0} , {"metric": "community", "delta": -1, "delay": 0}]},
 			"effective": {"effects": [{"metric": "water_level", "delta": 11, "delay": 0}, {"metric": "vegetation", "delta": 4, "delay": 1} , {"metric": "community", "delta": -2, "delay": 0}]},
 			"deep":      {"effects": [{"metric": "water_level", "delta": 24, "delay": 0}, {"metric": "vegetation", "delta": 7, "delay": 0}, {"metric": "community", "delta": -3, "delay": 0}]},
 		},
@@ -650,7 +650,7 @@ const ACTION_CARDS := [
 		"desc": "布置人工浮岛与生态浮床，吸附氮磷、净化水体。",
 		"cost": 30,
 		"tiers": {
-			"basic":     {"effects": [{"metric": "water_quality", "delta": 5, "delay": 1} , {"metric": "community", "delta": -1, "delay": 0}, {"metric": "vegetation", "delta": 1, "delay": 0}]},
+			"basic":     {"effects": [{"metric": "water_quality", "delta": 5, "delay": 1} , {"metric": "community", "delta": -1, "delay": 0}]},
 			"effective": {"effects": [{"metric": "water_quality", "delta": 7, "delay": 0}, {"metric": "vegetation", "delta": 4, "delay": 1} , {"metric": "community", "delta": -2, "delay": 0}]},
 			"deep":      {"effects": [{"metric": "water_quality", "delta": 14, "delay": 0}, {"metric": "vegetation", "delta": 6, "delay": 0} , {"metric": "community", "delta": -4, "delay": 0}]},
 		},
@@ -676,7 +676,7 @@ const ACTION_CARDS := [
 		"desc": "划定并管护候鸟越冬栖息地，控制人为干扰与栖息地破碎化。",
 		"cost": 20,
 		"tiers": {
-			"basic":     {"effects": [{"metric": "birds", "delta": 4, "delay": 1} , {"metric": "community", "delta": -1, "delay": 0}, {"metric": "vegetation", "delta": 1, "delay": 0}]},
+			"basic":     {"effects": [{"metric": "birds", "delta": 4, "delay": 1} , {"metric": "community", "delta": -1, "delay": 0}]},
 			"effective": {"effects": [{"metric": "birds", "delta": 7, "delay": 1}, {"metric": "vegetation", "delta": 3, "delay": 2} , {"metric": "community", "delta": -2, "delay": 0}]},
 			"deep":      {"effects": [{"metric": "birds", "delta": 12, "delay": 0}, {"metric": "vegetation", "delta": 4, "delay": 0} , {"metric": "community", "delta": -4, "delay": 0}]},
 		},
@@ -715,8 +715,8 @@ const ACTION_CARDS := [
 		"desc": "认证湖区生态农产品并拓展销路，让绿色生产有利可图。",
 		"cost": 30,
 		"tiers": {
-			"basic":     {"effects": [{"metric": "community", "delta": 5, "delay": 2}, {"metric": "vegetation", "delta": 1, "delay": 0}]},
-			"effective": {"effects": [{"metric": "community", "delta": 6, "delay": 1}, {"metric": "water_quality", "delta": 3, "delay": 2}, {"metric": "vegetation", "delta": 1, "delay": 0}]},
+			"basic":     {"effects": [{"metric": "community", "delta": 5, "delay": 2}]},
+			"effective": {"effects": [{"metric": "community", "delta": 6, "delay": 1}, {"metric": "water_quality", "delta": 3, "delay": 2}]},
 			"deep":      {"effects": [{"metric": "community", "delta": 7, "delay": 0}, {"metric": "water_quality", "delta": 5, "delay": 0}, {"metric": "vegetation", "delta": 4, "delay": 0}]},
 		},
 		"side_note": {"effective": "减少化肥农药投入，保护水质生态环境"},
@@ -917,7 +917,7 @@ const ACTION_CARDS := [
 		"desc": "维护候鸟停歇地的水位与人为干扰管控，保证迁徙通道畅通。",
 		"cost": 40,
 		"tiers": {
-			"basic":     {"effects": [{"metric": "birds", "delta": 6, "delay": 0} , {"metric": "community", "delta": -1, "delay": 0}, {"metric": "vegetation", "delta": 1, "delay": 0}]},
+			"basic":     {"effects": [{"metric": "birds", "delta": 6, "delay": 0} , {"metric": "community", "delta": -1, "delay": 0}]},
 			"effective": {"effects": [{"metric": "birds", "delta": 9, "delay": 0}, {"metric": "vegetation", "delta": 4, "delay": 1} , {"metric": "community", "delta": -2, "delay": 0}]},
 			"deep":      {"effects": [{"metric": "birds", "delta": 18, "delay": 0}, {"metric": "vegetation", "delta": 6, "delay": 0} , {"metric": "community", "delta": -4, "delay": 0}]},
 		},
@@ -956,8 +956,8 @@ const ACTION_CARDS := [
 		"desc": "把生态指标纳入湖区干部考核，压着各级真正去治。",
 		"cost": 40,
 		"tiers": {
-			"basic":     {"effects": [{"metric": "community", "delta": 6, "delay": 1}, {"metric": "vegetation", "delta": 1, "delay": 0}]},
-			"effective": {"effects": [{"metric": "community", "delta": 8, "delay": 0}, {"metric": "water_quality", "delta": 4, "delay": 1}, {"metric": "vegetation", "delta": 1, "delay": 0}]},
+			"basic":     {"effects": [{"metric": "community", "delta": 6, "delay": 1}]},
+			"effective": {"effects": [{"metric": "community", "delta": 8, "delay": 0}, {"metric": "water_quality", "delta": 4, "delay": 1}]},
 			"deep":      {"effects": [{"metric": "community", "delta": 12, "delay": 0}, {"metric": "water_quality", "delta": 7, "delay": 0}, {"metric": "vegetation", "delta": 5, "delay": 0}]},
 		},
 		"side_note": {"effective": "一人划定一片水域，工作细分，治理动作随之变快"},
@@ -1012,7 +1012,7 @@ const ACTION_CARDS := [
 		"desc": "联合调度五河水库群与湖口闸站，在枯水期加大下泄流量抬升湖区水位。",
 		"cost": 30,
 		"tiers": {
-			"basic":     {"effects": [{"metric": "water_level", "delta": 4, "delay": 1}, {"metric": "vegetation", "delta": 1, "delay": 0}]},
+			"basic":     {"effects": [{"metric": "water_level", "delta": 4, "delay": 1}]},
 			"effective": {"effects": [{"metric": "water_level", "delta": 8, "delay": 1}, {"metric": "vegetation", "delta": 3, "delay": 2}]},
 			"deep":      {"effects": [{"metric": "water_level", "delta": 15, "delay": 0}, {"metric": "vegetation", "delta": 5, "delay": 2}, {"metric": "community", "delta": -2, "delay": 0}]},
 		},
@@ -1038,7 +1038,7 @@ const ACTION_CARDS := [
 		"desc": "在入湖河口与农田退水口建生态沟渠和挺水植物缓冲带，拦截氮磷面源。",
 		"cost": 30,
 		"tiers": {
-			"basic":     {"effects": [{"metric": "water_quality", "delta": 4, "delay": 1}, {"metric": "vegetation", "delta": 1, "delay": 0}]},
+			"basic":     {"effects": [{"metric": "water_quality", "delta": 4, "delay": 1}]},
 			"effective": {"effects": [{"metric": "water_quality", "delta": 7, "delay": 1}, {"metric": "vegetation", "delta": 3, "delay": 1}]},
 			"deep":      {"effects": [{"metric": "water_quality", "delta": 13, "delay": 0}, {"metric": "vegetation", "delta": 5, "delay": 1}]},
 		},
@@ -1077,7 +1077,7 @@ const ACTION_CARDS := [
 		"desc": "与农户签订留茬留水协议，保留部分稻田藕田不翻耕，为白鹤等提供块茎与残茬食源。",
 		"cost": 30,
 		"tiers": {
-			"basic":     {"effects": [{"metric": "birds", "delta": 4, "delay": 1}, {"metric": "vegetation", "delta": 1, "delay": 0}]},
+			"basic":     {"effects": [{"metric": "birds", "delta": 4, "delay": 1}]},
 			"effective": {"effects": [{"metric": "birds", "delta": 8, "delay": 1}, {"metric": "vegetation", "delta": 3, "delay": 2}]},
 			"deep":      {"effects": [{"metric": "birds", "delta": 16, "delay": 0}, {"metric": "vegetation", "delta": 4, "delay": 2}, {"metric": "community", "delta": -2, "delay": 0}]},
 		},

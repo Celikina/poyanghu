@@ -2,29 +2,29 @@ extends Node
 const Art := preload("res://scripts/pixel_card_art.gd")
 const TIERS := ["basic", "effective", "deep"]
 const EXPECTED := {
-	"water_control": [[1, 0], [5, 2], [9, 0]],
+	"water_control": [[0, 0], [5, 2], [9, 0]],
 	"veg_restore": [[9, 1], [13, 1], [16, 0]],
 	"submerged_planting": [[9, 0], [14, 0], [29, 0]],
 	"seed_bank": [[11, 2], [17, 1], [23, 0]],
 	"invasive_clear": [[3, 0], [6, 1], [10, 0]],
-	"water_replenish": [[1, 0], [4, 1], [7, 0]],
+	"water_replenish": [[0, 0], [4, 1], [7, 0]],
 	"floodplain_diversion": [[3, 1], [4, 1], [7, 1]],
 	"wetland_restore": [[6, 1], [11, 2], [12, 0]],
-	"floating_island": [[1, 0], [4, 1], [6, 0]],
-	"habitat_protect": [[1, 0], [3, 2], [4, 0]],
-	"eco_brand": [[1, 0], [1, 0], [4, 0]],
+	"floating_island": [[0, 0], [4, 1], [6, 0]],
+	"habitat_protect": [[0, 0], [3, 2], [4, 0]],
+	"eco_brand": [[0, 0], [0, 0], [4, 0]],
 	"grazing_ban": [[3, 2], [6, 0], [11, 0]],
 	"eco_jobs": [[3, 0], [6, 1], [9, 0]],
 	"eco_resettle": [[11, 2], [13, 1], [20, 0]],
-	"migration_corridor": [[1, 0], [4, 1], [6, 0]],
+	"migration_corridor": [[0, 0], [4, 1], [6, 0]],
 	"obstruction_clear": [[7, 0], [10, 0], [16, 0]],
-	"lake_chief": [[1, 0], [1, 0], [5, 0]],
+	"lake_chief": [[0, 0], [0, 0], [5, 0]],
 	"sand_mining": [[2, 0], [4, 0], [7, 0]],
-	"eco_water_scheduling": [[1, 0], [3, 2], [5, 2]],
+	"eco_water_scheduling": [[0, 0], [3, 2], [5, 2]],
 	"preseason_drawdown": [[6, 2], [8, 2], [13, 1]],
-	"riparian_buffer": [[1, 0], [3, 1], [5, 1]],
+	"riparian_buffer": [[0, 0], [3, 1], [5, 1]],
 	"crab_control_replanting": [[8, 1], [14, 1], [25, 0]],
-	"waterbird_food_supply": [[1, 0], [3, 2], [4, 2]],
+	"waterbird_food_supply": [[0, 0], [3, 2], [4, 2]],
 }
 var checks := 0
 var failures := 0
@@ -55,7 +55,10 @@ func _ready() -> void:
 			var expected: Array = EXPECTED[id][i]
 			var card: Dictionary = state.card_by_id(id)
 			var entries: Array = card.tiers[tier].effects.filter(func(e): return e.metric == "vegetation")
-			check(entries.size() == 1 and entries[0].delta == expected[0] and entries[0].delay == expected[1], "%s/%s exact vegetation amount and original delay" % [id, tier])
+			if expected[0] == 0:
+				check(entries.is_empty(), "%s/%s keeps no vegetation effect" % [id, tier])
+			else:
+				check(entries.size() == 1 and entries[0].delta == expected[0] and entries[0].delay == expected[1], "%s/%s exact vegetation amount and original delay" % [id, tier])
 			for dispatched in [false, true]:
 				fixture(state)
 				var cost: int = state.tier_cost(id, tier)
