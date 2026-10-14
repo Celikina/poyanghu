@@ -59,7 +59,7 @@ func verify_face(panel: PanelContainer, title: String, footer: String, dixinhu: 
 	check(face.texture == PixelArt.texture(title, footer), "Correct name and fee/state")
 	var category: String = "knowledge" if footer in ["知识卡", "未收集"] else PixelArt.category_for(title)
 	var base: Image = PixelArt.base_image(category)
-	# 带括号的长卡名会退到 3/2 倍（括号组必须整组一行），实际字号问渲染层要，别假定 4 倍。
+	# 行动卡的主名称与金额都使用正常四倍字形。
 	var glyph_scale := PixelArt.face_glyph_scale(title, category)
 	var is_action := PixelArt.SUITS.has(category)
 	var image := face.texture.get_image()
@@ -75,7 +75,7 @@ func verify_face(panel: PanelContainer, title: String, footer: String, dixinhu: 
 				unchanged = unchanged and (title_region.has_point(Vector2i(x, y)) or cost_region.has_point(Vector2i(x, y)))
 				if pixel == Color8(150, 150, 150):
 					shadows += 1
-					# 卡名为了让括号成组可能退字号，金额一直是 4 倍 —— 两块的阴影偏移各按自己的字号查。
+					# 金额与主名称保持相同的阴影偏移。
 					var offset := 4 if (is_action and cost_region.has_point(Vector2i(x, y))) else glyph_scale
 					shadow_offset_correct = shadow_offset_correct and image.get_pixel(x - offset, y - offset) in [Color.BLACK, PixelArt.COST_INK]
 	check(unchanged, "Every pixel outside text and shadow remains original")

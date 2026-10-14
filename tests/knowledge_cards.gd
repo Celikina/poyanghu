@@ -188,7 +188,7 @@ func _ready() -> void:
 		var name_bottom := int(plan["name_top"]) + 16 * int(plan["scale"]) \
 			+ maxi(int(plan["lines"]) - 1, 0) * PixelArt.FACE_NAME_INDENT * int(plan["scale"])
 		check(name_bottom + int(plan["scale"]) <= 510, "%s name and shadow clear the printed footer: %d" % [kid, name_bottom])
-		check(int(plan["scale"]) >= 2, "%s name never shrinks below 2x" % kid)
+		check(int(plan["scale"]) == PixelArt.FACE_SCALE, "%s uses the uniform knowledge title size" % kid)
 		game._close_knowledge_detail()
 	# 换过照片的那张（草洲不是越野场）单独截一张正脸：牌面 + 详情里的出处链接
 	game._show_knowledge_detail(game.knowledge_grid.get_child(Knowledge.all_ids().find("protect_wetland_tracks")), "protect_wetland_tracks")

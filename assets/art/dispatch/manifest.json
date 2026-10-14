@@ -86,7 +86,7 @@
 	{
 		"category": "ecology",
 		"id": "water_replenish",
-		"name": "生态补水(引江济湖)",
+		"name": "生态补水",
 		"texture": "res://assets/art/dispatch/cards/water_replenish.png"
 	},
 	{
@@ -128,13 +128,13 @@
 	{
 		"category": "ecology",
 		"id": "wetland_restore",
-		"name": "退田还湿(湿地生态修复)",
+		"name": "退田还湿",
 		"texture": "res://assets/art/dispatch/cards/wetland_restore.png"
 	},
 	{
 		"category": "ecology",
 		"id": "floating_island",
-		"name": "人工浮岛(生态浮床)",
+		"name": "人工浮岛",
 		"texture": "res://assets/art/dispatch/cards/floating_island.png"
 	},
 	{
@@ -182,7 +182,7 @@
 	{
 		"category": "manage",
 		"id": "smart_patrol",
-		"name": "智慧巡护(无人机遥感)",
+		"name": "智慧巡护",
 		"texture": "res://assets/art/dispatch/cards/smart_patrol.png"
 	},
 	{
