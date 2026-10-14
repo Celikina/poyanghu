@@ -214,6 +214,9 @@ var car_site := Vector2.ZERO
 var car_progress := 0.0
 var yangtze_route: Array[Vector2] = []
 var gan_route: Array[Vector2] = []
+var _boat_route: Array[Vector2] = []
+var _boat_tangents: Array[Vector2] = []
+var _boat_lengths := PackedFloat64Array()
 var scenery_props: Array[Dictionary] = []
 var prop_textures: Array[ImageTexture] = []
 var exterior_image: Image
@@ -1137,6 +1140,69 @@ func _build_river_routes() -> void:
 	yangtze_route.append(yangtze_route[-1] + east * 2.5)
 	var south := (gan_route[0] - gan_route[5]).normalized()
 	gan_route.push_front(gan_route[0] + south * 2.5)
+	_build_boat_navigation()
+
+func _simplify_boat_route(first: int, last: int, result: Array[Vector2]) -> void:
+	# Ignore surveying-scale zigzags without altering the river geometry itself.
+	var farthest := -1
+	var error := 0.003 * 0.003
+	for i in range(first + 1, last):
+		var nearest := Geometry2D.get_closest_point_to_segment(yangtze_route[i], yangtze_route[first], yangtze_route[last])
+		var distance := yangtze_route[i].distance_squared_to(nearest)
+		if distance > error:
+			error = distance
+			farthest = i
+	if farthest < 0:
+		result.append(yangtze_route[first])
+	else:
+		_simplify_boat_route(first, farthest, result)
+		_simplify_boat_route(farthest, last, result)
+
+func _append_boat_node(point: Vector2, tangent: Vector2) -> void:
+	if not _boat_route.is_empty() and _boat_route[-1].distance_squared_to(point) < 0.0000000001: return
+	_boat_lengths.append(0.0 if _boat_route.is_empty() else _boat_lengths[-1] + _boat_route[-1].distance_to(point))
+	_boat_route.append(point)
+	_boat_tangents.append(tangent.normalized())
+
+func _build_boat_navigation() -> void:
+	_boat_route.clear()
+	_boat_tangents.clear()
+	_boat_lengths.clear()
+	if yangtze_route.size() < 2: return
+	var course: Array[Vector2] = []
+	_simplify_boat_route(0, yangtze_route.size() - 1, course)
+	course.append(yangtze_route[-1])
+	_append_boat_node(course[0], course[1] - course[0])
+	for i in range(1, course.size() - 1):
+		var previous := course[i - 1]
+		var corner := course[i]
+		var following := course[i + 1]
+		var incoming := (corner - previous).normalized()
+		var outgoing := (following - corner).normalized()
+		var trim := minf(0.012, minf(previous.distance_to(corner), corner.distance_to(following)) * 0.25)
+		var start := corner - incoming * trim
+		var end := corner + outgoing * trim
+		_append_boat_node(start, incoming)
+		# Round only genuine course changes. Between these joins the heading is constant.
+		var count := maxi(6, ceili(trim * 2.0 / 0.0008))
+		for j in range(1, count + 1):
+			var t := float(j) / count
+			var point := start * (1.0 - t) * (1.0 - t) + corner * 2.0 * (1.0 - t) * t + end * t * t
+			var tangent := (corner - start) * (1.0 - t) + (end - corner) * t
+			_append_boat_node(point, tangent)
+	_append_boat_node(course[-1], course[-1] - course[-2])
+
+func _boat_route_sample(phase: float) -> Dictionary:
+	if _boat_route.size() < 2: return _river_sample(yangtze_route, phase)
+	var distance := fposmod(phase, 1.0) * _boat_lengths[-1]
+	var low := 1
+	var high := _boat_route.size() - 1
+	while low < high:
+		var mid := (low + high) / 2
+		if _boat_lengths[mid] < distance: low = mid + 1
+		else: high = mid
+	var t := (distance - _boat_lengths[low - 1]) / maxf(_boat_lengths[low] - _boat_lengths[low - 1], 0.00001)
+	return {"pos": _boat_route[low - 1].lerp(_boat_route[low], t), "direction": _boat_tangents[low - 1].lerp(_boat_tangents[low], t).normalized()}
 
 func _near_route(uv: Vector2, route: Array[Vector2], radius: float) -> bool:
 	for i in range(1, route.size()):
@@ -1245,11 +1311,8 @@ func _river_sample(route: Array[Vector2], phase: float) -> Dictionary:
 func _yangtze_boat_sample(index: int, time: float) -> Dictionary:
 	var heading := 1.0 if index % 2 == 0 else -1.0
 	var phase := time * RIVER_BOAT_SPEED * heading + float(index) / 10.0
-	var sample := _river_sample(yangtze_route, phase)
-	# Average across bends so lanes and facing do not snap at short OSM segments.
-	var before: Vector2 = _river_sample(yangtze_route, phase - 0.001)["pos"]
-	var after: Vector2 = _river_sample(yangtze_route, phase + 0.001)["pos"]
-	var tangent := (after - before).normalized()
+	var sample := _boat_route_sample(phase)
+	var tangent: Vector2 = sample["direction"]
 	var normal := Vector2(-tangent.y, tangent.x)
 	return {"pos": sample["pos"] + normal * RIVER_BOAT_LANE * heading, "heading": heading, "direction": tangent * heading}
 
@@ -1271,9 +1334,9 @@ func _draw_fishing_boat(c: Control, p: Vector2, heading: float = 1.0, direction:
 func _draw_yangtze_boats(c: Control) -> void:
 	for i in 10:
 		var sample := _yangtze_boat_sample(i, elapsed)
-		var p := _wildlife_point(sample["pos"])
-		p.y += sin(elapsed * 0.65 + float(i)) * 0.6 if not reduced_motion else 0.0
-		var direction := (_wildlife_point(sample["pos"] + sample["direction"] * 0.01) - _wildlife_point(sample["pos"])).normalized()
+		# Rounded sprite positions must not be used to calculate a rotating hull's bearing.
+		var p := _shadow_point(sample["pos"])
+		var direction := _shadow_projection.basis_xform(sample["direction"]).normalized()
 		_draw_fishing_boat(c, p, sample["heading"], direction)
 
 func _build_meadow_scenery() -> void:
