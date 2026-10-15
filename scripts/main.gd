@@ -621,7 +621,6 @@ var ending_hint: Label = null
 var _ending_playing: bool = false
 var intro_col: VBoxContainer = null
 var intro_image: TextureRect = null
-var intro_title: Label = null
 var intro_body: Label = null
 var intro_hint: Label = null
 var intro_slides: Array = []
@@ -629,7 +628,12 @@ var intro_index: int = 0
 var _intro_playing: bool = false
 var _intro_elapsed: float = 0.0
 var _intro_advancing: bool = false
-const INTRO_SLIDE_SEC := 5.0
+## 打字机：正文逐字显示，打完才开始算自动翻页的时间
+var _intro_full_text: String = ""
+var _intro_typed: float = 0.0
+var _intro_type_done: bool = true
+const INTRO_SLIDE_SEC := 6.5
+const INTRO_TYPE_CPS := 22.0
 
 
 func _ready() -> void:
@@ -1446,11 +1450,15 @@ func _process(delta: float) -> void:
 		return
 	if not _metric_preview_values.is_empty() and not (wetland and wetland.reduced_motion):
 		_metric_preview_clock += delta
-	# 开场 PPT 计时：不按键则 8 秒自动过一张
+	# 开场 PPT：先打字机把正文打完，打完再计时 6.5 秒自动过一张
 	if _intro_playing:
-		_intro_elapsed += delta
-		if _intro_elapsed >= INTRO_SLIDE_SEC:
-			_advance_intro()
+		if _intro_type_done:
+			_intro_elapsed += delta
+			if _intro_elapsed >= INTRO_SLIDE_SEC:
+				_advance_intro()
+		else:
+			_intro_typed += delta * INTRO_TYPE_CPS
+			_intro_update_typing()
 	_update_card_hover(delta)
 	_process_card_drag(delta)
 	_process_staged_cards(delta)
@@ -3117,30 +3125,37 @@ func _build_intro() -> void:
 	bg.set_anchors_preset(Control.PRESET_FULL_RECT)
 	bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	intro_root.add_child(bg)
+	# 照片：铺满上方大部分屏幕，保持比例居中、不裁切（统一按 16:9 素材放）
+	intro_image = TextureRect.new()
+	intro_image.set_anchors_preset(Control.PRESET_FULL_RECT)
+	intro_image.offset_left = 24
+	intro_image.offset_right = -24
+	intro_image.offset_top = 18
+	intro_image.offset_bottom = -214
+	intro_image.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	intro_image.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	intro_image.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
+	intro_image.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	intro_root.add_child(intro_image)
+	# 文案区：锚在屏幕底部（固定高度），照片大小改了也不会把文字顶跑
 	var col := VBoxContainer.new()
-	col.set_anchors_preset(Control.PRESET_FULL_RECT)
+	col.set_anchors_preset(Control.PRESET_BOTTOM_WIDE)
 	col.offset_left = 80
 	col.offset_right = -80
-	col.offset_top = 30
-	col.offset_bottom = -30
+	col.offset_top = -206
+	col.offset_bottom = -22
 	col.alignment = BoxContainer.ALIGNMENT_CENTER
-	col.add_theme_constant_override("separation", 16)
+	col.add_theme_constant_override("separation", 12)
 	col.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	intro_root.add_child(col)
 	intro_col = col
-	intro_image = TextureRect.new()
-	intro_image.custom_minimum_size = Vector2(320, 192)
-	intro_image.stretch_mode = TextureRect.STRETCH_SCALE
-	intro_image.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	intro_image.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
-	intro_image.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
-	intro_image.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	col.add_child(intro_image)
-	intro_title = _make_label("", 30, Color(1, 0.9, 0.55))
-	intro_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	col.add_child(intro_title)
 	intro_body = _make_label("", 20, Color(0.92, 0.94, 0.95))
 	intro_body.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	intro_body.vertical_alignment = VERTICAL_ALIGNMENT_TOP
+	intro_body.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	intro_body.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	# 定高：打字机逐字显示时行数会变，不定高整块文字会上下跳
+	intro_body.custom_minimum_size = Vector2(0, 84)
 	intro_body.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.7))
 	intro_body.add_theme_constant_override("outline_size", 3)
 	col.add_child(intro_body)
@@ -3164,14 +3179,37 @@ func _show_intro() -> void:
 func _render_intro_slide() -> void:
 	_intro_elapsed = 0.0
 	var slide: Dictionary = intro_slides[intro_index]
-	intro_image.texture = _pixel_art(slide["grid"], slide["palette"])
-	intro_title.text = slide["title"]
-	intro_body.text = slide["body"]
+	intro_image.texture = load(slide["image"]) as Texture2D
+	# 正文交给打字机：先清空，_process 里逐字补上来
+	_intro_full_text = slide["body"]
+	_intro_typed = 0.0
+	_intro_type_done = false
+	intro_body.text = ""
+	_intro_update_typing()
 	# 淡入
 	intro_col.modulate.a = 0.0
 	var tw := Motion.tween(intro_col, "linear", "opacity")
 	Motion.curve(tw, "power2.out")
 	tw.tween_property(intro_col, "modulate:a", 1.0, 0.45)
+
+
+## 打字机：按 INTRO_TYPE_CPS 逐字显示正文；显示满一行后 _intro_type_done 才为真
+func _intro_update_typing() -> void:
+	var total := _intro_full_text.length()
+	var shown := mini(int(_intro_typed), total)
+	intro_body.text = _intro_full_text.substr(0, shown)
+	if shown >= total:
+		_intro_type_done = true
+		_intro_elapsed = 0.0   # 自动翻页的计时从「全文打完」那一刻开始
+
+
+## 打字中按回车/点击：先把全文亮出来；已经打完再按才翻下一张
+func _intro_press() -> void:
+	if not _intro_type_done:
+		_intro_typed = float(_intro_full_text.length())
+		_intro_update_typing()
+		return
+	_advance_intro()
 
 
 func _advance_intro() -> void:
@@ -3196,6 +3234,8 @@ func _advance_intro() -> void:
 func _finish_intro() -> void:
 	_intro_playing = false
 	_intro_advancing = false
+	_intro_type_done = true
+	_intro_typed = 0.0
 	intro_layer.visible = false
 	_mark_intro_seen()
 	_show_menu()
@@ -3204,131 +3244,20 @@ func _finish_intro() -> void:
 func _make_intro_slides() -> Array:
 	return [
 		{
-			"title": "鄱阳湖",
-			"body": "中国第一大淡水湖，\n也是亚洲最重要的候鸟越冬地之一。",
-			"palette": {
-				"S": Color(0.55, 0.78, 0.92), "Y": Color(0.98, 0.85, 0.36),
-				"B": Color(0.96, 0.96, 0.95), "W": Color(0.30, 0.62, 0.80),
-				"w": Color(0.50, 0.76, 0.90), "D": Color(0.16, 0.42, 0.62),
-				"G": Color(0.44, 0.72, 0.44), "g": Color(0.28, 0.54, 0.32),
-				"r": Color(0.40, 0.55, 0.34),
-			},
-			"grid": """SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS
-SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSYYYYYYSSS
-SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSYYYYYYYYSS
-SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSYYYYYYYYSS
-SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSYYYYYYSSS
-SSSSSSSSBSSSSSSSSSSSSBSSSSSSSSSSSSSSSSSS
-WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW
-WWWWWWWWWWWWWWwwwwwwWWWWWWWWWWWWWWWWWWWW
-WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW
-WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW
-WWWWWWWWWWWWWWWWwwWWWWWWWWWWWWWWWWWWWWWW
-WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW
-WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW
-WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW
-WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW
-DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD
-GGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGG
-rGrGrGrGrGrGrGrGrGrGrGrGrGrGrGrGrGrGrGrG
-rGrGrGrGrGrGrGrGrGrGrGrGrGrGrGrGrGrGrGrG
-gggggggggggggggggggggggggggggggggggggggg
-gggggggggggggggggggggggggggggggggggggggg
-gggggggggggggggggggggggggggggggggggggggg""",
+			"image": "res://assets/art/intro/intro-01.jpg",
+			"body": "这里是生灵的乐园。万顷碧波，候鸟翔集。微风拂过水草，一切都是最美的模样。",
 		},
 		{
-			"title": "危机逼近",
-			"body": "围垦、污染、干旱……\n湖水缩减，候鸟与鱼类正失去家园。",
-			"palette": {
-				"K": Color(0.10, 0.12, 0.15), "R": Color(0.85, 0.25, 0.22),
-				"E": Color(0.52, 0.40, 0.28), "e": Color(0.38, 0.28, 0.20),
-				"W": Color(0.28, 0.48, 0.60),
-			},
-			"grid": """KKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKK
-KKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKK
-KKKKKKKKKKKKKRRRRRRRRRKKKKKKKKKKKKKKKKKK
-KKKKKKKKKKKKRRRRRRRRRRRKKKKKKKKKKKKKKKKK
-KKKKKKKKKKKKKRRRRRRRRRKKKKKKKKKKKKKKKKKK
-KKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKK
-EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE
-EEEEEEEEeEEEEEEEEEEEEEEEEEEEEEEeEEEEEEEE
-EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE
-EEeEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEeEEEE
-EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE
-EEEEEEEEEEEEEEEWWWWWWEEEEEEEEEEEEEEEEEEE
-EEEEEEEEEEEEEEEWWWWWWEEEEEEEEEEEEEEEEEEE
-EEEEEEEEEEEEEEEEWWWWEEEEEEEEEEEEEEEEEEEE
-EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE
-EEEEEEeEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE
-EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE
-eEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE
-EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE
-eEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE
-EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE
-eEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE""",
+			"image": "res://assets/art/intro/intro-02.jpg",
+			"body": "然而，危机正悄然逼近。干旱、污染、围垦……湖水在退缩，候鸟与鱼类，正在失去它们的家园。",
 		},
 		{
-			"title": "你",
-			"body": "你被任命为鄱阳湖\n新一任湖区管理员。",
-			"palette": {
-				"S": Color(0.55, 0.78, 0.92), "P": Color(0.92, 0.76, 0.62),
-				"H": Color(0.25, 0.55, 0.30), "C": Color(0.30, 0.50, 0.70),
-				"c": Color(0.22, 0.38, 0.55), "Y": Color(0.95, 0.80, 0.30),
-				"G": Color(0.44, 0.72, 0.44),
-			},
-			"grid": """SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS
-SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS
-SSSSSSSSSSSSSSSSSHHHHHHHSSSSSSSSSSSSSSSS
-SSSSSSSSSSSSSSSSHHHHHHHHHHSSSSSSSSSSSSSS
-SSSSSSSSSSSSSSSSSSPPPPPPSSSSSSSSSSSSSSSS
-SSSSSSSSSSSSSSSSSPPPPPPPPSSSSSSSSSSSSSSS
-SSSSSSSSSSSSSSSSSPPPPPPPPSSSSSSSSSSSSSSS
-SSSSSSSSSSSSSSSSSSPPPPPPSSSSSSSSSSSSSSSS
-SSSSSSSSSSSSSSSSSSCCCCCCSSSSSSSSSSSSSSSS
-SSSSSSSSSSSSSSSSCCCCCCCCCCSSSSSSSSSSSSSS
-SSSSSSSSSSSSSSSSCCCCYYCCCCSSSSSSSSSSSSSS
-SSSSSSSSSSSSSSSSCCCCCCCCCCSSSSSSSSSSSSSS
-SSSSSSSSSSSSSSSSCCCCCCCCCCSSSSSSSSSSSSSS
-SSSSSSSSSSSSSSSSCCCCCCCCCCSSSSSSSSSSSSSS
-SSSSSSSSSSSSSSSSccccccccccSSSSSSSSSSSSSS
-SSSSSSSSSSSSSSSSccccccccccSSSSSSSSSSSSSS
-SSSSSSSSSSSSSSSSSSCCCCCCSSSSSSSSSSSSSSSS
-SSSSSSSSSSSSSSSSSSCCCCCCSSSSSSSSSSSSSSSS
-SSSSSSSSSSSSSSSSSSCCCCCCSSSSSSSSSSSSSSSS
-SSSSSSSSSSSSSSSSSSccccccSSSSSSSSSSSSSSSS
-GGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGG
-GGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGG""",
+			"image": "res://assets/art/intro/intro-03.jpg",
+			"body": "你，被任命为鄱阳湖新任湖区管理员。\n在这16个回合（4年）里，你需要平衡资金与生态，守护水位、植被与万物生灵。",
 		},
 		{
-			"title": "你的使命",
-			"body": "16 个回合内，平衡资金与生态，\n守护水位、植被、水质、鱼类、鸟类与社区。",
-			"palette": {
-				"K": Color(0.15, 0.18, 0.25), "O": Color(0.95, 0.60, 0.25),
-				"R": Color(0.90, 0.40, 0.25), "Y": Color(0.98, 0.85, 0.40),
-				"W": Color(0.30, 0.62, 0.80), "D": Color(0.16, 0.42, 0.62),
-			},
-			"grid": """KKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKK
-KKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKK
-KKKKKKKKKKKKKKKKKKKYYKKKKKKKKKKKKKKKKKKK
-KKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKK
-KKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKK
-KKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKK
-KKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKK
-KKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKK
-KKKKKKKKKKKKKKKKKOOOOOOKKKKKKKKKKKKKKKKK
-KKKKKKKKKKKKKKKKOOOOOOOOKKKKKKKKKKKKKKKK
-KKKKKKKKKKKKKKKKOOOOOOOOKKKKKKKKKKKKKKKK
-KKKKKKKKKKKKKKKKROOOOOOOKKKKKKKKKKKKKKKK
-KKKKKKKKKKKKKKKKRROOOOOKKKKKKKKKKKKKKKKK
-WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW
-WWWWWWWWWWWWWWOOOWWWWWWWWWWWWWWWWWWWWWWW
-WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW
-WWWWWWWWWWWWWWRRRRWWWWWWWWWWWWWWWWWWWWWW
-WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW
-WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW
-DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD
-DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD
-DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD""",
+			"image": "res://assets/art/intro/intro-04.jpg",
+			"body": "肩并肩，面向未来。愿夕阳下的鄱阳湖，能重焕生机，生生不息。",
 		},
 	]
 
@@ -3916,14 +3845,14 @@ func _unhandled_input(event: InputEvent) -> void:
 			get_viewport().set_input_as_handled()
 		return
 	if _intro_playing:
-		# 开场 PPT：回车/点击下一张，ESC 直接跳过
+		# 开场 PPT：回车/点击先补完打字机、再翻下一张；ESC 直接跳过
 		if event is InputEventKey and event.pressed and not event.echo:
 			if event.keycode == KEY_ESCAPE:
 				_finish_intro()
 			elif event.keycode == KEY_ENTER or event.keycode == KEY_SPACE:
-				_advance_intro()
+				_intro_press()
 		elif event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
-			_advance_intro()
+			_intro_press()
 		return
 	if event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_ESCAPE:
 		_toggle_pause()
